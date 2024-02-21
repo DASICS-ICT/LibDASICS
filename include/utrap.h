@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef uint64_t reg_t;
+typedef unsigned long reg_t;
 
 
 /**
@@ -24,12 +24,14 @@ struct ucontext_trap
     /* Saved main processor registers.*/
 	reg_t ra;
 	reg_t sp;
-	reg_t gp;
-	reg_t tp;
 	reg_t t0;
 	reg_t t1;
 	reg_t t2;
-	reg_t a0;
+	reg_t t3;
+	reg_t t4;
+	reg_t t5;
+	reg_t t6;	
+    reg_t a0;
 	reg_t a1;
 	reg_t a2;
 	reg_t a3;
@@ -37,38 +39,32 @@ struct ucontext_trap
 	reg_t a5;
 	reg_t a6;
 	reg_t a7;
-	reg_t t3;
-	reg_t t4;
-	reg_t t5;
-	reg_t t6;
 };
 
 
-#define OFFSET_TRAP_MEMBER(t) offsetof(struct ucontext_trap, t)
+#define OFFSET_TRAP_UEPC    (8*0)
+#define OFFSET_TRAP_UTVAL   (8*1)
+#define OFFSET_TRAP_UCAUSE  (8*2)
+#define OFFSET_TRAP_RA      (8*3)
+#define OFFSET_TRAP_SP      (8*4)
+#define OFFSET_TRAP_T0      (8*5)
+#define OFFSET_TRAP_T1      (8*6)
+#define OFFSET_TRAP_T2      (8*7)
+#define OFFSET_TRAP_T3      (8*8)
+#define OFFSET_TRAP_T4      (8*9)
+#define OFFSET_TRAP_T5      (8*10)
+#define OFFSET_TRAP_T6      (8*11)
+#define OFFSET_TRAP_A0      (8*12)
+#define OFFSET_TRAP_A1      (8*13)
+#define OFFSET_TRAP_A2      (8*14)
+#define OFFSET_TRAP_A3      (8*15)
+#define OFFSET_TRAP_A4      (8*16)
+#define OFFSET_TRAP_A5      (8*17)
+#define OFFSET_TRAP_A6      (8*18)
+#define OFFSET_TRAP_A7      (8*19)
 
-#define OFFSET_TRAP_UEPC    OFFSET_TRAP_MEMBER(uepc)
-#define OFFSET_TRAP_UTVAL   OFFSET_TRAP_MEMBER(utval)
-#define OFFSET_TRAP_UCAUSE  OFFSET_TRAP_MEMBER(ucause)
-#define OFFSET_TRAP_RA      OFFSET_TRAP_MEMBER(ra)
-#define OFFSET_TRAP_SP      OFFSET_TRAP_MEMBER(sp)
-#define OFFSET_TRAP_GP      OFFSET_TRAP_MEMBER(gp)
-#define OFFSET_TRAP_TP      OFFSET_TRAP_MEMBER(tp)
-#define OFFSET_TRAP_T0      OFFSET_TRAP_MEMBER(t0)
-#define OFFSET_TRAP_T1      OFFSET_TRAP_MEMBER(t1)
-#define OFFSET_TRAP_T2      OFFSET_TRAP_MEMBER(t2)
-#define OFFSET_TRAP_T3      OFFSET_TRAP_MEMBER(t3)
-#define OFFSET_TRAP_T4      OFFSET_TRAP_MEMBER(t4)
-#define OFFSET_TRAP_T5      OFFSET_TRAP_MEMBER(t5)
-#define OFFSET_TRAP_T6      OFFSET_TRAP_MEMBER(t6)
-#define OFFSET_TRAP_A0      OFFSET_TRAP_MEMBER(a0)
-#define OFFSET_TRAP_A1      OFFSET_TRAP_MEMBER(a1)
-#define OFFSET_TRAP_A2      OFFSET_TRAP_MEMBER(a2)
-#define OFFSET_TRAP_A3      OFFSET_TRAP_MEMBER(a3)
-#define OFFSET_TRAP_A4      OFFSET_TRAP_MEMBER(a4)
-#define OFFSET_TRAP_A5      OFFSET_TRAP_MEMBER(a5)
-#define OFFSET_TRAP_A6      OFFSET_TRAP_MEMBER(a6)
 
-#define OFFSET_SIZE         sizeof(struct ucontext_trap)
+#define OFFSET_SIZE         (8*20)
 
 /* DASICS exceptions */
 #define EXC_DASICS_UFETCH_FAULT     24

@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <utrap.h>
 #include <dasics_stdio.h>
 
@@ -46,7 +47,7 @@ dasics_static_load:
     
     if (idx == -1)
     {
-        my_printf("[error]: no more libbounds!!\n");
+        dasics_printf("[error]: no more libbounds!!\n");
         // while(1);
         exit(1);
     }    
@@ -94,7 +95,7 @@ dasics_static_store:
         r_regs->uepc += 4;
     if (idx == -1)
     {
-        my_printf("[error]: no more libbounds!!\n");
+        dasics_printf("[error]: no more libbounds!!\n");
         exit(1);
     }    
     return 0;

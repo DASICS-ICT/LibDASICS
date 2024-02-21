@@ -1,22 +1,68 @@
 # compile logic
-CROSS_COMPILE	= riscv64-unknown-linux-gnu
+CROSS_COMPILE	?= riscv64-unknown-linux-gnu
 CC				= $(CROSS_COMPILE)-gcc
 OBJDUMP			= $(CROSS_COMPILE)-objdump
+AR				= $(CROSS_COMPILE)-ar
+RANLIB			= $(CROSS_COMPILE)-ranlib
 
-DIR_PWD			= $(shell pwd)
-DIR_BUILD		= $(DIR_PWD)/build
+# C flags
+INCLUDE			= -Iinclude
+CFLAGS			= -O2 -g $(INCLUDE)
+
+# build dir
+DIR_PWD			?= 
+DIR_BUILD		= build
+DIR_SRC			= src
+DIR_LIB			= lib
+DIR_TEST		= test
+
+# target files
+# LIB FILE, stand alone, not depend on any other standard library
+LIB_FILES_C		= $(wildcard $(DIR_LIB)/*/*.c)
+LIB_FILES_ASM	= $(wildcard $(DIR_LIB)/*/*.S)
+
+# SRC FILE, may used standard library
+SRC_FILES_C		= $(wildcard $(DIR_SRC)/*/*.c)
+SRC_FILES_ASM	= $(wildcard $(DIR_SRC)/*/*.S)
+
+# TEST FIle
+TEST_FILES		= $(wildcard $(DIR_TEST)/*.c)
+
+# BASENAME
+BASENAME		= $(notdir $(LIB_FILES_C) $(LIB_FILES_ASM) $(SRC_FILES_C) $(SRC_FILES_ASM))
+OBJ_FILES		= $(addprefix build/, \
+						$(addsuffix .o, $(basename $(BASENAME))))
+
+# Lib target
+LibDASICS		= $(DIR_BUILD)/LibDASICS.a
 
 
 .PHONY: all
 
-all: build lib
-
+all: $(LibDASICS)
 
 build:
 	mkdir -p $(DIR_BUILD)
 
 
-lib:
+# compile all files
+$(DIR_BUILD)/%.o: $(DIR_SRC)/*/%.c | $(DIR_BUILD)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(DIR_BUILD)/%.o: $(DIR_SRC)/*/%.S | $(DIR_BUILD)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(DIR_BUILD)/%.o: $(DIR_LIB)/*/%.c | $(DIR_BUILD)
+	$(CC) -fno-builtin -nostdlib $(CFLAGS) -c $< -o $@
+
+# Make lib
+$(LibDASICS): $(OBJ_FILES)
+	$(AR) rcs $(LibDASICS) $(OBJ_FILES) 
+	$(RANLIB) $(LibDASICS)
+ 
+test: $(LibDASICS)
+	$(CC) $(CFLAGS) $(TEST_FILES) -o ./build/test $(LibDASICS) -T./ld.lds
 
 
-
+clean:
+	rm -rf $(DIR_BUILD)

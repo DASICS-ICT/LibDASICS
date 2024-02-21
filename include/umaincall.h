@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef uint64_t reg_t;
+typedef unsigned long reg_t;
 
 
 /**
@@ -21,6 +21,7 @@ typedef uint64_t reg_t;
  * a0 is used to variable length parameters
  * ra is used to change jump target
  */
+
 struct umaincall
 {
     reg_t t1;
@@ -37,22 +38,19 @@ struct umaincall
 };
 
 
-#define OFFSET_UMAINCALL_MEMBER(t) offsetof(struct umaincall, t)
-
-#define OFFSET_UMAINCALL_T1     OFFSET_UMAINCALL_MEMBER(t1)
-#define OFFSET_UMAINCALL_T3     OFFSET_UMAINCALL_MEMBER(t3)
-#define OFFSET_UMAINCALL_RA     OFFSET_UMAINCALL_MEMBER(ra)
-#define OFFSET_UMAINCALL_A0     OFFSET_UMAINCALL_MEMBER(a0)
-#define OFFSET_UMAINCALL_A1     OFFSET_UMAINCALL_MEMBER(a1)
-#define OFFSET_UMAINCALL_A2     OFFSET_UMAINCALL_MEMBER(a2)
-#define OFFSET_UMAINCALL_A3     OFFSET_UMAINCALL_MEMBER(a3)
-#define OFFSET_UMAINCALL_A4     OFFSET_UMAINCALL_MEMBER(a4)
-#define OFFSET_UMAINCALL_A5     OFFSET_UMAINCALL_MEMBER(a5)
-#define OFFSET_UMAINCALL_A6     OFFSET_UMAINCALL_MEMBER(a6)
-#define OFFSET_UMAINCALL_A7     OFFSET_UMAINCALL_MEMBER(a7)
+#define OFFSET_UMAINCALL_T1     (8*0)
+#define OFFSET_UMAINCALL_T3     (8*1)
+#define OFFSET_UMAINCALL_RA     (8*2)
+#define OFFSET_UMAINCALL_A0     (8*3)
+#define OFFSET_UMAINCALL_A1     (8*4)
+#define OFFSET_UMAINCALL_A2     (8*5)
+#define OFFSET_UMAINCALL_A3     (8*6)
+#define OFFSET_UMAINCALL_A4     (8*7)
+#define OFFSET_UMAINCALL_A5     (8*8)
+#define OFFSET_UMAINCALL_A6     (8*9)
+#define OFFSET_UMAINCALL_A7     (8*10)
 
 #define OFFSET_UMAINCALL        sizeof(struct umaincall)
-
 
 
 

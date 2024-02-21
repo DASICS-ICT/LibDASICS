@@ -5,6 +5,8 @@
 #include "udasics.h"
 #include "uthash.h"
 #include <utrap.h>
+#include <dasics_stdio.h>
+#include <umaincall.h>
 
 uint64_t umaincall_helper;
 
@@ -175,26 +177,26 @@ static int dasics_bound_checker(uint64_t lo, uint64_t hi, int perm)
 //     return retval;
 // }
 
-static long dasics_syscall_proxy(SYSCALL_ARGS)
-{
-    register long a0 asm("a0") = arg1;
-    register long a1 asm("a1") = arg2;
-    register long a2 asm("a2") = arg3;
-    register long a3 asm("a3") = arg4;
-    register long a4 asm("a4") = arg5;
-    register long a5 asm("a5") = arg6;
-    register long a7 asm("a7") = sysno;
+// static long dasics_syscall_proxy(SYSCALL_ARGS)
+// {
+//     register long a0 asm("a0") = arg1;
+//     register long a1 asm("a1") = arg2;
+//     register long a2 asm("a2") = arg3;
+//     register long a3 asm("a3") = arg4;
+//     register long a4 asm("a4") = arg5;
+//     register long a5 asm("a5") = arg6;
+//     register long a7 asm("a7") = sysno;
 
-    asm volatile("ecall"                        \
-                 : "+r"(a0)                     \
-                 : "r"(a1), "r"(a2), "r"(a3),   \
-                   "r"(a4), "r"(a5), "r"(a7)    \
-                 : "memory");
+//     asm volatile("ecall"                        \
+//                  : "+r"(a0)                     \
+//                  : "r"(a1), "r"(a2), "r"(a3),   \
+//                    "r"(a4), "r"(a5), "r"(a7)    \
+//                  : "memory");
 
-    return a0;
-}
+//     return a0;
+// }
 
-uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
+uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
 {
     uint64_t dasics_return_pc = csr_read(0x8b1);            // DasicsReturnPC
     uint64_t dasics_free_zone_return_pc = csr_read(0x8b2);  // DasicsFreeZoneReturnPC
@@ -202,6 +204,8 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
     uint64_t retval = 0;
 
     va_list args;
+    UmaincallTypes type = (UmaincallTypes)regs->a0;
+
     va_start(args, type);
 
     switch (type)
@@ -315,7 +319,7 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
         break;
         
     default:
-        my_printf("[ERROR] unhandle ufault: 0x%lx\n", regs->ucause);
+        dasics_printf("[ERROR] unhandle ufault: 0x%lx\n", regs->ucause);
         exit(1);
     }
 

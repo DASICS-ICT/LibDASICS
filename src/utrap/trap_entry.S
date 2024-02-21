@@ -1,16 +1,14 @@
 #include <asm/asm.h>
 #include <ucsr.h>
-#include <utrap.h>
+#include <asm/offset.h>
 
 .macro SAVE_CONTEXT
     addi sp, sp, -(OFFSET_SIZE) 
     /* save all general purpose registers here! */
     // return address
-    sd ra, OFFSET_TRAP_ra(sp)
+    sd ra, OFFSET_TRAP_RA(sp)
 
     // pointers, sp and tp will be handled later
-    sd gp, OFFSET_REG_GP(sp)
-    sd tp, OFFSET_REG_TP(sp)
 
     // temporary
     sd t0, OFFSET_TRAP_T0(sp)
@@ -44,7 +42,7 @@
     sd t0, OFFSET_TRAP_UCAUSE(sp)
 
     csrr t0, CSR_UTVAL
-    sd t0, OFFSET_TRAP_UBADADDR(sp)
+    sd t0, OFFSET_TRAP_UTVAL(sp)
 
 .endm
 
@@ -55,7 +53,7 @@
     ld t0, OFFSET_TRAP_UCAUSE(sp)
     csrw CSR_UCAUSE, t0 
 
-    ld t0, OFFSET_TRAP_UBADADDR(sp)
+    ld t0, OFFSET_TRAP_UTVAL(sp)
     csrw CSR_UTVAL, t0 
 
 
@@ -63,8 +61,6 @@
     ld ra, OFFSET_TRAP_RA(sp)
 
     // pointers, sp will be handled later
-    ld gp, OFFSET_TRAP_GP(sp)
-    ld tp, OFFSET_TRAP_TP(sp)
 
     // temporary
     ld t0, OFFSET_TRAP_T0(sp)
@@ -115,11 +111,11 @@ END(dasics_ufault_entry)
 # __dasics_start_ufault_entry: deal fault when the dynamic.
 #-----------------------------------------------------------------------
 ENTRY(__dasics_start_ufault_entry)
-    SAVE_CONTEXT
-    mv a0, sp
-    la ra, __dasics_uret
-    la t0, _dasics_start_ufault_entry
-    jr t0
-    ret
+//    SAVE_CONTEXT
+//    mv a0, sp
+//    la ra, __dasics_uret
+//    la t0, _dasics_start_ufault_entry
+//    jr t0
+//    ret
 END(__dasics_start_ufault_entry)
 

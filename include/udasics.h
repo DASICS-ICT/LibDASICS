@@ -29,8 +29,11 @@ typedef enum {
 void register_udasics(uint64_t funcptr);
 void unregister_udasics(void);
 
+
+struct umaincall;
+
 // DASICS maincall
-uint64_t dasics_umaincall_helper(UmaincallTypes type, ...);
+uint64_t dasics_umaincall_helper(struct umaincall * regs, ...);
 
 // source but don't include 
 struct ucontext_trap;

@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "dasics_stdio.h": "c",
-        "utrap.h": "c",
-        "ucsr.h": "c"
-    }
-}
