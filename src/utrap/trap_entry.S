@@ -108,14 +108,14 @@ ENTRY(dasics_ufault_entry)
 END(dasics_ufault_entry)
 
 #-----------------------------------------------------------------------
-# __dasics_start_ufault_entry: deal fault when the dynamic.
+# _setup_fault: deal fault when the dynamic.
 #-----------------------------------------------------------------------
-ENTRY(__dasics_start_ufault_entry)
-//    SAVE_CONTEXT
-//    mv a0, sp
-//    la ra, __dasics_uret
-//    la t0, _dasics_start_ufault_entry
-//    jr t0
-//    ret
-END(__dasics_start_ufault_entry)
+ENTRY(_setup_fault)
+    SAVE_CONTEXT
+    mv a0, sp
+    la ra, __dasics_uret
+    la t0, dasics_start_fault
+    jr t0
+    ret
+END(_setup_fault)
 

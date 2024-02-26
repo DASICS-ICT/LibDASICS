@@ -43,19 +43,11 @@
 
 #include <dasics_stdarg.h>
 #include <dasics_stdio.h>
-
-static int my_strlen(const char *str)
-{
-    int i = 0;
-    while (str[i] != '\0') {
-        i++;
-    }
-    return i;
-}
+#include <dasics_string.h>
 
 static inline int sys_write(const char * buff)
 {
-    int len = my_strlen(buff);
+    int len = dasics_strlen(buff);
     register long a7 asm("a7") = 64;
     register long a0 asm("a0") = 1;
     register long a1 asm("a1") = (unsigned long)buff;
@@ -222,7 +214,7 @@ static int mini_vsnprintf(
 
                 case 's':
                     ptr = va_arg(va, char *);
-                    _puts(ptr, my_strlen(ptr), &b);
+                    _puts(ptr, dasics_strlen(ptr), &b);
                     break;
 
                 default:

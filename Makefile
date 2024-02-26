@@ -42,24 +42,36 @@ LibDASICS		= $(DIR_BUILD)/LibDASICS.a
 all: $(LibDASICS)
 
 build:
-	mkdir -p $(DIR_BUILD)
+	@mkdir -p $(DIR_BUILD)
 
 
 # compile all files
 $(DIR_BUILD)/%.o: $(DIR_SRC)/*/%.c | $(DIR_BUILD)
-	$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
+	@echo CC $<
 
 $(DIR_BUILD)/%.o: $(DIR_SRC)/*/%.S | $(DIR_BUILD)
-	$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
+	@echo CC $<
+
 
 $(DIR_BUILD)/%.o: $(DIR_LIB)/*/%.c | $(DIR_BUILD)
-	$(CC) -fno-builtin -nostdlib $(CFLAGS) -c $< -o $@
+	@$(CC) -fno-builtin -nostdlib $(CFLAGS) -c $< -o $@
+	@echo CC $<
+
+
+$(DIR_BUILD)/%.o: $(DIR_LIB)/*/%.S | $(DIR_BUILD)
+	@$(CC) -fno-builtin -nostdlib $(CFLAGS) -c $< -o $@
+	@echo CC $<
 
 # Make lib
 $(LibDASICS): $(OBJ_FILES)
-	$(AR) rcs $(LibDASICS) $(OBJ_FILES) 
-	$(RANLIB) $(LibDASICS)
- 
+	@$(AR) rcs $(LibDASICS) $(OBJ_FILES) 
+	@echo AR $(LibDASICS)
+	@$(RANLIB) $(LibDASICS)
+	@echo RANLIB $(LibDASICS)
+
+
 test: $(LibDASICS)
 	$(CC) $(CFLAGS) $(TEST_FILES) -o ./build/test $(LibDASICS) -T./ld.lds
 

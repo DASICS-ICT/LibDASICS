@@ -1,39 +1,26 @@
 #ifndef _INCLUDE_DASICS_STRING_H
 #define _INCLUDE_DASICS_STRING_H
+#include <stdint.h>
+#include <syscall.h>
 
-static inline int __dasics_linker_memcpy(char *dest, const char *src, unsigned int len)
+extern void * dasics_memcpy(void *, const void *, uint64_t n);
+extern void * dasics_memset(void *, int, uint64_t);
+extern int dasics_strncmp(const char *cs, const char *ct, uint64_t count);
+extern int dasics_strlen(const char *s);
+extern int dasics_strncmp(const char *cs, const char *ct, uint64_t count);
+
+
+// malloc memory on heap simplily
+static inline uint64_t __BRK(uint64_t ptr)
 {
-    for (int i = 0; i < len; i++)
-    {
-        dest[i] = src[i];
-    }
-    return len;
+    register uint64_t a7 asm("a7") = __NR_brk;
+    register uint64_t a0 asm("a0") = ptr;
+    asm volatile("ecall"                        \
+                 : "+r"(a0)                     \
+                 : "r"(a7)                      \
+                 : "memory");
+
+    return a0;
 }
-
-static inline char * __dasics_linker_strcpy(char *dest, const char *src)
-{
-    char *tmp = dest;
-
-    while (*src) {
-        *dest++ = *src++;
-    }
-
-    *dest = '\0';
-
-    return tmp;
-}
-
-static inline int __dasics_linker_strcmp(const char *str1, const char *str2)
-{
-    while (*str1 && *str2) {
-        if (*str1 != *str2) {
-            return (*str1) - (*str2);
-        }
-        ++str1;
-        ++str2;
-    }
-    return (*str1) - (*str2);
-}
-
 
 #endif

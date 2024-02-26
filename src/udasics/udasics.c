@@ -66,27 +66,27 @@ int dlibcfg_handle_map[DASICS_LIBCFG_WIDTH] = {-1};
 
 void register_udasics(uint64_t funcptr) 
 {
-    // uint64_t libcfg = csr_read(0x880);  // DasicsLibCfg
-    // int32_t max_cfgs = DASICS_LIBCFG_WIDTH;
-    // int32_t step = 4;
+    uint64_t libcfg = csr_read(0x880);  // DasicsLibCfg
+    int32_t max_cfgs = DASICS_LIBCFG_WIDTH;
+    int32_t step = 4;
 
-    // // Write OS-allocated bounds to hash table
-    // for (int32_t idx = 0; idx < max_cfgs; ++idx) {
-    //     uint64_t curr_cfg = (libcfg >> (idx * step)) & DASICS_LIBCFG_MASK;
+    // Write OS-allocated bounds to hash table
+    for (int32_t idx = 0; idx < max_cfgs; ++idx) {
+        uint64_t curr_cfg = (libcfg >> (idx * step)) & DASICS_LIBCFG_MASK;
 
-    //     // Found allocated config
-    //     if ((curr_cfg & DASICS_LIBCFG_V) != 0) {
-    //         uint64_t hi, lo;
-    //         LIBBOUND_LOOKUP(hi, lo, idx, READ);
-    //         hashed_bound_t *entry = (hashed_bound_t *)malloc(sizeof(hashed_bound_t));
-    //         entry->bound.hi = hi;
-    //         entry->bound.lo = lo;
-    //         entry->priv = curr_cfg;
-    //         entry->handle = available_handle++;
-    //         HASH_ADD_INT(bounds_table, handle, entry);
-    //         dlibcfg_handle_map[idx] = entry->handle;
-    //     }
-    // }
+        // Found allocated config
+        if ((curr_cfg & DASICS_LIBCFG_V) != 0) {
+            uint64_t hi, lo;
+            LIBBOUND_LOOKUP(hi, lo, idx, READ);
+            hashed_bound_t *entry = (hashed_bound_t *)malloc(sizeof(hashed_bound_t));
+            entry->bound.hi = hi;
+            entry->bound.lo = lo;
+            entry->priv = curr_cfg;
+            entry->handle = available_handle++;
+            HASH_ADD_INT(bounds_table, handle, entry);
+            dlibcfg_handle_map[idx] = entry->handle;
+        }
+    }
 
     // Set maincall & ufault handler
     umaincall_helper = (funcptr != 0) ? funcptr : (uint64_t) dasics_umaincall_helper;
@@ -100,11 +100,11 @@ void unregister_udasics(void)
     csr_write(0x005, 0);
 
     // Free bounds hash table
-    // hashed_bound_t *current, *temp;
-    // HASH_ITER(hh, bounds_table, current, temp) {
-    //     HASH_DEL(bounds_table, current);
-    //     free(current);
-    // }
+    hashed_bound_t *current, *temp;
+    HASH_ITER(hh, bounds_table, current, temp) {
+        HASH_DEL(bounds_table, current);
+        free(current);
+    }
 }
 
 static int bound_coverage_cmp(const void *a, const void *b)
@@ -153,53 +153,11 @@ static int dasics_bound_checker(uint64_t lo, uint64_t hi, int perm)
     return hi <= lo;
 }
 
-// static uint32_t dasics_syscall_checker(SYSCALL_ARGS)
-// {
-//     uint32_t retval = 1;
-
-//     switch(sysno)
-//     {
-//         case SYS_read : case SYS_write :
-//         case SYS_pread: case SYS_pwrite:
-//             if (arg3 < 0) {
-//                 // nbytes should not be less than zero
-//                 retval = 0;
-//             }
-//             else {
-//                 int perm = (sysno == SYS_read || sysno == SYS_pread) ? DASICS_LIBCFG_W : DASICS_LIBCFG_R;
-//                 retval = dasics_bound_checker((uint64_t)arg2, (uint64_t)arg2 + (uint64_t)arg3 - 1, perm);
-//             }
-//             break;
-//         default:
-//             break;
-//     }
-
-//     return retval;
-// }
-
-// static long dasics_syscall_proxy(SYSCALL_ARGS)
-// {
-//     register long a0 asm("a0") = arg1;
-//     register long a1 asm("a1") = arg2;
-//     register long a2 asm("a2") = arg3;
-//     register long a3 asm("a3") = arg4;
-//     register long a4 asm("a4") = arg5;
-//     register long a5 asm("a5") = arg6;
-//     register long a7 asm("a7") = sysno;
-
-//     asm volatile("ecall"                        \
-//                  : "+r"(a0)                     \
-//                  : "r"(a1), "r"(a2), "r"(a3),   \
-//                    "r"(a4), "r"(a5), "r"(a7)    \
-//                  : "memory");
-
-//     return a0;
-// }
 
 uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
 {
-    uint64_t dasics_return_pc = csr_read(0x8b1);            // DasicsReturnPC
-    uint64_t dasics_free_zone_return_pc = csr_read(0x8b2);  // DasicsFreeZoneReturnPC
+    // uint64_t dasics_return_pc = csr_read(0x8b1);            // DasicsReturnPC
+    // uint64_t dasics_free_zone_return_pc = csr_read(0x8b2);  // DasicsFreeZoneReturnPC
 
     uint64_t retval = 0;
 
@@ -215,11 +173,11 @@ uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
             vprintf(format, args);
         }
         case Umaincall_SETAZONERTPC:
-            asm volatile (
-                "li     t0,  0x1d1bc\n"
-                "csrw   0x8b2, t0\n"
-                :::"t0"
-            );
+            // asm volatile (
+            //     "li     t0,  0x1d1bc\n"
+            //     "csrw   0x8b2, t0\n"
+            //     :::"t0"
+            // );
             break;
 
         default:
@@ -227,8 +185,9 @@ uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
             break;
     }
 
-    csr_write(0x8b1, dasics_return_pc);             // DasicsReturnPC
-    csr_write(0x8b2, dasics_free_zone_return_pc);   // DasicsFreeZoneReturnPC
+    regs->t1 = regs->ra;
+    // csr_write(0x8b1, dasics_return_pc);             // DasicsReturnPC
+    // csr_write(0x8b2, dasics_free_zone_return_pc);   // DasicsFreeZoneReturnPC
 
     va_end(args);
 
@@ -300,6 +259,7 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
 {
     // Save some registers that should be saved by callees
     int error;
+    int csr_idx;
     switch (regs->ucause)
     {
     case EXC_DASICS_UFETCH_FAULT:
@@ -307,10 +267,30 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
         break;
     
     case EXC_DASICS_ULOAD_FAULT:
+        csr_idx = dasics_ldst_checker(regs->utval, 1);
+
+        if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
+            uint64_t hi, lo;
+            LIBBOUND_LOOKUP(hi, lo, csr_idx, READ);
+            printf("[DASICS EXCEPTION]Info: dasics uload fault OK! new csr idx is %d, lo = %#lx, hi = %#lx\n", \
+                csr_idx, lo, hi);
+            return;
+        }
+
         error = handle_DasicsULoadFault(regs);
         break;
 
     case EXC_DASICS_USTORE_FAULT:
+        csr_idx = dasics_ldst_checker(regs->utval, 0);
+
+        if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
+            uint64_t hi, lo;
+            LIBBOUND_LOOKUP(hi, lo, csr_idx, READ);
+            printf("[DASICS EXCEPTION]Info: dasics ustore fault OK! new csr idx is %d, lo = %#lx, hi = %#lx\n", \
+                csr_idx, lo, hi);
+            return;
+        }      
+
         error = handle_DasicsUStoreFault(regs);
         break;
     
@@ -412,6 +392,18 @@ int32_t dasics_libcfg_free(int32_t handle) {
         }
     }
 
+    return 0;
+}
+
+int32_t dasics_libcfg_free_all()
+{
+    int32_t idx = 0;
+
+    for (; idx < DASICS_LIBCFG_WIDTH; ++idx) {
+        if (dlibcfg_handle_map[idx] != -1) {
+            dasics_libcfg_free(dlibcfg_handle_map[idx]);
+        }
+    }   
     return 0;
 }
 

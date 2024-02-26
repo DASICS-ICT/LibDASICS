@@ -80,10 +80,10 @@ struct ucontext_trap
 /*
  * Three types of U-exception types
  */
-int handle_DasicsUFetchFault(struct ucontext_trap * r_regs);
-int handle_DasicsULoadFault(struct ucontext_trap * r_regs);
-int handle_DasicsUStoreFault(struct ucontext_trap * r_regs);
-int handle_DasicsUEcallFault(struct ucontext_trap * r_regs);
+int handle_DasicsUFetchFault(struct ucontext_trap * regs);
+int handle_DasicsULoadFault(struct ucontext_trap * regs);
+int handle_DasicsUStoreFault(struct ucontext_trap * regs);
+int handle_DasicsUEcallFault(struct ucontext_trap * regs);
 
 
 

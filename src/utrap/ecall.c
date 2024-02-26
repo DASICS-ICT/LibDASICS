@@ -25,20 +25,20 @@ static long invoke_syscall(long sysno, long arg0, long arg1, long arg2,
 
 
 
-int handle_DasicsUEcallFault(struct ucontext_trap * r_regs)
+int handle_DasicsUEcallFault(struct ucontext_trap * regs)
 {
-  r_regs->a0 = invoke_syscall(r_regs->a7, \
-                              r_regs->a0, \
-                              r_regs->a1, \
-                              r_regs->a2, \
-                              r_regs->a3, \
-                              r_regs->a4, \
-                              r_regs->a5, \
-                              r_regs->a6);
+  regs->a0 = invoke_syscall(regs->a7, \
+                              regs->a0, \
+                              regs->a1, \
+                              regs->a2, \
+                              regs->a3, \
+                              regs->a4, \
+                              regs->a5, \
+                              regs->a6);
 
 
   // jump ecall
-  r_regs->uepc += 4;
+  regs->uepc += 4;
 
   return 0;
 
