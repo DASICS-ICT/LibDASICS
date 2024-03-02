@@ -51,7 +51,13 @@ struct umaincall
 #define OFFSET_UMAINCALL_A7     (8*10)
 
 #define OFFSET_UMAINCALL        sizeof(struct umaincall)
+#define NOP 0x00000013
 
+extern uint64_t umaincall_helper;
 
+// Open maincall
+int _open_maincall();
+
+int dasics_dynamic_call(struct umaincall * CallContext);
 
 #endif

@@ -30,10 +30,8 @@ ENTRY(dasics_memset)
 	or a1, a3, a1
 	slli a3, a1, 16
 	or a1, a3, a1
-#ifdef CONFIG_64BIT
 	slli a3, a1, 32
 	or a1, a3, a1
-#endif
 
 	/* Calculate end address */
 	andi a4, a2, ~(RISCV_SZPTR-1)
@@ -50,9 +48,7 @@ ENTRY(dasics_memset)
 	/* Jump into loop body */
 	/* Assumes 32-bit instruction lengths */
 	la a5, 3f
-#ifdef CONFIG_64BIT
 	srli a4, a4, 1
-#endif
 	add a5, a5, a4
 	jr a5
 3:

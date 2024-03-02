@@ -1,5 +1,12 @@
 #include <dasics_start.h>
 #include <udasics.h>
+#include <dynamic.h>
+#include <dasics_stdio.h>
+#include <umaincall.h>
+
+fixup_entry_t dll_fixup_handler;
+
+rtld_fini dll_fini;
 
 /*
  * for the stage two, we will set a utrap function 
@@ -7,17 +14,35 @@
  */
 void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 {
-    csr_write(0x005, (uint64_t)dasics_ufault_entry);
+    // csr_write(0x005, (uint64_t)dasics_ufault_entry);
 
+    // Get FIXUP
+    dll_fixup_handler = (fixup_entry_t)_get_auxv_entry(sp, AT_FIXUP);
+    dll_fini = fini;
 
+    user_sp = sp;
 
-//     extern uint64_t _got_start[];
-//     // Get FIXUP
-//     dll_fixup_handler = (fixup_entry_t)_get_auxv_entry((uint64_t *)sp, AT_FIXUP);
-//     dll_fini = fini;
+    dasics_printf("> [INIT] _dasics_entry_stage2\n");
+    
+    // get the struct link_map
+    Elf64_Dyn * dyn =  NULL;
+    struct r_debug * debug_extended =  NULL;
+    for(dyn = _DYNAMIC; dyn->d_tag != DT_NULL; ++dyn)
+    {
+        if(dyn->d_tag == DT_DEBUG)
+        {
+            debug_extended = (struct r_debug *)dyn->d_un.d_ptr;
+        }          
+    }
+    
+    struct link_map * link = debug_extended->r_map;
 
-//     my_printf("> [INIT] _dasics_entry_stage2\n");
+    for (struct link_map *cur = link; cur != NULL ; cur = cur->l_next)
+    {
+        dasics_printf("[LIB]: %s, l_addr: 0x%lx\n", cur->l_name, cur->l_addr);
+    }
 
+    create_umain_elf_chain(link);
 // #ifdef DASICS_LINUX
 //     // for (int i = 0; i < 2 * DASICS_LIBCFG_WIDTH; i++)
 //     // {
@@ -28,29 +53,14 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 //     csr_write(0x8c8, 0);
 // #endif
 
-//     dasics_link_map_t * main_map = (dasics_link_map_t *)(_got_start[1]);
-//     link_map_main = main_map;
 
-// #ifdef DASICS_DEBUG
-//     dasics_link_map_t * debug_main_map = main_map;
-//     my_printf("> [INIT] linker_runtime_solve_entry: 0x%lx\n", _got_start[0]);
-//     my_printf("> [INIT] main link_map: 0x%lx\n", _got_start[1]);
 
-//     while (debug_main_map)
-//     {
-//         debug_print_link_map(debug_main_map);
-//         my_printf("\n\n");
-//         my_printf("link_map_address: 0x%lx\n", debug_main_map);
-//         debug_main_map = debug_main_map->l_next;
-//     }
-// #endif
 
 //     /* create got chain to support dynamic call  */
 //     create_umain_got_chain(main_map, *(char**)(sp + 8));
 
 
-//     // print_all_lib_func();
-// #ifdef DASICS_LINUX
+#ifdef DASICS_LINUX
 //     /* open maincall for dynamic if you need, or we will used ufault exception */
 //     _open_maincall();
 //     /* open dynamic's got read jurisdiction */
@@ -62,7 +72,8 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 //                 TASK_SIZE);
 //     dasics_jumpcfg_alloc(TASK_SIZE/2, TASK_SIZE);
 //     my_printf("> [INIT] Init maincall for dynamic successfully\n");
-// #endif
+#endif
+    _open_maincall();
 
 // #ifdef DASICS_DEBUG
 
@@ -76,6 +87,8 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 
 // #endif
 
+    dasics_stage = 2;
+    
 
 // #ifdef DASICS_COPY
 //     /* begin to init copy of the trust lib */

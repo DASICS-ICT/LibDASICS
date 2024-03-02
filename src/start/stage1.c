@@ -4,6 +4,8 @@
 #include <usyscall.h>
 #include <stdlib.h>
 #include <udasics.h>
+
+uint64_t user_sp = 0;
 /* 
  * if we get the _dll_linker from the auxv which means that 
  * the program need a dynamic linker for stage one, we will 
@@ -17,11 +19,14 @@ void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
     dasics_printf("> [INIT] _dasics_entry_stage1\n");
     uint64_t _dll_linker = _get_auxv_entry(sp, AT_LINKER);
 
+    user_sp = sp;
 
     if (_dll_linker && _get_auxv_entry(sp, AT_DASICS))
     {
         // change the elf_enrtry to  _umain_entry
         _set_auxv_entry(sp, AT_ENTRY, (uint64_t)_setup_mainlib_entry);
+
+        dasics_stage = 1;
 
         init_syscall_check();
 

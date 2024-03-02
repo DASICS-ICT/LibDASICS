@@ -46,6 +46,18 @@ void dasics_start_fault(struct ucontext_trap * regs);
 #define TASK_SIZE 0X4000000000
 
 
+// DASICS module flag
+// Define the area flags
+#define MAIN_AREA 0x1UL         /* The main function */
+#define LIB_AREA 0x2UL          /* The lib function */
+#define LINK_AREA 0x4UL         /* The link function, accompay with MAIN_AREA */
+#define ELF_AREA 0x8UL          /* The ELF function, accompay with MAIN_AREA */
+
+
+extern uint64_t user_sp;
+extern int dasics_stage;
+
+
 /* Get the auxv array addr */ 
 static inline uint64_t _get_auxv(uint64_t *sp)
 {

@@ -1,5 +1,6 @@
 LibDASICS.md
 .gdb_history
+.gdbinit
 .vscode
 build
 rootfs.img
