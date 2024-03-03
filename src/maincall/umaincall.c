@@ -1,9 +1,11 @@
 #include <umaincall.h>
 #include <udasics.h>
 #include <dynamic.h>
+#include <udirect.h>
 #include <dasics_start.h>
 #include <dasics_stdio.h>
 
+/* calculate the plt table of a elf */
 static uint64_t emulate_plt(uint32_t * pltPc, uint64_t * gotAddr)
 {
 /*
@@ -17,17 +19,25 @@ static uint64_t emulate_plt(uint32_t * pltPc, uint64_t * gotAddr)
     uint32_t ld = *(pltPc + 1);
     uint32_t jalr = *(pltPc + 2);
 
-#define IMM_LD   0xfff00000UL
+#define IMM_LD         0xfff00000UL
 #define IMM_AUIPC      0xfffff000UL
 
     // uint64_t gotTarget = (uint64_t)pltPc + (int64_t)()
     int64_t auipc_imm = (int64_t)(auipc & IMM_AUIPC);
 
     uint64_t t3 = (uint64_t)pltPc + auipc_imm;
-    int32_t ld_imm = (int32_t)((int16_t)((ld & IMM_LD)>> 20));
+    uint64_t ld_imm = (uint64_t)((uint64_t)((ld & IMM_LD)>> 20));
 
+    int64_t ld_offset = 0;
+
+#define NEGATIVE_FLAG 0x00000800
+#define NEGATIVE      0xfffffffffffff000
+    if (ld_imm & NEGATIVE_FLAG)
+        ld_offset = (int64_t)(NEGATIVE | ld_imm);
+    else 
+        ld_offset = ld_imm;
     // This load addr of t3
-    uint64_t addr = t3 + ld_imm;
+    uint64_t addr = t3 + ld_offset;
 
     return (uint64_t)pltPc - 0x10 * ((addr - (uint64_t)gotAddr) / 8);
 
@@ -39,6 +49,7 @@ int _open_maincall()
     
     umain_elf_t *_map = _umain_elf_table;
 
+    if (!_umain_elf_table) return 0;
 
     do {   
         if (_map ->_flags & LINK_AREA)
@@ -55,23 +66,27 @@ int _open_maincall()
         _map = _map->umain_elf_next;
     } while (_map != _umain_elf_table);
 
+    return 0;
 }
 
 
 int dasics_dynamic_call(struct umaincall * CallContext)
 {
-    
+    if (!_umain_elf_table) return 0;
+
     umain_elf_t * _elf = _get_area(CallContext->t1);
     
     // Judge dynamic call
-    if (!_elf || *(uint32_t *)CallContext->t1 != NOP) return 1;
+    if (!_elf || *(uint32_t *)CallContext->t1 != NOP) return 0;
 
     // Calculate plt begin
     if (!_elf->plt_begin) {
-        _elf->_plt_start = emulate_plt((uint32_t *)(CallContext->t1 - 0xc), \
+        _elf->plt_begin = (uint64_t *)emulate_plt((uint32_t *)(CallContext->t1 - 0xc), \
                                 (uint64_t *)_elf->got_begin);
+        _elf->_plt_start = (uint64_t)_elf->plt_begin + 0x20;
+                          
         _elf->_plt_end = _elf->_plt_start + 0x10 * _elf->got_num;
-        _elf->plt_begin = (uint64_t *)_elf->_plt_start;
+        
     }
 
     dasics_printf("[LOG]: lib (%s)'s plt begin: 0x%lx\n", _elf->real_name, _elf->_plt_start);
@@ -93,7 +108,7 @@ int dasics_dynamic_call(struct umaincall * CallContext)
 
     /* First time call */ 
     if (!_elf->_local_got_table[plt_idx + 2])
-    {    
+    {
         /*
         * We found that the Plt[x] wants to use dely binding to find the fucntion,
         * and we prepare all the parameters, and jump
@@ -102,7 +117,7 @@ int dasics_dynamic_call(struct umaincall * CallContext)
         * dll_a1: the thrice of the plt table offset
         * ulib_func: the addr of the ulib function 
         */
-        uint64_t dll_a0 = _elf->map_link;
+        uint64_t dll_a0 = (uint64_t)_elf->map_link;
         uint64_t dll_a1 = (((reg_t)plt_idx * 0x10UL) >> 1) * 3;
         uint64_t ulib_func = _elf->fixup_handler(dll_a0, dll_a1);
         ulib_func = _call_reloc(_elf, ulib_func);
@@ -110,7 +125,7 @@ int dasics_dynamic_call(struct umaincall * CallContext)
         uint64_t force_func = force_redirect(_elf, _get_lib_name(_elf, plt_idx), ulib_func);
 
         // update the true target
-        target_elf = _get_trap_area(force_func);
+        target_elf = _get_area(force_func);
         target = CallContext->t1 = force_func;
 
         /* saved */
@@ -126,9 +141,16 @@ int dasics_dynamic_call(struct umaincall * CallContext)
          */
         target = force_redirect(_elf, _get_lib_name(_elf, plt_idx),  _elf->_local_got_table[plt_idx + 2]);
         CallContext->t1 = target;
-        target_elf = _get_trap_area(target);
+        target_elf = _get_area(target);
 
     }
 
-    while(1);
+    CallContext->t1 = target;
+
+    dasics_printf("[LOG]: DASICS lib (%s), name: %s\n", _elf->real_name, _get_lib_name(_elf, plt_idx));
+
+    // Add Cross-library calls here
+
+
+    return 1;
 }

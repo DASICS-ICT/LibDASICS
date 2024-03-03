@@ -10,7 +10,7 @@
 umain_elf_t * _umain_elf_table = NULL;
 int dasics_stage = 0;
 
-extern uint64_t _interp_start[];
+extern char _interp_start[];
 
 // Fill dynamic section
 static void _fill_dynamic_section(ElfW(Dyn) **l_info, ElfW(Dyn) *l_ld)
@@ -151,6 +151,31 @@ setup:
     }
 }
 
+static void _find_copy_lib(umain_elf_t * elf)
+{
+    umain_elf_t * tmp = _umain_elf_table; 
+    
+    if (tmp == NULL) 
+    {
+        dasics_printf("[DASICS_ERROR]: Error in _find_copy_lib, copy lib not found\n");
+        while(1);        
+    }
+
+    do {
+        if ((tmp->_flags & MAIN_AREA) && \
+            !dasics_strcmp(tmp->l_name, elf->l_name))
+        {
+            tmp->_copy_lib_elf = elf;
+            elf->_copy_lib_elf = tmp;
+            return;
+        }
+        tmp = tmp->umain_elf_next;
+    } while(tmp != _umain_elf_table);
+
+    dasics_printf("[DASICS_ERROR]: Error in _find_copy_lib, copy lib not found\n");
+    while(1);      
+}
+
 /*
  * This fuinction is used to init umain dasics_link_map
  * include the exe, linker, all library
@@ -159,7 +184,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
 {
     struct link_map * _map_init = main_elf;
 
-
+    // Judge trust area
     extern uint64_t _start[];
     // Build all chain
     while (_map_init != NULL)
@@ -181,7 +206,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
         _fill_module_name(_map_init->l_name, _elf);
 
         dasics_printf("[LOG]: DASICS module:%s\n", _elf->real_name);
-        _elf->fixup_handler = dll_fixup_handler;
+        _elf->fixup_handler = dasics_stage == 2 ? dll_fixup_handler_lib : dll_fixup_handler;
         _elf->map_link = _map_init;
         _elf->_copy_lib_elf = NULL;
         _elf->dynamic = (uint64_t)_map_init->l_ld;
@@ -190,12 +215,19 @@ int create_umain_elf_chain(struct link_map * main_elf)
         // the flag
         ElfW(Addr) map_base = _elf->l_addr; 
         if (map_base < (uint64_t)_start) _elf->_flags |= MAIN_AREA;
-        else _elf->_flags |= LIB_AREA;
+        else 
+        {
+            _elf->_flags |= LIB_AREA;
+            // Find copy lib
+            if (dasics_stage == 2)
+            {
+                _find_copy_lib(_elf);
+            }
+        }
 
         if (!map_base)  _elf->_flags |= ELF_AREA;
-        if (_get_auxv_entry(user_sp ,AT_DASICS))
-            if (map_base == _get_auxv_entry(user_sp ,AT_LINKER) \
-                    || map_base == _get_auxv_entry(user_sp, AT_LINKER_COPY))
+        if (map_base && _get_auxv_entry(user_sp ,AT_DASICS))
+            if (!dasics_strcmp(_map_init->l_name, _interp_start))
                 _elf->_flags |= LINK_AREA;
         
         
@@ -258,7 +290,52 @@ no_pltgot:
 
 }
 
+#include <sys/mman.h>
+void open_memory(umain_elf_t * _main)
+{
+    ElfW(Phdr) * _Phdr = (ElfW(Phdr) *)_main->l_phdr;
+    // Circulate the PT_LOAD Phdr
+    for (int _i = 0; _i < _main->l_phnum; _i++)
+    {
+        if (_Phdr[_i].p_type == PT_LOAD)
+            if (_Phdr[_i].p_flags & PF_W)
+            {
+                mprotect((void *)ROUNDDOWN(_Phdr[_i].p_vaddr, PAGE_SIZE), 
+                        ROUND(_Phdr[_i].p_vaddr + _Phdr[_i].p_memsz, PAGE_SIZE) \
+                        - ROUNDDOWN(_Phdr[_i].p_vaddr, PAGE_SIZE),
+                        PROT_READ | PROT_WRITE
+                        );
+            }
+    }    
 
 
+}
+
+struct link_map * get_main_link()
+{
+    // get the struct link_map
+    Elf64_Dyn * dyn =  NULL;
+    struct r_debug * debug_extended =  NULL;
+    for(dyn = _DYNAMIC; dyn->d_tag != DT_NULL; ++dyn)
+    {
+        if(dyn->d_tag == DT_DEBUG)
+        {
+            debug_extended = (struct r_debug *)dyn->d_un.d_ptr;
+        }          
+    }
+    
+    struct link_map * link = NULL;
+
+    if (debug_extended == NULL)
+    {
+        extern uint64_t _got_start[];
+        link = (struct link_map *)_got_start[1];
+    } else 
+    {
+        link = debug_extended->r_map;
+    }    
+
+    return link;
+}
 
 

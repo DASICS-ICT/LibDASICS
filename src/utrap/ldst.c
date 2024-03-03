@@ -10,7 +10,7 @@
 int handle_DasicsULoadFault(struct ucontext_trap * regs)
 {
     int idx = 0;
-//     umain_got_t * _got_entry = _get_trap_area(regs->uepc);
+//     umain_got_t * _got_entry = _get_area(regs->uepc);
 // #ifdef DASICS_DEBUG
 //     if (_got_entry)
 //         dasics_printf("[ufault info]: hit read ufault uepc: 0x%lx, address: 0x%lx \n", regs->uepc, regs->utval);
@@ -63,7 +63,7 @@ dasics_static_load:
 int handle_DasicsUStoreFault(struct ucontext_trap * regs)
 {
     int idx = 0;
-//     umain_got_t * _got_entry = _get_trap_area(regs->uepc);
+//     umain_got_t * _got_entry = _get_area(regs->uepc);
 // // #ifdef DASICS_DEBUG
 //     dasics_printf("[ufault info]: hit write ufault uepc: 0x%lx, address: 0x%lx \n", regs->uepc, regs->utval);
 //     // debug_print_umain_map(_got_entry);

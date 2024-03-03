@@ -1,8 +1,9 @@
 #ifndef _INCLUDE_DYNAMIC_H
 #define _INCLUDE_DYNAMIC_H
 
-#include <link.h>
 #include <stdint.h>
+#include <stddef.h>
+#include <link.h>
 #include <elf.h>
 
 #define PAGE_SIZE 0x1000
@@ -12,6 +13,8 @@ typedef uint64_t (*fixup_entry_t)(uint64_t, uint64_t);
 #define RANGE(X, Y, Z) (((X)>(Y)) && ((X)<(Z)))
 #define D_PTR(map,i) map->i->d_un.d_ptr
 #define PLTREL  ElfW(Rela)
+
+#define ELFW(type)	_ElfW (ELF, __ELF_NATIVE_CLASS, type)
 
 /* Define the find result of the plt */
 #define NOEXIST -1
@@ -68,11 +71,15 @@ typedef struct umain_elf
 
 
 extern fixup_entry_t dll_fixup_handler;
+extern fixup_entry_t dll_fixup_handler_lib;
 extern uint64_t user_sp;
 extern umain_elf_t * _umain_elf_table;
 
 // Creat Umain elf 
 int create_umain_elf_chain(struct link_map * main_elf);
+void open_memory(umain_elf_t * _main);
+struct link_map * get_main_link();
+
 
 // check is elf
 static inline int is_elf_format(unsigned char *binary)
@@ -92,8 +99,9 @@ static inline int is_elf_format(unsigned char *binary)
 // get the area of the pc
 static inline umain_elf_t * _get_area(uint64_t pc)
 {
-    umain_elf_t * _elf = _umain_elf_table;
-    
+   umain_elf_t * _elf = _umain_elf_table;
+
+   if (_umain_elf_table == NULL) return NULL; 
 
    do {
         if (RANGE(pc, \
@@ -124,7 +132,7 @@ static inline char * _get_lib_name(umain_elf_t * entry, uint64_t plt_idx)
     PLTREL *const reloc
         = (void *) ((D_PTR (entry, l_info[DT_JMPREL]) + entry->l_addr)
                 + reloc_arg);    
-    ElfW(Sym) *sym = &symtab[ElfW(R_SYM) (reloc->r_info)];
+    ElfW(Sym) *sym = &symtab[ELFW(R_SYM) (reloc->r_info)];
 
     return strtab + sym->st_name;
 }

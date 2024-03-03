@@ -7,8 +7,8 @@ RANLIB			= $(CROSS_COMPILE)-ranlib
 
 # C flags
 INCLUDE			= -Iinclude
-CFLAGS			= -O0 -g $(INCLUDE) -DDASICS_LINUX
-UCFLAGS			= -O0 -g $(INCLUDE)  
+CFLAGS			= -O2 -g $(INCLUDE) -DDASICS_LINUX -DDASICS_COPY
+UCFLAGS			= -O2 -g $(INCLUDE)  
 # build dir
 DIR_PWD			?= 
 DIR_BUILD		= build
@@ -48,21 +48,21 @@ build:
 # compile all files
 $(DIR_BUILD)/%.o: $(DIR_SRC)/*/%.c | $(DIR_BUILD)
 	@$(CC) $(CFLAGS) -c $< -o $@
-	@echo + CC $<
+	@echo + CC $@
 
 $(DIR_BUILD)/%.o: $(DIR_SRC)/*/%.S | $(DIR_BUILD)
 	@$(CC) $(CFLAGS) -c $< -o $@
-	@echo + CC $<
+	@echo + CC $@
 
 
 $(DIR_BUILD)/%.o: $(DIR_LIB)/*/%.c | $(DIR_BUILD)
 	@$(CC) -fno-builtin -nostdlib $(CFLAGS) -c $< -o $@
-	@echo + CC $<
+	@echo + CC $@
 
 
 $(DIR_BUILD)/%.o: $(DIR_LIB)/*/%.S | $(DIR_BUILD)
 	@$(CC) -fno-builtin -nostdlib $(CFLAGS) -c $< -o $@
-	@echo + CC $<
+	@echo + CC $@
 
 # Make lib
 $(LibDASICS): $(OBJ_FILES)
@@ -76,7 +76,7 @@ test: $(LibDASICS)
 	@$(CC) $(UCFLAGS) $(TEST_FILES) -o ./build/test $(LibDASICS) -T./ld.lds
 	@echo + CC ./build/test
 	@$(OBJDUMP) -d ./build/test > $(DIR_BUILD)/test.txt
-	@echo + OBJDUMP $(TEST_FILES)
+	@echo + OBJDUMP ./build/test
 
 
 clean:

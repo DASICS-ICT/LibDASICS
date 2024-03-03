@@ -50,7 +50,7 @@ ENTRY(_setup_copy_lib_entry)
      */
     mv a1, a0
     mv a0, sp
-    // call _dasics_entry_stage3
+    call _dasics_entry_stage3
     li a0, 0
     call _start
 END(_setup_copy_lib_entry)

@@ -61,24 +61,24 @@ int main(int argc, char * argv[])
 
     // unregister_udasics();
 
-    // Elf64_Dyn * dyn =  NULL;
-    // struct r_debug * debug_extended =  NULL;
-    // for(dyn = _DYNAMIC; dyn->d_tag != DT_NULL; ++dyn)
-    // {
-    //     if(dyn->d_tag == DT_DEBUG)
-    //     {
-    //         debug_extended = (struct r_debug *)dyn->d_un.d_ptr;
-    //     }          
-    // }
+    Elf64_Dyn * dyn =  NULL;
+    struct r_debug * debug_extended =  NULL;
+    for(dyn = _DYNAMIC; dyn->d_tag != DT_NULL; ++dyn)
+    {
+        if(dyn->d_tag == DT_DEBUG)
+        {
+            debug_extended = (struct r_debug *)dyn->d_un.d_ptr;
+        }          
+    }
     
-    // struct link_map * link = debug_extended->r_map;
+    struct link_map * link = debug_extended->r_map;
 
-    // for (struct link_map *cur = link; cur != NULL ; cur = cur->l_next)
-    // {
-    //     printf("[LIB]: %s, l_addr: 0x%lx\n", cur->l_name, cur->l_addr);
-    // }
+    for (struct link_map *cur = link; cur != NULL ; cur = cur->l_next)
+    {
+        printf("[LIB]: %s, l_addr: 0x%lx\n", cur->l_name, cur->l_addr);
+    }
     
-
+    while(1);
 
     return 0;
 }
