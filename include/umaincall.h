@@ -35,6 +35,7 @@ struct umaincall
     reg_t a5;
     reg_t a6;
     reg_t a7;
+    reg_t sp;
 };
 
 
@@ -49,6 +50,8 @@ struct umaincall
 #define OFFSET_UMAINCALL_A5     (8*8)
 #define OFFSET_UMAINCALL_A6     (8*9)
 #define OFFSET_UMAINCALL_A7     (8*10)
+#define OFFSET_UMAINCALL_SP     (8*11)
+
 
 #define OFFSET_UMAINCALL        sizeof(struct umaincall)
 #define NOP 0x00000013
@@ -59,5 +62,7 @@ extern uint64_t umaincall_helper;
 int _open_maincall();
 
 int dasics_dynamic_call(struct umaincall * CallContext);
+void dasics_dynamic_return(struct umaincall * CallContext);
+
 
 #endif

@@ -19,7 +19,7 @@ int handle_DasicsULoadFault(struct ucontext_trap * regs)
 //     if (_got_entry == NULL)
 //     {
 //     #ifdef DASICS_DEBUG
-//         my_printf("[error]: failed to find the _got_entry\n");
+//         dasics_printf("[error]: failed to find the _got_entry\n");
 //     #endif
 //         if (_umain_got_table == NULL) goto dasics_static_load;
 //         exit(1);
@@ -71,7 +71,7 @@ int handle_DasicsUStoreFault(struct ucontext_trap * regs)
 //     if (_got_entry == NULL)
 //     {
 //     #ifdef DASICS_DEBUG
-//         my_printf("[error]: failed to find the _got_entry\n");
+//         dasics_printf("[error]: failed to find the _got_entry\n");
 //     #endif
 //         if (_umain_got_table == NULL) goto dasics_static_store;
 //         exit(1);

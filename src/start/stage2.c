@@ -25,8 +25,6 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 
     user_sp = sp;
 
-
-    
     struct link_map * link = get_main_link();
     create_umain_elf_chain(link);
     

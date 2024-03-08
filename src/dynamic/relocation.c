@@ -38,10 +38,6 @@ uint64_t _call_reloc(umain_elf_t *elf, uint64_t target)
     {
         if (_target_got->_copy_lib_elf != NULL)
         {
-            #ifdef DASICS_DEBUG
-            // my_printf("reloc: change 1 to: 0x%lx\n", \ 
-            // (target - _target_got->l_addr) + _target_got->_copy_lib_elf->l_addr);
-            #endif
             return (target - _target_got->l_addr) + _target_got->_copy_lib_elf->l_addr;
         }
     }
@@ -52,10 +48,6 @@ uint64_t _call_reloc(umain_elf_t *elf, uint64_t target)
     {
         if (_target_got->_copy_lib_elf != NULL)
         {
-            #ifdef DASICS_DEBUG
-            // my_printf("reloc: change 2 to: 0x%lx\n", \
-            // (target - _target_got->l_addr) + _target_got->_copy_lib_elf->l_addr);
-            #endif
             return (target - _target_got->l_addr) +  _target_got->_copy_lib_elf->l_addr;
         }
     }    
@@ -74,7 +66,6 @@ static redirect_t * find_item(const char *name)
 
     list_for_each_entry_safe(item_entry, item_q ,&redirect_table, list)
     {
-        // my_printf("%s\n", item_entry->name);
         if (!dasics_strcmp(name, item_entry->name))
         {
             return item_entry;
@@ -153,10 +144,6 @@ uint64_t force_redirect(umain_elf_t * entry, const char * func_name, uint64_t ta
     {
         if (_target_got->_copy_lib_elf != NULL)
         {
-            // #ifdef DASICS_DEBUG
-            // my_printf("reloc: change %s to: 0x%lx\n", \ 
-            // func_name, (target - _target_got->l_addr) + _target_got->_copy_lib_elf->l_addr);
-            // #endif
             return (target - _target_got->l_addr) + _target_got->_copy_lib_elf->l_addr;
         }
     }

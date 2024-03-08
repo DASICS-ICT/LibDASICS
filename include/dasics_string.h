@@ -13,6 +13,7 @@ extern void * dasics_memset(void *, int, uint64_t);
 extern int dasics_strncmp(const char *cs, const char *ct, uint64_t count);
 extern int dasics_strlen(const char *s);
 extern int dasics_strncmp(const char *cs, const char *ct, uint64_t count);
+extern uint64_t __BRK(uint64_t ptr);
 
 static char *dasics_strcpy(char *dest, const char *src)
 {
@@ -41,19 +42,6 @@ static int dasics_strcmp(const char *cs, const char *ct)
 			break;
 	}
 	return 0;
-}
-
-// malloc memory on heap simplily
-static inline uint64_t __BRK(uint64_t ptr)
-{
-    register uint64_t a7 asm("a7") = __NR_brk;
-    register uint64_t a0 asm("a0") = ptr;
-    asm volatile("ecall"                        \
-                 : "+r"(a0)                     \
-                 : "r"(a7)                      \
-                 : "memory");
-
-    return a0;
 }
 
 static inline void * dasics_malloc(uint64_t size)

@@ -338,4 +338,42 @@ struct link_map * get_main_link()
     return link;
 }
 
+void init_elf_plt(umain_elf_t * elf, uint32_t * pltPc, uint64_t * gotAddr)
+{
+/*
+00000000010069a0 <malloc@plt>:
+ 10069a0:	00002e17          	auipc	t3,0x2
+ 10069a4:	6d0e3e03          	ld	t3,1744(t3) # 1009070 <malloc@GLIBC_2.27>
+ 10069a8:	000e0367          	jalr	t1,t3
+ 10069ac:	00000013
+*/  
+    uint32_t auipc = *pltPc;
+    uint32_t ld = *(pltPc + 1);
+    uint32_t jalr = *(pltPc + 2);
+
+#define IMM_LD         0xfff00000UL
+#define IMM_AUIPC      0xfffff000UL
+
+    int64_t auipc_imm = (int64_t)(auipc & IMM_AUIPC);
+
+    uint64_t t3 = (uint64_t)pltPc + auipc_imm;
+    uint64_t ld_imm = (uint64_t)((uint64_t)((ld & IMM_LD)>> 20));
+
+    int64_t ld_offset = 0;
+
+#define NEGATIVE_FLAG 0x00000800
+#define NEGATIVE      0xfffffffffffff000
+    if (ld_imm & NEGATIVE_FLAG)
+        ld_offset = (int64_t)(NEGATIVE | ld_imm);
+    else 
+        ld_offset = ld_imm;
+    // This load addr of t3
+    uint64_t addr = t3 + ld_offset;
+
+    elf->plt_begin = (uint64_t *)((uint64_t)pltPc - 0x10 * ((addr - (uint64_t)gotAddr) / 8));
+    elf->_plt_start = (uint64_t)elf->plt_begin + 0x20;
+                        
+    elf->_plt_end = elf->_plt_start + 0x10 * elf->got_num;    
+
+}
 
