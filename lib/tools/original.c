@@ -148,7 +148,7 @@ int32_t original_jumpcfg_free(int32_t idx) {
     return 0;
 }
 
-int32_t original_jumpcfg_free_all(int32_t idx)
+int32_t original_jumpcfg_free_all()
 {
     for (int idx = 0; idx < DASICS_JUMPCFG_WIDTH; idx++)
     {

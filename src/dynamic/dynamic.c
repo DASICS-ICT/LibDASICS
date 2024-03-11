@@ -2,6 +2,7 @@
 #include <link.h>
 #include <stddef.h>
 
+#include <list.h>
 #include <dynamic.h>
 #include <dasics_string.h>
 #include <dasics_stdio.h>
@@ -236,7 +237,8 @@ int create_umain_elf_chain(struct link_map * main_elf)
         /* Init local got table for module */
         _elf->got_begin = (uint64_t *)(_elf->l_info[DT_PLTGOT]->d_un.d_val + \
                                             _map_init->l_addr);
-
+        
+        init_list(&_elf->func_man);
 
         uint64_t judge_dynamic = _elf->dynamic - _elf->l_addr;
 
@@ -250,6 +252,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
 
         _elf->got_num = rela_got_num;
         _elf->_local_got_table = (uint64_t *)dasics_malloc(rela_got_num * sizeof(uint64_t));
+        _elf->local_func = (struct func_mem **)dasics_malloc(rela_got_num * sizeof(struct func_mem *));
 
         // fill the *_start, *_end of 
         _fill_module_map(_elf);

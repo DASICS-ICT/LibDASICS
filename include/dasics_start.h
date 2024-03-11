@@ -22,7 +22,7 @@ int32_t original_libcfg_free_all();
 int32_t original_libcfg_get(int32_t idx);
 int32_t original_jumpcfg_alloc(uint64_t lo, uint64_t hi);
 int32_t original_jumpcfg_free(int32_t idx);
-int32_t original_jumpcfg_free_all(int32_t idx);
+int32_t original_jumpcfg_free_all();
 
 // FAULT
 struct ucontext_trap;

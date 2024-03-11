@@ -40,8 +40,10 @@
 #define OFFSET_UMAINCALL_A5     (8*8)
 #define OFFSET_UMAINCALL_A6     (8*9)
 #define OFFSET_UMAINCALL_A7     (8*10)
+#define OFFSET_UMAINCALL_SP     (8*11)
 
 
-#define OFFSET_UMAINCALL        (8*11)
+
+#define OFFSET_UMAINCALL        (8*12)
 
 #endif

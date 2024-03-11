@@ -5,10 +5,13 @@
 #include <stddef.h>
 #include <link.h>
 #include <elf.h>
+#include <list.h>
 
 #define PAGE_SIZE 0x1000
 
 typedef uint64_t (*fixup_entry_t)(uint64_t, uint64_t);
+struct func_mem;
+
 
 #define RANGE(X, Y, Z) (((X)>(Y)) && ((X)<(Z)))
 #define D_PTR(map,i) map->i->d_un.d_ptr
@@ -18,6 +21,7 @@ typedef uint64_t (*fixup_entry_t)(uint64_t, uint64_t);
 
 /* Define the find result of the plt */
 #define NOEXIST -1
+
 
 typedef struct umain_elf
 {
@@ -42,6 +46,8 @@ typedef struct umain_elf
     */
    struct umain_elf * _copy_lib_elf;
 
+   list_head func_man;  /* manage func's memory */
+
    /* The useful message of the module */
    ElfW(Dyn) *l_info[DT_NUM];
    /* The plt begin which will be used to count the got, it can be read from got[2], got[3]... */
@@ -51,6 +57,7 @@ typedef struct umain_elf
    uint64_t dynamic     ;		/* Dynamic section of the shared object.  */
 
    uint64_t *_local_got_table; /* Num of lib call */
+   struct func_mem **local_func; /* find func_mem fast */
 
    const ElfW(Phdr) *l_phdr;	/* Pointer to program header table in core.  */
    const ElfW(Ehdr) *l_ehdr;  /* Pointer to elf header table in core.  */

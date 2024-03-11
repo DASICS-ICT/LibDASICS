@@ -8,14 +8,14 @@ RANLIB			= $(CROSS_COMPILE)-ranlib
 # C flags
 INCLUDE			= -Iinclude
 CFLAGS			= -O2 -g $(INCLUDE) -DDASICS_LINUX -DDASICS_COPY
-UCFLAGS			= -O2 -g $(INCLUDE)  
 # build dir
 DIR_PWD			?= 
 DIR_BUILD		= build
 DIR_SRC			= src
 DIR_LIB			= lib
-DIR_TEST		= test
 
+DIR_TEST		= test
+UCFLAGS			= -O2 -g $(INCLUDE) -I$(DIR_TEST)/include
 # target files
 # LIB FILE, stand alone, not depend on any other standard library
 LIB_FILES_C		= $(wildcard $(DIR_LIB)/*/*.c)
@@ -32,6 +32,10 @@ TEST_FILES		= $(wildcard $(DIR_TEST)/*.c)
 BASENAME		= $(notdir $(LIB_FILES_C) $(LIB_FILES_ASM) $(SRC_FILES_C) $(SRC_FILES_ASM))
 OBJ_FILES		= $(addprefix build/, \
 						$(addsuffix .o, $(basename $(BASENAME))))
+
+TEST_SO_FILES	= $(notdir $(wildcard $(DIR_TEST)/lib/*.c))
+TEST_SO_OBJ		= $(addprefix build/, \
+						$(addsuffix .so, $(basename $(TEST_SO_FILES))))
 
 # Lib target
 LibDASICS		= $(DIR_BUILD)/LibDASICS.a
@@ -64,6 +68,11 @@ $(DIR_BUILD)/%.o: $(DIR_LIB)/*/%.S | $(DIR_BUILD)
 	@$(CC) -fno-builtin -nostdlib $(CFLAGS) -c $< -o $@
 	@echo + CC $@
 
+# Test library
+$(DIR_BUILD)/%.so: $(DIR_TEST)/*/%.c | $(DIR_BUILD) $(LibDASICS)
+	@$(CC) -fPIC -shared -o $(UCFLAGS) ./lib/tools/dasics_printf.c $< -o $@
+	@echo + CC $@	
+
 # Make lib
 $(LibDASICS): $(OBJ_FILES)
 	@$(AR) rcs $(LibDASICS) $(OBJ_FILES) 
@@ -72,8 +81,8 @@ $(LibDASICS): $(OBJ_FILES)
 	@echo +  RANLIB $(LibDASICS)
 
 
-test: $(LibDASICS)
-	@$(CC) $(UCFLAGS) $(TEST_FILES) -o ./build/test $(LibDASICS) -T./ld.lds
+test: $(LibDASICS) $(TEST_SO_OBJ)
+	@$(CC) $(UCFLAGS) $(TEST_FILES) -o ./build/test -T./ld.lds $(LibDASICS) ./build/malloc-free.so
 	@echo + CC ./build/test
 	@$(OBJDUMP) -d ./build/test > $(DIR_BUILD)/test.txt
 	@echo + OBJDUMP ./build/test

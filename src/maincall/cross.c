@@ -15,7 +15,7 @@ void init_cross_stack()
                         sizeof(int) * DASICS_LIBCFG_WIDTH) * MAX_DEPTH;
     cross_stack_base = (uint64_t)malloc(malloc_size);
 
-    if(cross_stack_base)
+    if(!cross_stack_base)
     {
         perror("DASICS: init cross_stack failed\n");
     }
@@ -28,7 +28,7 @@ void push_cross(struct cross * tmp)
 {
     int stack_spend = sizeof(struct cross);
 
-    if (stack_spend > cross_stack - cross_stack_base)
+    if (stack_spend > (cross_stack - cross_stack_base))
         perror("DASICS: push cross failed\n");
 
     cross_stack -= stack_spend;
@@ -59,7 +59,6 @@ void pop_cross(struct umaincall * maincallContext)
             assert(dasics_jumpcfg_free(cross_handle->jmpcfg[i]) == 0);
     }
     
-    free(cross_handle->handle);
 
     // Free stack area
     cross_stack += sizeof(struct cross);

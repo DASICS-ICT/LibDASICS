@@ -3,6 +3,7 @@
 #include <udasics.h>
 #include <dynamic.h>
 #include <umaincall.h>
+#include <cross.h>
 
 // STD
 #include <stdlib.h>
@@ -31,6 +32,12 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     
     /* open maincall for dynamic */
     _open_maincall();
+    
+    dasics_printf("> [INIT] Init maincall for dynamic successfully\n");
+
+    init_cross_stack();
+
+    dasics_printf("> [INIT] Init corss stack successfully\n");
 #ifdef DASICS_COPY
     /* begin to init copy of the trust lib */
     uint64_t copy_linker_dll = _get_auxv_entry(sp, AT_LINKER_COPY);
@@ -40,8 +47,8 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     // Open data segment to read
     open_memory(_umain_elf_table);
     // Register eixt func to 
-    if (fini)
-        atexit(fini);
+    // if (fini)
+    //     atexit(fini);
     /* change dasics_flag to 2 let linker just map trust lib on untrusted area*/
     _set_auxv_entry(sp, AT_DASICS, 2);
     // Stage 2
@@ -59,6 +66,9 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     csr_write(0x880, 0);
     csr_write(0x8c8, 0);
 
+    original_libcfg_free_all();
+    original_jumpcfg_free_all();
+
     /* open dynamic's got read jurisdiction */
     original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R, \
                         (uint64_t)_umain_elf_table->got_begin, \
@@ -71,7 +81,9 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     // setup user ufault handler 
     csr_write(0x005, (uint64_t)dasics_ufault_entry);
 
-    dasics_printf("> [INIT] Init maincall for dynamic successfully\n");
+    init_cross_stack();
+
+    dasics_printf("> [INIT] Init corss stack successfully\n");
 #endif
 
     
