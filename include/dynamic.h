@@ -7,6 +7,7 @@
 #include <elf.h>
 #include <list.h>
 
+
 #define PAGE_SIZE 0x1000
 
 typedef uint64_t (*fixup_entry_t)(uint64_t, uint64_t);
@@ -58,6 +59,8 @@ typedef struct umain_elf
 
    uint64_t *_local_got_table; /* Num of lib call */
    struct func_mem **local_func; /* find func_mem fast */
+
+   struct func_mem * namespace_func;
 
    const ElfW(Phdr) *l_phdr;	/* Pointer to program header table in core.  */
    const ElfW(Ehdr) *l_ehdr;  /* Pointer to elf header table in core.  */

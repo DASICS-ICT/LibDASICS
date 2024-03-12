@@ -11,6 +11,8 @@
 // import umian_elf_t from dynamic.h
 typedef struct umain_elf umain_elf_t;
 struct umaincall; 
+struct func_mem;
+
 typedef uint64_t reg_t;
 
 extern uint64_t cross_stack;
@@ -18,6 +20,7 @@ extern uint64_t cross_stack;
 struct cross {
     umain_elf_t * begin;
     umain_elf_t * target;
+    struct func_mem * func;
     // Return Address
     reg_t ra;
     int handle_num;

@@ -25,7 +25,6 @@ struct func_mem {
 
 #define EXPAN_BOUNDS (sizeof(struct bound_table) * MAX_BOUNS)
 
-extern struct func_mem * global_func_mem;
 
 typedef struct umain_elf umain_elf_t;
 struct umaincall;
@@ -34,9 +33,9 @@ struct umaincall;
 int handle_lib_mem(umain_elf_t *_elf, int pltIdx, struct umaincall * callContext);
 
 // Handle memory option
-void * handle_lib_malloc(struct umaincall * callContext);
-int handle_lib_realloc(struct umaincall * callContext);
-int handle_lib_free(struct umaincall * callContext);
+void * handle_lib_malloc(struct umaincall * callContext, struct func_mem * mem);
+int handle_lib_realloc(struct umaincall * callContext, struct func_mem * mem);
+int handle_lib_free(struct umaincall * callContext, struct func_mem * mem);
 int set_global_func_man(umain_elf_t *entry, uint64_t func);
 
 

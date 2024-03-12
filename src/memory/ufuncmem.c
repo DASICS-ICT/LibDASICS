@@ -62,40 +62,36 @@ int set_global_func_man(umain_elf_t *entry, uint64_t func)
     if (result == NULL) result = init_func_mem(func);
     list_add_tail(&result->list, &entry->func_man);
 
-    global_func_mem = result;
+    entry->namespace_func = result;
     return 0;
 
 }
 
 
 // Handle mem
-void * handle_lib_malloc(struct umaincall * callContext)
+void * handle_lib_malloc(struct umaincall * callContext, struct func_mem * mem)
 {
-    assert(global_func_mem != NULL);
-
-    struct func_mem * tmp = global_func_mem;
-
     // Expand
-    if (tmp->bound_num == tmp->bound_max)
-        _expan_bound(tmp);
+    if (mem->bound_num == mem->bound_max)
+        _expan_bound(mem);
 
     void * malloc_mem = malloc(callContext->a0);
     assert(malloc_mem != NULL);
 
     struct bound_table * record = NULL;
     // Find a place to set
-    for (int i = 0; i < tmp->bound_max; i++)
+    for (int i = 0; i < mem->bound_max; i++)
     {
 
-        if (tmp->mem[i].addr == 0)
+        if (mem->mem[i].addr == 0)
         {
-            tmp->mem[i].addr = (uint64_t)malloc_mem;
-            tmp->mem[i].length = callContext->a0;
-            record = &tmp->mem[i];
+            mem->mem[i].addr = (uint64_t)malloc_mem;
+            mem->mem[i].length = callContext->a0;
+            record = &mem->mem[i];
             break;
         }
     }
-    tmp->bound_num++;
+    mem->bound_num++;
     // Return result to caller
     callContext->a0 = (uint64_t)malloc_mem;
 
@@ -109,17 +105,15 @@ void * handle_lib_malloc(struct umaincall * callContext)
 }
 
 // Handle realloc
-int handle_lib_realloc(struct umaincall * callContext)
+int handle_lib_realloc(struct umaincall * callContext, struct func_mem * mem)
 {
-    assert(global_func_mem != NULL);
 
-    struct func_mem * tmp = global_func_mem;
-    struct bound_table * bounds = global_func_mem->mem;
+    struct bound_table * bounds = mem->mem;
 
     int realloc_idx = -1;
 
     struct bound_table * target = NULL;
-    for (int i = 0; i < tmp->bound_max; i++)
+    for (int i = 0; i < mem->bound_max; i++)
     {
         if (bounds[i].addr == callContext->a0)
         {
@@ -149,16 +143,14 @@ int handle_lib_realloc(struct umaincall * callContext)
 
 
 // Handle free
-int handle_lib_free(struct umaincall * callContext)
+int handle_lib_free(struct umaincall * callContext, struct func_mem * mem)
 {
-    assert(global_func_mem != NULL);
 
-    struct func_mem * tmp = global_func_mem;
-    struct bound_table * bounds = global_func_mem->mem;
+    struct bound_table * bounds = mem->mem;
 
 
     struct bound_table * target = NULL;
-    for (int i = 0; i < tmp->bound_max; i++)
+    for (int i = 0; i < mem->bound_max; i++)
     {
         if (bounds[i].addr == callContext->a0)
         {
@@ -171,7 +163,7 @@ int handle_lib_free(struct umaincall * callContext)
 
     free((void *)callContext->a0);
 
-    tmp->bound_num--;
+    mem->bound_num--;
 
     target->addr = 0;
     target->length = 0;
@@ -192,7 +184,7 @@ int handle_lib_mem(umain_elf_t *_elf, int pltIdx, struct umaincall * callContext
     if (!dasics_strcmp("malloc",_get_lib_name(_elf, pltIdx)) && \
         !(_elf->_flags & MAIN_AREA))
     {
-        handle_lib_malloc(callContext);
+        handle_lib_malloc(callContext, _elf->namespace_func);
         callContext->t1 = callContext->ra;
         return 0;
     }
@@ -200,7 +192,7 @@ int handle_lib_mem(umain_elf_t *_elf, int pltIdx, struct umaincall * callContext
     if (!dasics_strcmp("free",_get_lib_name(_elf, pltIdx)) && \
         !(_elf->_flags & MAIN_AREA))
     {
-        handle_lib_free(callContext);
+        handle_lib_free(callContext, _elf->namespace_func);
         callContext->t1 = callContext->ra;
         return 0;
     }
@@ -208,7 +200,7 @@ int handle_lib_mem(umain_elf_t *_elf, int pltIdx, struct umaincall * callContext
     if (!dasics_strcmp("realloc",_get_lib_name(_elf, pltIdx)) && \
         !(_elf->_flags & MAIN_AREA))
     {
-        handle_lib_realloc(callContext);
+        handle_lib_realloc(callContext, _elf->namespace_func);
         callContext->t1 = callContext->ra;
         return 0;        
     }        

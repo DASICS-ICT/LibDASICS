@@ -10,6 +10,7 @@
 // STD
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 
 int _open_maincall()
@@ -28,6 +29,7 @@ int _open_maincall()
         for (int _i = 2; _i < _map->got_num; _i++)
         {            
             _map->got_begin[_i] = (uint64_t)dasics_umaincall;
+            _map->local_func[_i] = NULL;
         }              
 
 
@@ -60,6 +62,7 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, struct umaincall * 
         tmp.begin = _entry;
         tmp.target = _target;
         tmp.ra = CallContext->ra;
+        tmp.func = _target->namespace_func;
         
         tmp.jmpcfg[idx_jmp++] = dasics_jumpcfg_alloc(_target->_plt_start, _target->_text_end);
 
@@ -74,25 +77,25 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, struct umaincall * 
         tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
                                         CallContext->sp - 4 * PAGE_SIZE, \
                                         CallContext->sp);
-        // Alloc bound
-        struct bound_table * bounds = global_func_mem->mem;
-
-        for (int i = 0; i < global_func_mem->bound_max; i++)
-        {
-            /* code */
-            if (bounds[i].handler)
-                dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
-                                    bounds[i].addr,
-                                    bounds[i].addr + bounds[i].length);
-        }
-
+        
         // Push 
         push_cross(&tmp);
 
         CallContext->ra = (reg_t)dasics_umaincall;
+
+        if (!_target->namespace_func) return;
+        // Alloc bound
+        struct bound_table * bounds = _target->namespace_func->mem;
+
+        for (int i = 0; i <_target->namespace_func->bound_max; i++)
+        {
+            /* code */
+            if (bounds[i].addr)
+                bounds[i].handler = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+                                    bounds[i].addr,
+                                    bounds[i].addr + bounds[i].length);
+        }        
     }
-
-
 }
 
 
@@ -182,22 +185,24 @@ int dasics_dynamic_call(struct umaincall * CallContext)
 
     CallContext->t1 = target;
 
-    // dasics_printf("[LOG]: DASICS lib (%s), name: %s\n", _elf->real_name, _get_lib_name(_elf, plt_idx));
 
-    cross_call(_elf, target_elf, CallContext);
 
     // Add memory support
-    if (!(target_elf->_flags & MAIN_AREA))
+    if (!(target_elf->_flags & MAIN_AREA) && target_elf != _elf)
     {
         if (_elf->local_func[plt_idx + 2])
-            global_func_mem = _elf->local_func[plt_idx + 2];
+            target_elf->namespace_func = _elf->local_func[plt_idx + 2];
         else 
         {
             set_global_func_man(target_elf, target);
             // Next time 
-            _elf->local_func[plt_idx + 2] = global_func_mem;            
+            _elf->local_func[plt_idx + 2] = target_elf->namespace_func; 
         }
     }
+
+    // dasics_printf("[LOG]: DASICS lib (%s), name: %s\n", _elf->real_name, _get_lib_name(_elf, plt_idx));
+
+    cross_call(_elf, target_elf, CallContext);
 
 
     return 1;
@@ -212,16 +217,6 @@ void  dasics_dynamic_return(struct umaincall * CallContext)
     
     CallContext->t1 = CallContext->ra;
 
-        // Alloc bound
-        struct bound_table * bounds = global_func_mem->mem;
-
-
-    for (int i = 0; i < global_func_mem->bound_max; i++)
-    {
-        /* code */
-        if (bounds[i].addr)
-            dasics_libcfg_free(bounds[i].handler);
-    }
 }
 
 
