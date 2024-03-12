@@ -16,7 +16,7 @@
 int32_t  dasics_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi);
 ```
 
-**函数功能：**分配一组界限寄存器并返回对应的 `handler`。
+**函数功能：** 分配一组界限寄存器并返回对应的 `handler`。
 
 **参数说明：**
 
@@ -24,7 +24,7 @@ int32_t  dasics_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi);
 - `lo`：界限下界。
 - `hi`：界限上界。
 
-**返回值：**返回值为大于或等于0的 `int` 类型，失败返回 `-1`。
+**返回值：** 返回值为大于或等于0的 `int` 类型，失败返回 `-1`。
 
 
 
@@ -34,13 +34,13 @@ int32_t  dasics_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi);
 int32_t  dasics_libcfg_free(int32_t idx);
 ```
 
-**函数功能：**释放分配的一组 `libbound` 寄存器。
+**函数功能：** 释放分配的一组 `libbound` 寄存器。
 
 **参数说明：**
 
 - `idx`：通过 `dasics_libcfg_alloc` 分配界限寄存器组得到的 `handler。`
 
-**返回值：**函数执行成功返回0 ，失败返回 -1，失败表示未查找到该 `handler` 对应的 `libbound` 寄存器信息。 
+**返回值：** 函数执行成功返回0 ，失败返回 -1，失败表示未查找到该 `handler` 对应的 `libbound` 寄存器信息。 
 
  
 
@@ -50,13 +50,13 @@ int32_t  dasics_libcfg_free(int32_t idx);
 int32_t  dasics_libcfg_get(int32_t idx);
 ```
 
-**函数功能：**获取分配的一组 `libbounds` 寄存器的配置 `cfg` 权限信息。
+**函数功能：** 获取分配的一组 `libbounds` 寄存器的配置 `cfg` 权限信息。
 
 **参数说明：**
 
 - `idx`：通过 `dasics_libcfg_alloc` 分配界限寄存器组得到的 `handler`。
 
-**返回值：**函数执行成功返回 `libbound` 对应的权限信息，失败返回 `-1`，失败表示未查找到该 `handler` 对应的 `libbound` 寄存器信息。
+**返回值：** 函数执行成功返回 `libbound` 对应的权限信息，失败返回 `-1`，失败表示未查找到该 `handler` 对应的 `libbound` 寄存器信息。
 
 ## `DASICS jmpbounds` 管理接口
 
@@ -75,7 +75,7 @@ int32_t dasics_jumpcfg_alloc(uint64_t lo, uint64_t hi);
 - `lo`：活跃区下界
 - `hi`：活跃区上界
 
-**返回值：**分配成功返回对应的 `handler`，失败返回 `-1`
+**返回值：** 分配成功返回对应的 `handler`，失败返回 `-1`
 
 
 
@@ -85,7 +85,7 @@ int32_t dasics_jumpcfg_alloc(uint64_t lo, uint64_t hi);
 int32_t dasics_jumpcfg_free(int32_t idx);
 ```
 
-**函数功能：**释放分配的一组 `jmpbounds` 寄存器
+**函数功能：** 释放分配的一组 `jmpbounds` 寄存器
 
 **函数参数：**
 
@@ -103,7 +103,7 @@ int32_t dasics_jumpcfg_free(int32_t idx);
 int register_syscall_check(int sysno, ecall_check_handler check_handler, ecall_error_handler error_handler)
 ```
 
-**函数功能：**为标号为 `sysno` 的系统调用设置检查函数和错误处理函数。若用户传递的处理函数为空，则处理方式保持原有不变。
+**函数功能：** 为标号为 `sysno` 的系统调用设置检查函数和错误处理函数。若用户传递的处理函数为空，则处理方式保持原有不变。
 
 **函数参数：**
 
@@ -111,7 +111,7 @@ int register_syscall_check(int sysno, ecall_check_handler check_handler, ecall_e
 - `check_handler`：用户定义的系统调用检查函数
 - `error_handler`：用户定义的错误检查函数
 
-**返回值：**成功返回0，失败返回-1。
+**返回值：** 成功返回0，失败返回-1。
 
 
 
