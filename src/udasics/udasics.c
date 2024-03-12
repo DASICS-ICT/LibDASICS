@@ -174,13 +174,7 @@ uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
             const char *format = va_arg(args, const char *);
             vprintf(format, args);
         }
-        case Umaincall_SETAZONERTPC:
-            // asm volatile (
-            //     "li     t0,  0x1d1bc\n"
-            //     "csrw   0x8b2, t0\n"
-            //     :::"t0"
-            // );
-            break;
+        break;
 
         default:
             printf("\x1b[33m%s\x1b[0m","Warning: Invalid umaincall number %d!\n", type); //could not use printf in kernel

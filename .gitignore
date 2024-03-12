@@ -6,3 +6,4 @@ build
 rootfs.img
 run_qemu.sh
 rootfs
+copy.sh

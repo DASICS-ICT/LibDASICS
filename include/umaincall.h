@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <list.h>
 
 typedef unsigned long reg_t;
 
@@ -58,11 +59,29 @@ struct umaincall
 
 extern uint64_t umaincall_helper;
 
+typedef void * (*ecall_check_handler)(unsigned long, \
+                                    unsigned long, \
+                                    unsigned long, \
+                                    unsigned long, \
+                                    unsigned long, \
+                                    unsigned long, \
+                                    unsigned long, \
+                                    unsigned long);
+
+struct umaincall_handler
+{
+    list_head list;
+    uint64_t maincallnum;
+    ecall_check_handler handler;
+};
+
+
 // Open maincall
 int _open_maincall();
 
 int dasics_dynamic_call(struct umaincall * CallContext);
 void dasics_dynamic_return(struct umaincall * CallContext);
 
+void init_maincall_handler();
 
 #endif

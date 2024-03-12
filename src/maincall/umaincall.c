@@ -74,6 +74,18 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, struct umaincall * 
         tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
                                         CallContext->sp - 4 * PAGE_SIZE, \
                                         CallContext->sp);
+        // Alloc bound
+        struct bound_table * bounds = global_func_mem->mem;
+
+        for (int i = 0; i < global_func_mem->bound_max; i++)
+        {
+            /* code */
+            if (bounds[i].handler)
+                dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+                                    bounds[i].addr,
+                                    bounds[i].addr + bounds[i].length);
+        }
+
         // Push 
         push_cross(&tmp);
 
@@ -200,4 +212,16 @@ void  dasics_dynamic_return(struct umaincall * CallContext)
     
     CallContext->t1 = CallContext->ra;
 
+        // Alloc bound
+        struct bound_table * bounds = global_func_mem->mem;
+
+
+    for (int i = 0; i < global_func_mem->bound_max; i++)
+    {
+        /* code */
+        if (bounds[i].addr)
+            dasics_libcfg_free(bounds[i].handler);
+    }
 }
+
+
