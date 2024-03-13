@@ -16,6 +16,7 @@
 int _open_maincall()
 {
     umaincall_helper = (uint64_t)dasics_umaincall_helper;
+    csr_write(0x8b0, (uint64_t)dasics_umaincall);
     
     umain_elf_t *_map = _umain_elf_table;
 

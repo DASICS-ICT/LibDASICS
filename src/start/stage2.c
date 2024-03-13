@@ -20,13 +20,28 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 {
 
     dasics_printf("> [INIT] _dasics_entry_stage2\n");    
-    // Get FIXUP
-    dll_fixup_handler = (fixup_entry_t)_get_auxv_entry(sp, AT_FIXUP);
-    dll_fini = fini;
-
     user_sp = sp;
 
     struct link_map * link = get_main_link();
+
+    // Get FIXUP
+#ifdef DASICS_LINUX
+    dll_fixup_handler = (fixup_entry_t)_get_auxv_entry(sp, AT_FIXUP);
+    dll_fini = fini;
+#else
+    struct link_map * tmp = link;
+    extern char _interp_start[];
+    for (; tmp != 0; tmp = tmp->l_next)
+    {
+        /* code */
+        if (!dasics_strcmp(tmp->l_name, _interp_start))
+        {
+            dll_fixup_handler = tmp->l_addr + 0xac66;
+        }
+    }
+#endif
+
+    dasics_printf("> [INIT] dll_fixup_handler: 0x%lx\n", (uint64_t)dll_fixup_handler);
     create_umain_elf_chain(link);
     
     

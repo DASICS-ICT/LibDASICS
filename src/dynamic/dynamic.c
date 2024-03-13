@@ -206,7 +206,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
         _fill_dynamic_section(_elf->l_info, _map_init->l_ld);
         _fill_module_name(_map_init->l_name, _elf);
 
-        dasics_printf("[LOG]: DASICS module:%s\n", _elf->real_name);
+        // dasics_printf("[LOG]: DASICS module:%s\n", _elf->real_name);
         _elf->fixup_handler = dasics_stage == 2 ? dll_fixup_handler_lib : dll_fixup_handler;
         _elf->map_link = _map_init;
         _elf->_copy_lib_elf = NULL;
