@@ -2,6 +2,7 @@ LibDASICS.md
 .gdb_history
 .gdbinit
 .vscode
+*.txt
 build
 rootfs.img
 run_qemu.sh
