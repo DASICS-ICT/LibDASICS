@@ -7,7 +7,7 @@ RANLIB			= $(CROSS_COMPILE)ranlib
 
 # C flags
 INCLUDE			= -Iinclude
-CFLAGS			= -O0 -g $(INCLUDE) -DDASICS_LINUX -DDASICS_COPY
+CFLAGS			= -O0 -g $(INCLUDE) -DDASICS_LINUX -DDASICS_COPY -MMD
 # build di0
 DIR_PWD			?= 
 DIR_BUILD		= build
@@ -15,7 +15,7 @@ DIR_SRC			= src
 DIR_LIB			= lib
 
 DIR_TEST		= test
-UCFLAGS			= -O0 -g $(INCLUDE) -I$(DIR_TEST)/include
+UCFLAGS			= -O0 -g $(INCLUDE) -I$(DIR_TEST)/include -MMD
 # target files
 # LIB FILE, stand alone, not depend on any other standard library
 LIB_FILES_C		= $(wildcard $(DIR_LIB)/*/*.c)
@@ -40,6 +40,9 @@ TEST_SO_OBJ		= $(addprefix build/, \
 # Lib target
 LibDASICS		= $(DIR_BUILD)/LibDASICS.a
 
+# Dependencies
+DEPS = $(addprefix $(DIR_BUILD)/, $(addsuffix .d, $(basename $(SRCS))))
+-include $(DEPS)
 
 .PHONY: all
 
