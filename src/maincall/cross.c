@@ -6,6 +6,7 @@
 #include <umaincall.h>
 #include <dynamic.h>
 #include <dasics_start.h>
+#include <dasics_string.h>
 #include <ufuncmem.h>
 
 uint64_t cross_stack = 0;
@@ -38,7 +39,7 @@ void push_cross(struct cross * tmp)
     
     struct cross * cross_handle =(struct cross *)cross_stack; 
 
-    memcpy((void *)cross_stack, tmp, sizeof(struct cross));    
+    dasics_memcpy((void *)cross_stack, tmp, sizeof(struct cross));    
 }
 
 

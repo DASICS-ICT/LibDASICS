@@ -18,6 +18,9 @@
 #define DASICS_JUMPCFG_MASK 	0xffffUL
 #define DASICS_JUMPCFG_V    	0x1UL
 
+#define align8up(addr) 		 ((addr+0x7) & ~(0x7)) 
+#define align8down(addr) 	 (addr & ~(0x7))
+
 // TODO: Add UmaincallTypes
 typedef enum {
     Umaincall_PRINT,
@@ -57,5 +60,7 @@ extern void dasics_ufault_entry(void);
 extern uint64_t dasics_umaincall(UmaincallTypes type, ...);
 extern void lib_call(void* func_name, ...);
 extern void azone_call(void* func_name);
+
+#define LIBCFG_ALLOC(flag, base, len) (dasics_libcfg_alloc(flag,((uint64_t)(base)),((uint64_t)(base)) + ((uint64_t)(len))));
 
 #endif

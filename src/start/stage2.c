@@ -62,8 +62,8 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     // Open data segment to read
     open_memory(_umain_elf_table);
     // Register eixt func to 
-    // if (fini)
-    //     atexit(fini);
+    if (fini)
+        atexit(fini);
     /* change dasics_flag to 2 let linker just map trust lib on untrusted area*/
     _set_auxv_entry(sp, AT_DASICS, 2);
     // Stage 2

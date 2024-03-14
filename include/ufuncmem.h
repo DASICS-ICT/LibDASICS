@@ -30,7 +30,7 @@ typedef struct umain_elf umain_elf_t;
 struct umaincall;
 
 // Used to handle all malloc, free, realloc of lib func
-int handle_lib_mem(umain_elf_t *_elf, int pltIdx, struct umaincall * callContext);
+int handle_lib_mem(umain_elf_t *_elf, const char * name, struct umaincall * callContext);
 
 // Handle memory option
 void * handle_lib_malloc(struct umaincall * callContext, struct func_mem * mem);

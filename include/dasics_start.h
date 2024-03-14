@@ -57,6 +57,11 @@ void dasics_start_fault(struct ucontext_trap * regs);
 extern uint64_t user_sp;
 extern int dasics_stage;
 
+// DASICS STAGE FLAG
+#define DASICS_CHECK 0
+#define DASICS_MAIN_LIB 1
+#define DASICS_COPY_LIB 2
+
 
 /* Get the auxv array addr */ 
 static inline uint64_t _get_auxv(uint64_t *sp)

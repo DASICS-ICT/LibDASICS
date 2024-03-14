@@ -96,8 +96,8 @@ void register_udasics(uint64_t funcptr)
 
 void unregister_udasics(void) 
 {
-    csr_write(0x8b0, 0);
-    csr_write(0x005, 0);
+    // csr_write(0x8b0, 0);
+    // csr_write(0x005, 0);
 
     // Free bounds hash table
     hashed_bound_t *current, *temp;
@@ -307,6 +307,9 @@ int32_t dasics_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi) {
     uint64_t libcfg = csr_read(0x880);  // DasicsLibCfg
     int32_t max_cfgs = DASICS_LIBCFG_WIDTH;
     int32_t step = 4;
+
+    lo = align8down(lo);
+    hi = align8up(hi);
 
     // Insert new bound information to hash table
     hashed_bound_t *entry = (hashed_bound_t *)malloc(sizeof(hashed_bound_t));

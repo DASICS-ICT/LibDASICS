@@ -38,7 +38,7 @@ static struct bound_table * _expan_bound(struct func_mem * tmp)
     assert(tmp->mem != NULL);
 
     // Clear the expand mem
-    memset((void *)(&tmp->mem[tmp->bound_max]), 0, EXPAN_BOUNDS);
+    dasics_memset((void *)(&tmp->mem[tmp->bound_max]), 0, EXPAN_BOUNDS);
     tmp->bound_max += MAX_BOUNS;
 
     return tmp->mem;
@@ -96,9 +96,7 @@ void * handle_lib_malloc(struct umaincall * callContext, struct func_mem * mem)
     callContext->a0 = (uint64_t)malloc_mem;
 
 
-    int32_t handler = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
-                        record->addr, record->addr + record->length);
-
+    int32_t handler = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, record->addr, record->length);
     record->handler = handler;
 
     return 0;
@@ -130,9 +128,7 @@ int handle_lib_realloc(struct umaincall * callContext, struct func_mem * mem)
 
     dasics_libcfg_free(target->handler);
 
-    target->handler =  dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
-                        target->addr, target->addr + target->length);
-
+    target->handler = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, target->addr, target->length);
     // Return result to caller
     callContext->a0 = (uint64_t)new_addr;
 
@@ -179,9 +175,9 @@ int handle_lib_free(struct umaincall * callContext, struct func_mem * mem)
 }
 
 
-int handle_lib_mem(umain_elf_t *_elf, int pltIdx, struct umaincall * callContext)
+int handle_lib_mem(umain_elf_t *_elf, const char * name, struct umaincall * callContext)
 {
-    if (!dasics_strcmp("malloc",_get_lib_name(_elf, pltIdx)) && \
+    if (!dasics_strcmp("malloc", name) && \
         !(_elf->_flags & MAIN_AREA))
     {
         handle_lib_malloc(callContext, _elf->namespace_func);
@@ -189,7 +185,7 @@ int handle_lib_mem(umain_elf_t *_elf, int pltIdx, struct umaincall * callContext
         return 0;
     }
 
-    if (!dasics_strcmp("free",_get_lib_name(_elf, pltIdx)) && \
+    if (!dasics_strcmp("free", name) && \
         !(_elf->_flags & MAIN_AREA))
     {
         handle_lib_free(callContext, _elf->namespace_func);
@@ -197,7 +193,7 @@ int handle_lib_mem(umain_elf_t *_elf, int pltIdx, struct umaincall * callContext
         return 0;
     }
 
-    if (!dasics_strcmp("realloc",_get_lib_name(_elf, pltIdx)) && \
+    if (!dasics_strcmp("realloc", name) && \
         !(_elf->_flags & MAIN_AREA))
     {
         handle_lib_realloc(callContext, _elf->namespace_func);

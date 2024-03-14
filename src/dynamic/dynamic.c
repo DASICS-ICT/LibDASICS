@@ -8,6 +8,9 @@
 #include <dasics_stdio.h>
 #include <dasics_start.h>
 
+//STD
+#include <stdlib.h>
+
 umain_elf_t * _umain_elf_table = NULL;
 int dasics_stage = 0;
 
@@ -191,9 +194,11 @@ int create_umain_elf_chain(struct link_map * main_elf)
     while (_map_init != NULL)
     {
         /* Dasics Copy stage don't do main elf again */
-        if (dasics_stage == 2 && !_map_init->l_addr) goto jump;
+        if (dasics_stage == DASICS_COPY_LIB && !_map_init->l_addr) goto jump;
 
-        umain_elf_t * _elf = (umain_elf_t *)dasics_malloc(sizeof(umain_elf_t));
+        // DASICS_COPY_STAGE will use stdlib and avoid to change BRK
+        umain_elf_t * _elf = dasics_stage == DASICS_COPY_LIB ? (umain_elf_t *)malloc(sizeof(umain_elf_t)) :
+                             (umain_elf_t *)dasics_malloc(sizeof(umain_elf_t));
 
         dasics_memset(_elf, 0, sizeof(umain_elf_t));
 
@@ -207,7 +212,8 @@ int create_umain_elf_chain(struct link_map * main_elf)
         _fill_module_name(_map_init->l_name, _elf);
 
         // dasics_printf("[LOG]: DASICS module:%s\n", _elf->real_name);
-        _elf->fixup_handler = dasics_stage == 2 ? dll_fixup_handler_lib : dll_fixup_handler;
+        _elf->fixup_handler = dasics_stage == DASICS_COPY_LIB ? dll_fixup_handler_lib : 
+                                                dll_fixup_handler;
         _elf->map_link = _map_init;
         _elf->_copy_lib_elf = NULL;
         _elf->dynamic = (uint64_t)_map_init->l_ld;

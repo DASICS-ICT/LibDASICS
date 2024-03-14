@@ -25,8 +25,8 @@ void _dasics_entry_stage3(uint64_t sp, rtld_fini fini)
     dasics_printf("> [INIT] Init maincall for dynamic successfully\n");
 
     /* Add copy ld.so to atexit */
-    // if (fini)
-    //     atexit(fini);
+    if (fini)
+        atexit(fini);
         
     dasics_printf("> [INIT] Add func 0x%lx to exit chain\n", fini);    
 
@@ -52,6 +52,4 @@ void _dasics_entry_stage3(uint64_t sp, rtld_fini fini)
     csr_write(0x005, (uint64_t)dasics_ufault_entry);
 
 #endif
-
-
 }
