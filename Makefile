@@ -40,9 +40,6 @@ TEST_SO_OBJ		= $(addprefix build/, \
 # Lib target
 LibDASICS		= $(DIR_BUILD)/LibDASICS.a
 
-# Dependencies
-DEPS = $(addprefix $(DIR_BUILD)/, $(addsuffix .d, $(basename $(SRCS))))
--include $(DEPS)
 
 .PHONY: all
 
@@ -93,3 +90,8 @@ test: $(LibDASICS) $(TEST_SO_OBJ)
 
 clean:
 	rm -rf $(DIR_BUILD)
+
+# Dependencies
+DEPS = $(addprefix $(DIR_BUILD)/, \
+						$(addsuffix .d, $(basename $(BASENAME))))
+-include $(DEPS)
