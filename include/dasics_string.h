@@ -13,7 +13,6 @@ extern void * dasics_memset(void *, int, uint64_t);
 extern int dasics_strncmp(const char *cs, const char *ct, uint64_t count);
 extern int dasics_strlen(const char *s);
 extern int dasics_strncmp(const char *cs, const char *ct, uint64_t count);
-extern uint64_t __BRK(uint64_t ptr);
 
 static char *dasics_strcpy(char *dest, const char *src)
 {
@@ -44,21 +43,5 @@ static int dasics_strcmp(const char *cs, const char *ct)
 	return 0;
 }
 
-static inline void * dasics_malloc(uint64_t size)
-{
-    uint64_t heap = __BRK((uint64_t)ROUND(__BRK(0), 0x16UL));
-
-    // brk syscall fail
-    if (heap == 0) return (void *)0;
-
-    uint64_t error = __BRK(heap + ROUND(size, 0x16UL));
-
-    // brk syscall fail
-    if (error == 0) return (void *)0;
-   
-
-    return (void *)heap;
-
-}
 
 #endif

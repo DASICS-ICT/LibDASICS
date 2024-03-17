@@ -7,6 +7,7 @@
 #include <dasics_string.h>
 #include <dasics_stdio.h>
 #include <dasics_start.h>
+#include <dmalloc.h>
 
 //STD
 #include <stdlib.h>
