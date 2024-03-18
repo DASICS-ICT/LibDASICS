@@ -12,6 +12,13 @@ SECTIONS
 {
   /* Read-only sections, merged into text segment: */
   PROVIDE (__executable_start = SEGMENT_START("text-segment", 0x1000000)); . = SEGMENT_START("text-segment", 0x1000000) + SIZEOF_HEADERS;
+  .plt            : 
+  {
+    _plt_start = . ;
+     *(.plt) 
+     *(.iplt) 
+    _plt_end = . ;  
+  }  
   /* . = TEXT_START; */
   _text_start = . ;
   .text           :
@@ -28,13 +35,6 @@ SECTIONS
   _text_end = . ;
   . = ALIGN(64 / 8);
   . = .;
-  .plt            : 
-  {
-    _plt_start = . ;
-     *(.plt) 
-     *(.iplt) 
-    _plt_end = . ;  
-  }
   
   . = ALIGN(64 / 8);
   /* DASICS lib and freezone text section */
