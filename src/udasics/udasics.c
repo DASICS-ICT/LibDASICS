@@ -69,6 +69,8 @@ void register_udasics(uint64_t funcptr)
     uint64_t libcfg = csr_read(0x880);  // DasicsLibCfg
     int32_t max_cfgs = DASICS_LIBCFG_WIDTH;
     int32_t step = 4;
+    // Set random seed
+    srand(2023);
 
     // Write OS-allocated bounds to hash table
     for (int32_t idx = 0; idx < max_cfgs; ++idx) {
@@ -233,7 +235,8 @@ static int dasics_ldst_checker(uint64_t utval, int is_read)
         if (current->bound.lo <= utval && utval <= current->bound.hi && \
             (current->priv & valid_perm) == valid_perm) {
             // Find the matching bound, thus replace one libcfg & libbound with it
-            int victim = dasics_oldest_victim();
+            // int victim = dasics_oldest_victim();
+            int victim = rand() % DASICS_LIBCFG_WIDTH;
             LIBBOUND_LOOKUP(current->bound.hi, current->bound.lo, victim, WRITE);
 
             // Write config
@@ -332,7 +335,8 @@ int32_t dasics_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi) {
 
     // Kick out the oldest victim if we cannot find one available place
     if (victim == max_cfgs) {
-        victim = dasics_oldest_victim();
+        // victim = dasics_oldest_victim();
+        victim = rand() % DASICS_LIBCFG_WIDTH;
     }
 
     // Write libbound
