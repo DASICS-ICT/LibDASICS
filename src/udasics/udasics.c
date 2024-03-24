@@ -347,17 +347,17 @@ int32_t dasics_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi) {
     libcfg |= ((uint64_t)entry->priv) << (victim * step);
     csr_write(0x880, libcfg);   // DasicsLibCfg
 
-    // Write init aging value
-    uint64_t aging_width = 8;
-    if (victim < DASICS_LIBCFG_WIDTH / 2) {
-        uint64_t dlaging = csr_read(0x881);
-        dlaging |= 0xfful << (victim * aging_width);
-        csr_write(0x881, dlaging);
-    } else {
-        uint64_t dlaging = csr_read(0x882);
-        dlaging |= 0xfful << ((victim - DASICS_LIBCFG_WIDTH / 2) * aging_width);
-        csr_write(0x882, dlaging);
-    }
+    // // Write init aging value
+    // uint64_t aging_width = 8;
+    // if (victim < DASICS_LIBCFG_WIDTH / 2) {
+    //     uint64_t dlaging = csr_read(0x881);
+    //     dlaging |= 0xfful << (victim * aging_width);
+    //     csr_write(0x881, dlaging);
+    // } else {
+    //     uint64_t dlaging = csr_read(0x882);
+    //     dlaging |= 0xfful << ((victim - DASICS_LIBCFG_WIDTH / 2) * aging_width);
+    //     csr_write(0x882, dlaging);
+    // }
 
     // Fill dlibcsr map with new handle
     dlibcfg_handle_map[victim] = entry->handle;
