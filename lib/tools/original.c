@@ -154,4 +154,5 @@ int32_t original_jumpcfg_free_all()
     {
         original_jumpcfg_free(idx);
     }
+    return 0;
 }

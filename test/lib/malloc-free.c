@@ -4,6 +4,14 @@
 #include <dasics_stdio.h>
 
 
+int dasics_strlen(const char *str) {
+    int length = 0;
+    while (*str != '\0') {
+        length++;
+        str++;
+    }
+    return length;
+}
 
 static inline int sys_write(const char * buff)
 {
@@ -246,7 +254,7 @@ static inline int __dasics_linker_strcpy(char *dest, const char *src)
 
     *dest = '\0';
 
-    return tmp;
+    return (int)tmp;
 }
 
 static inline int __dasics_linker_strcmp(const char *str1, const char *str2)
@@ -289,7 +297,7 @@ int call_and_record(int flag, char * message)
     // Free
     if (flag == FREE)
     {
-        if (head == NULL) return;
+        if (head == NULL) return 0;
         malloc_free_t * point = head->prev;
 
         lib_printf("[FREE]: addr: %lx\n", (uint64_t)point);
@@ -312,7 +320,7 @@ int call_and_record(int flag, char * message)
     if (flag == REALLOC)
     {
 
-        if (head == NULL) return;
+        if (head == NULL) return 0;
 
         malloc_free_t * point = head->prev;
 

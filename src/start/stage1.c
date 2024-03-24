@@ -16,7 +16,9 @@ uint64_t user_sp = 0;
  */
 void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
 {
+#ifdef DASICS_DEBUG
     dasics_printf("> [INIT] _dasics_entry_stage1\n");
+#endif    
     uint64_t _dll_linker = _get_auxv_entry(sp, AT_LINKER);
 
     user_sp = sp;
@@ -29,8 +31,9 @@ void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
         dasics_stage = 1;
 
         init_syscall_check();
-
+#ifdef DASICS_DEBUG
         dasics_printf("> [INIT] Init syscall_check_table successfully\n");        
+#endif
         /* 
          * give all lib area be VALID, READ, WRITE, FREE
          * This is not safe

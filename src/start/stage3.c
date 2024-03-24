@@ -13,8 +13,10 @@ fixup_entry_t dll_fixup_handler_lib = NULL;
 
 void _dasics_entry_stage3(uint64_t sp, rtld_fini fini)
 {
+#ifdef DASICS_DEBUG
     dasics_printf("> [INIT] _dasics_entry_stage3\n");
-    
+#endif    
+
     struct link_map * link = get_main_link();
     create_umain_elf_chain(link);
 
@@ -22,14 +24,18 @@ void _dasics_entry_stage3(uint64_t sp, rtld_fini fini)
 
     /* set copy lib's GOT to dasics_umain_call */
     _open_maincall();
+
+#ifdef DASICS_DEBUG
     dasics_printf("> [INIT] Init maincall for dynamic successfully\n");
+#endif
 
     /* Add copy ld.so to atexit */
     if (fini)
         atexit(fini);
-        
-    dasics_printf("> [INIT] Add func 0x%lx to exit chain\n", fini);    
 
+#ifdef DASICS_DEBUG
+    dasics_printf("> [INIT] Add func 0x%lx to exit chain\n", fini);    
+#endif
 
 #ifdef DASICS_LINUX
     // Clear all lib bounds

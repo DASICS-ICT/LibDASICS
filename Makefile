@@ -7,7 +7,7 @@ RANLIB			= $(CROSS_COMPILE)ranlib
 
 # C flags
 INCLUDE			= -Iinclude
-CFLAGS			= -O2 -g -MMD $(INCLUDE) #-DDASICS_LINUX -DDASICS_COPY
+CFLAGS			= -O2 -g -MMD $(INCLUDE) -DDASICS_LINUX -DDASICS_COPY -DDASICS_DEBUG
 # build di0
 DIR_PWD			?= 
 DIR_BUILD		= build
@@ -82,7 +82,8 @@ $(LibDASICS): $(OBJ_FILES)
 
 
 test: $(LibDASICS) $(TEST_SO_OBJ)
-	@$(CC) $(UCFLAGS) $(TEST_FILES) -o ./build/test -T./ld.lds $(LibDASICS) ./build/malloc-free.so
+	@$(CC) -pie $(UCFLAGS) $(TEST_FILES) -o ./build/test -T./ld.lds $(LibDASICS) ./build/malloc-free.so --verbose
+
 	@echo + CC ./build/test
 	@$(OBJDUMP) -d ./build/test > $(DIR_BUILD)/test.txt
 	@echo + OBJDUMP ./build/test

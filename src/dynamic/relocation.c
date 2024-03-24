@@ -155,21 +155,25 @@ uint64_t force_redirect(umain_elf_t * entry, const char * func_name, uint64_t ta
 int open_redirect()
 {
     redirect_switch = 1;
+    return 0;
 }
 
 // Close the switch
 int close_redirect()
 {
     redirect_switch = 0;
+    return 0;
 }
 
 
 int force_redirect_open()
 {
     force_redirect_switch = 1;
+    return 0;
 }
 
 int force_redirect_close()
 {
     force_redirect_switch = 0;
+    return 0;
 }

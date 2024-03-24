@@ -18,8 +18,9 @@ rtld_fini dll_fini;
  */
 void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 {
-
+#ifdef DASICS_DEBUG
     dasics_printf("> [INIT] _dasics_entry_stage2\n");    
+#endif
     user_sp = sp;
 
     struct link_map * link = get_main_link();
@@ -36,23 +37,30 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
         /* code */
         if (!dasics_strcmp(tmp->l_name, _interp_start))
         {
-            dll_fixup_handler = tmp->l_addr + 0xac66;
+            dll_fixup_handler = (fixup_entry_t)(tmp->l_addr + 0xac66);
         }
     }
 #endif
 
+#ifdef DASICS_DEBUG
     dasics_printf("> [INIT] dll_fixup_handler: 0x%lx\n", (uint64_t)dll_fixup_handler);
+#endif
+
     create_umain_elf_chain(link);
     
     
     /* open maincall for dynamic */
     _open_maincall();
-    
-    dasics_printf("> [INIT] Init maincall for dynamic successfully\n");
 
+#ifdef DASICS_DEBUG
+    dasics_printf("> [INIT] Init maincall for dynamic successfully\n");
+#endif
     init_cross_stack();
 
+#ifdef DASICS_DEBUG
     dasics_printf("> [INIT] Init corss stack successfully\n");
+#endif
+
 #ifdef DASICS_COPY
     /* begin to init copy of the trust lib */
     uint64_t copy_linker_dll = _get_auxv_entry(sp, AT_LINKER_COPY);
@@ -98,7 +106,10 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 
     init_cross_stack();
 
+#ifdef DASICS_DEBUG
     dasics_printf("> [INIT] Init corss stack successfully\n");
+#endif
+
 #endif
 
     
