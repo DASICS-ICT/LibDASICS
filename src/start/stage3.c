@@ -30,8 +30,8 @@ void _dasics_entry_stage3(uint64_t sp, rtld_fini fini)
 #endif
 
     /* Add copy ld.so to atexit */
-    if (fini)
-        atexit(fini);
+    // if (fini)
+    //     atexit(fini);
 
 #ifdef DASICS_DEBUG
     dasics_printf("> [INIT] Add func 0x%lx to exit chain\n", fini);    

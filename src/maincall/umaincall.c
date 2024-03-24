@@ -77,19 +77,19 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
                                         _target->_w_end);
         
         tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 4 * PAGE_SIZE, 4 * PAGE_SIZE);
-        if (!dasics_strcmp(name, "memset"))
-        {
-            memset_num++;
-            tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R, CallContext->a0, CallContext->a2)
-        }
+        // if (!dasics_strcmp(name, "memset"))
+        // {
+        //     memset_num++;
+        //     tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R, CallContext->a0, CallContext->a2)
+        // }
 
-        if (!dasics_strcmp(name, "memcpy"))
-        {
-            memcpy_num++;
-            // dasics_printf("dst: 0x%lx, src: 0x%lx, length: 0x%lx\n", CallContext->a0, CallContext->a1, CallContext->a2);
-            tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R, CallContext->a0, CallContext->a2);
-            tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R, CallContext->a1, CallContext->a2);
-        }
+        // if (!dasics_strcmp(name, "memcpy"))
+        // {
+        //     memcpy_num++;
+        //     // dasics_printf("dst: 0x%lx, src: 0x%lx, length: 0x%lx\n", CallContext->a0, CallContext->a1, CallContext->a2);
+        //     tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R, CallContext->a0, CallContext->a2);
+        //     tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R, CallContext->a1, CallContext->a2);
+        // }
 
         tmp.handle_num = idx_lib;
 

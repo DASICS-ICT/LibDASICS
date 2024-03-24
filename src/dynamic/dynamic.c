@@ -252,7 +252,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
         // Calculate the number of got table
         int rela_got_num = 0;
         for (rela_got_num  = 0; \
-                _elf->got_begin[rela_got_num] != judge_dynamic;\
+                _elf->got_begin[rela_got_num] != judge_dynamic && _elf->got_begin[rela_got_num] != 0;\
                     rela_got_num++);
         // no got table
         if (rela_got_num == 0) goto no_pltgot;
