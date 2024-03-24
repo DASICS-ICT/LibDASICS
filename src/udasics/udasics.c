@@ -232,7 +232,7 @@ static int dasics_ldst_checker(uint64_t utval, int is_read)
     // Iterate bounds table to find matching bounds
     hashed_bound_t *current, *temp;
     HASH_ITER(hh, bounds_table, current, temp) {
-        if (current->bound.lo <= utval && utval <= current->bound.hi && \
+        if (current->bound.lo <= utval && utval < current->bound.hi && \
             (current->priv & valid_perm) == valid_perm) {
             // Find the matching bound, thus replace one libcfg & libbound with it
             // int victim = dasics_oldest_victim();
