@@ -260,18 +260,26 @@ int create_umain_elf_chain(struct link_map * main_elf)
         _elf->got_num = rela_got_num;
         _elf->_local_got_table = (uint64_t *)dasics_malloc(rela_got_num * sizeof(uint64_t));
         _elf->local_func = (struct func_mem **)dasics_malloc(rela_got_num * sizeof(struct func_mem *));
+        _elf->redirect_switch = (int *)dasics_malloc(rela_got_num * sizeof(int));
+        _elf->target_elf = (umain_elf_t **)dasics_malloc(rela_got_num * sizeof(umain_elf_t *));
 
         // fill the *_start, *_end of 
         _fill_module_map(_elf);
 
 
-        if (_elf->_local_got_table == NULL)
+        if (_elf->_local_got_table == NULL || \
+                _elf->local_func == NULL || \
+                    _elf->redirect_switch == NULL || \
+                        _elf->target_elf)
         {
             dasics_printf("[DASICS ERROR]: dasics_malloc error\n");
             while(1);
-        }
+        } 
 
         dasics_memset(_elf->_local_got_table, 0, rela_got_num * sizeof(uint64_t));
+        dasics_memset(_elf->local_func, 0, rela_got_num * sizeof(struct func_mem *));
+        dasics_memset(_elf->redirect_switch, 0, rela_got_num * sizeof(int));
+        dasics_memset(_elf->target_elf, 0, rela_got_num * sizeof(umain_elf_t *));
         
 no_pltgot:
         // Add into chain

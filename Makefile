@@ -82,7 +82,7 @@ $(LibDASICS): $(OBJ_FILES)
 
 
 test: $(LibDASICS) $(TEST_SO_OBJ)
-	@$(CC) -pie $(UCFLAGS) $(TEST_FILES) -o ./build/test -T./ld.lds $(LibDASICS) ./build/malloc-free.so --verbose
+	@$(CC) $(UCFLAGS) $(TEST_FILES) -o ./build/test -T./ld.lds $(LibDASICS) ./build/malloc-free.so --verbose
 
 	@echo + CC ./build/test
 	@$(OBJDUMP) -d ./build/test > $(DIR_BUILD)/test.txt

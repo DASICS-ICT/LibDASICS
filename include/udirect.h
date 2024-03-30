@@ -33,7 +33,7 @@ int delete_redirect_item(const char *func_name);
 
 typedef struct umain_elf umain_elf_t;
 /* Force relocation */
-uint64_t force_redirect(umain_elf_t * entry,const char * func_name, uint64_t target);
+uint64_t force_redirect(umain_elf_t * entry, int idx, uint64_t target);
 
 
 
@@ -41,10 +41,6 @@ uint64_t force_redirect(umain_elf_t * entry,const char * func_name, uint64_t tar
 int open_redirect();
 int close_redirect();
 
-
-// Force redirect
-int force_redirect_open();
-int force_redirect_close();
 
 
 

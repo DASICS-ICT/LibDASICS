@@ -58,7 +58,9 @@ typedef struct umain_elf
    uint64_t dynamic     ;		/* Dynamic section of the shared object.  */
 
    uint64_t *_local_got_table; /* Num of lib call */
-   struct func_mem **local_func; /* find func_mem fast */
+   struct func_mem **local_func; /* Find func_mem fast */
+   int * redirect_switch;       /* Redirect switch */
+   struct umain_elf ** target_elf; /* Target elf */
 
    struct func_mem * namespace_func;
 

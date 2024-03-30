@@ -13,6 +13,19 @@ LIST_HEAD(redirect_table);
 int redirect_switch = 0;
 int force_redirect_switch = 0;
 
+static int _find_idx_by_name(umain_elf_t * target, const char *name)
+{
+    for (int  i = 0; i < target->got_num - 2; i++)
+    {
+        if (!dasics_strcmp(_get_lib_name(target, i), name))
+        {
+            return i - 2;
+        }
+    }
+
+    return -1;
+}
+
 
 /* This func is used to reloc the target */
 uint64_t _call_reloc(umain_elf_t *elf, uint64_t target)
@@ -78,19 +91,38 @@ static redirect_t * find_item(const char *name)
 /* Add one item  */
 int add_redirect_item(const char *func_name)
 {
-    if (find_item(func_name) != NULL)
+    // if (find_item(func_name) != NULL)
+    // {
+    //     dasics_printf("[Warning]: There has exited one redirect item: %s\n", func_name);
+    //     return 0;
+    // }
+
+    // Never redirect __libc_start_main
+    if (!dasics_strcmp(func_name, "__libc_start_main"))
     {
-        dasics_printf("[Warning]: There has exited one redirect item: %s\n", func_name);
         return 0;
     }
 
-    // Malloc one
-    redirect_t * new_item = (redirect_t *)malloc(sizeof(redirect_t));
+    int idx = _find_idx_by_name(_umain_elf_table, func_name);
 
-    dasics_strcpy(new_item->name, func_name);
+    if (idx == -1)
+    {
+        dasics_printf("[Warning]: Not function: %s in this module\n", func_name);
+        return 0;
+    }
+    // Open switch
+    _umain_elf_table->redirect_switch[idx + 2] = 1;
 
+    umain_elf_t * target = _umain_elf_table->target_elf[idx+2];
 
-    list_add_tail(&new_item->list, &redirect_table);
+    if (!target) return 0;
+ 
+    if (target->_copy_lib_elf)
+    {
+        _umain_elf_table->_local_got_table[idx + 2] = target->_copy_lib_elf->l_addr + \
+                (_umain_elf_table->_local_got_table[idx + 2] - target->l_addr);
+        _umain_elf_table->target_elf[idx+2] =  target->_copy_lib_elf;
+    }    
 
     return 0;
 }
@@ -98,37 +130,38 @@ int add_redirect_item(const char *func_name)
 /* Delete one item from list */ 
 int delete_redirect_item(const char *func_name)
 {
-    redirect_t *delete_item = NULL;
+    int idx = _find_idx_by_name(_umain_elf_table, func_name);
 
-    // Find one item
-    if ((delete_item = find_item(func_name)) == NULL)
+    if (idx == -1)
     {
-        dasics_printf("[Warning]: There has no one redirect item: %s\n", func_name);
+        dasics_printf("[Warning]: Not function: %s in this module\n", func_name);
         return 0;
     }
+    // Close switch and switch func
+    _umain_elf_table->redirect_switch[idx + 2] = 0;
+    umain_elf_t * target = _umain_elf_table->target_elf[idx+2];
 
-
-    list_del(&delete_item->list);
-
-    free(delete_item);
+    if (!target) return 0;
+ 
+    if (target->_copy_lib_elf)
+    {
+        _umain_elf_table->_local_got_table[idx + 2] = target->_copy_lib_elf->l_addr + \
+                (_umain_elf_table->_local_got_table[idx + 2] - target->l_addr);
+        _umain_elf_table->target_elf[idx+2] =  target->_copy_lib_elf;
+    }
 
     return 0;
 }
 
 /* Force relocation */
-uint64_t force_redirect(umain_elf_t * entry, const char * func_name, uint64_t target)
+uint64_t force_redirect(umain_elf_t * entry, int idx, uint64_t target)
 {
     if (!redirect_switch) return target;
 
-    // Never redirect __libc_start_main
-    if (!dasics_strcmp(func_name, "__libc_start_main"))
-    {
-        return target;
-    }
 
+    if (idx == -1) return target;
+    if (entry->redirect_switch[idx + 2] == 0) return target;
 
-    // If force_redirect_switch open, force redirect
-    if (find_item(func_name) == NULL && !force_redirect_switch) return target;
     /* Get the target area of the target addr */
     umain_elf_t * _target_got = _get_area(target);   
 
@@ -144,9 +177,11 @@ uint64_t force_redirect(umain_elf_t * entry, const char * func_name, uint64_t ta
     {
         if (_target_got->_copy_lib_elf != NULL)
         {
+            entry->target_elf[idx + 2] = _target_got->_copy_lib_elf;
             return (target - _target_got->l_addr) + _target_got->_copy_lib_elf->l_addr;
         }
     }
+
 
     return target;
 }
@@ -162,18 +197,5 @@ int open_redirect()
 int close_redirect()
 {
     redirect_switch = 0;
-    return 0;
-}
-
-
-int force_redirect_open()
-{
-    force_redirect_switch = 1;
-    return 0;
-}
-
-int force_redirect_close()
-{
-    force_redirect_switch = 0;
     return 0;
 }

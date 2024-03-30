@@ -174,14 +174,25 @@ int dasics_dynamic_call(struct umaincall * CallContext)
         ulib_func = _call_reloc(_elf, ulib_func);
         // change the target by user force
         uint64_t force_func = ulib_func;
-        if (dynamic_level == 1)
-          force_func = force_redirect(_elf, target_name, ulib_func);
+        // if (dynamic_level == 1)
+        force_func = force_redirect(_elf, plt_idx, ulib_func);
 
         target_elf = _get_area(force_func);
         target = force_func;
-
+        
         /* saved */
-        _elf->_local_got_table[plt_idx + 2] = ulib_func;
+        _elf->_local_got_table[plt_idx + 2] = target;
+        _elf->target_elf[plt_idx + 2] = target_elf;
+
+        // Dasics call no need to redirect
+        if (dynamic_level != 1 && _elf->redirect_switch[plt_idx + 2])
+        {
+            if (target_elf->_copy_lib_elf)
+            {
+                target = target - target_elf->l_addr + target_elf->_copy_lib_elf->l_addr;
+                target_elf = target_elf->_copy_lib_elf;                
+            }
+        }
 
         /* reset got */
         _elf->got_begin[plt_idx + 2] = (uint64_t)dasics_umaincall;
@@ -191,12 +202,18 @@ int dasics_dynamic_call(struct umaincall * CallContext)
          * Now, the got has been filled with the lib function address in the memory
          * we will check it.
          */
-        if (dynamic_level == 1)
-            target = force_redirect(_elf, target_name, _elf->_local_got_table[plt_idx + 2]);
-        else 
-            target = _elf->_local_got_table[plt_idx + 2];
+        target = _elf->_local_got_table[plt_idx + 2]; 
+        target_elf = _elf->target_elf[plt_idx + 2];     
 
-        target_elf = _get_area(target);
+        // Dasics call no need to redirect
+        if (dynamic_level != 1 && _elf->redirect_switch[plt_idx + 2])
+        {
+            if (target_elf->_copy_lib_elf)
+            {
+                target = target - target_elf->l_addr + target_elf->_copy_lib_elf->l_addr;
+                target_elf = target_elf->_copy_lib_elf;                
+            }
+        } 
     }
 
     CallContext->t1 = target;
