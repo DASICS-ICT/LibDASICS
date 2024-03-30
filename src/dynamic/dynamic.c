@@ -251,9 +251,10 @@ int create_umain_elf_chain(struct link_map * main_elf)
 
         // Calculate the number of got table
         int rela_got_num = 0;
-        for (rela_got_num  = 0; \
-                _elf->got_begin[rela_got_num] != judge_dynamic && _elf->got_begin[rela_got_num] != 0;\
-                    rela_got_num++);
+
+        // rela.plt only used for func, but .rela.dyn used for variable
+        rela_got_num = _elf->l_info[DT_PLTRELSZ]->d_un.d_val / sizeof(Elf64_Rela);
+
         // no got table
         if (rela_got_num == 0) goto no_pltgot;
 
@@ -270,7 +271,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
         if (_elf->_local_got_table == NULL || \
                 _elf->local_func == NULL || \
                     _elf->redirect_switch == NULL || \
-                        _elf->target_elf)
+                        _elf->target_elf == NULL)
         {
             dasics_printf("[DASICS ERROR]: dasics_malloc error\n");
             while(1);
