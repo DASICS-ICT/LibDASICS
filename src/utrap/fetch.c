@@ -6,20 +6,20 @@
 /* Handle DASICS Fetch Fault */ 
 int handle_DasicsUFetchFault(struct ucontext_trap * regs)
 {
-    dasics_printf("[DASICS_EXCEPTION]: Fetch fault\n");
+    // dasics_printf("[DASICS_EXCEPTION]: Fetch fault\n");
 
 
-    uint64_t dasics_return_pc = csr_read(0x8b1);            // DasicsReturnPC
+    uint64_t dasics_return_pc = csr_read(0x8b4);            // DasicsReturnPC
     uint64_t dasics_free_zone_return_pc = csr_read(0x8b2);  // DasicsFreeZoneReturnPC
 
 
-    dasics_printf("DASICS_EXCEPTION: utval: 0x%lx, record: 0x%lx\n", regs->utval, dasics_return_pc);
+    // dasics_printf("DASICS_EXCEPTION: utval: 0x%lx, record: 0x%lx\n", regs->utval, dasics_return_pc);
     
 
 
     if (dasics_return_pc != regs->utval)
     {
-        csr_write(0x8b1, regs->utval);
+        csr_write(0x8b4, regs->utval);
         return 0;
     }
         

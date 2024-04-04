@@ -152,10 +152,10 @@ int dasics_dynamic_call(struct umaincall * CallContext)
     umain_elf_t *target_elf = NULL;
     const char * target_name = _get_lib_name(_elf, plt_idx);
 
-    if (!handle_lib_mem(_elf, target_name, CallContext))
-    {
-        return 1;
-    }
+    // if (!handle_lib_mem(_elf, target_name, CallContext))
+    // {
+    //     return 1;
+    // }
 
     /* First time call */ 
     if (!_elf->_local_got_table[plt_idx + 2])
@@ -221,21 +221,21 @@ int dasics_dynamic_call(struct umaincall * CallContext)
 
 
     // Add memory support
-    if (!(target_elf->_flags & MAIN_AREA) && target_elf != _elf)
-    {
-        if (_elf->local_func[plt_idx + 2])
-            target_elf->namespace_func = _elf->local_func[plt_idx + 2];
-        else 
-        {
-            set_global_func_man(target_elf, target);
-            // Next time 
-            _elf->local_func[plt_idx + 2] = target_elf->namespace_func; 
-        }
-    }
+    // if (!(target_elf->_flags & MAIN_AREA) && target_elf != _elf)
+    // {
+    //     if (_elf->local_func[plt_idx + 2])
+    //         target_elf->namespace_func = _elf->local_func[plt_idx + 2];
+    //     else 
+    //     {
+    //         set_global_func_man(target_elf, target);
+    //         // Next time 
+    //         _elf->local_func[plt_idx + 2] = target_elf->namespace_func; 
+    //     }
+    // }
 
-    // dasics_printf("[LOG]: DASICS lib (%s), name: %s\n", _elf->real_name, _get_lib_name(_elf, plt_idx));
+    // // dasics_printf("[LOG]: DASICS lib (%s), name: %s\n", _elf->real_name, _get_lib_name(_elf, plt_idx));
 
-    cross_call(_elf, target_elf, target_name, CallContext);
+    // cross_call(_elf, target_elf, target_name, CallContext);
 
 
     dynamic_level--;

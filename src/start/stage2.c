@@ -97,7 +97,7 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
                         (uint64_t)_umain_elf_table->got_begin, \
                         (uint64_t)_umain_elf_table->got_begin + sizeof(uint64_t) * (_umain_elf_table->got_num + 2));
     original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R | DASICS_LIBCFG_W, \
-                TASK_SIZE/2, \
+                0, \
                 TASK_SIZE);
     original_jumpcfg_alloc(TASK_SIZE/2, TASK_SIZE);
 

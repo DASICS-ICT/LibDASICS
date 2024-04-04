@@ -6,6 +6,7 @@
 #include <udasics.h>
 
 uint64_t user_sp = 0;
+extern char _start[];
 /* 
  * if we get the _dll_linker from the auxv which means that 
  * the program need a dynamic linker for stage one, we will 
@@ -26,7 +27,7 @@ void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
     if (_dll_linker && _get_auxv_entry(sp, AT_DASICS))
     {
         // change the elf_enrtry to  _umain_entry
-        _set_auxv_entry(sp, AT_ENTRY, (uint64_t)_setup_mainlib_entry);
+        // _set_auxv_entry(sp, AT_ENTRY, (uint64_t)_setup_mainlib_entry);
 
         dasics_stage = 1;
 
@@ -41,10 +42,14 @@ void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
         original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R | DASICS_LIBCFG_W, \
                     0, \
                     TASK_SIZE);
-        original_jumpcfg_alloc(0, TASK_SIZE);
+        original_jumpcfg_alloc(TASK_SIZE/2, TASK_SIZE);
 
         // set a trap entry for link time
-        csr_write(0x005, (uint64_t)_setup_fault);
+        // csr_write(0x005, (uint64_t)_setup_fault);
+        csr_write(0x005,  (uint64_t)dasics_ufault_entry);
+    
+        _set_auxv_entry(sp, AT_DASICS, 0);
+        _set_auxv_entry(sp, AT_ENTRY, (uint64_t)_start);
         // Transfer executive authority to dynamic linker
         RESET_ENTRY(sp, _dll_linker);
     }
