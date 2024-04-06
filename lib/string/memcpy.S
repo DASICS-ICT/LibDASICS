@@ -35,7 +35,7 @@ ENTRY(dasics_memcpy)
 	add a3, a1, a4
 3:
 	ld a4,       0(a1)
-	ld a5,   (a1)
+	ld a5,   RISCV_SZPTR(a1)
 	ld a6, 2*RISCV_SZPTR(a1)
 	ld a7, 3*RISCV_SZPTR(a1)
 	ld t0, 4*RISCV_SZPTR(a1)
@@ -54,12 +54,12 @@ ENTRY(dasics_memcpy)
 	sd t3, 7*RISCV_SZPTR(t6)
 	sd t4, 8*RISCV_SZPTR(t6)
 	sd t5, 9*RISCV_SZPTR(t6)
-	sd a4, 10*RISCV_SZPTR(a1)
-	sd a5, 11*RISCV_SZPTR(a1)
-	sd a6, 12*RISCV_SZPTR(a1)
-	sd a7, 13*RISCV_SZPTR(a1)
-	sd t0, 14*RISCV_SZPTR(a1)
-	sd t1, 15*RISCV_SZPTR(a1)
+	ld a4, 10*RISCV_SZPTR(a1)
+	ld a5, 11*RISCV_SZPTR(a1)
+	ld a6, 12*RISCV_SZPTR(a1)
+	ld a7, 13*RISCV_SZPTR(a1)
+	ld t0, 14*RISCV_SZPTR(a1)
+	ld t1, 15*RISCV_SZPTR(a1)
 	addi a1, a1, 16*RISCV_SZPTR
 	sd a4, 10*RISCV_SZPTR(t6)
 	sd a5, 11*RISCV_SZPTR(t6)
@@ -100,8 +100,3 @@ ENTRY(dasics_memcpy)
 	ret
 
 END(dasics_memcpy)
-
-
-
-
-
