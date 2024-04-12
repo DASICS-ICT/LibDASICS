@@ -130,12 +130,6 @@ int dasics_dynamic_call(struct umaincall * CallContext)
     // Judge dynamic call
     if (!_elf || *(uint32_t *)CallContext->t1 != NOP) return 0;
 
-    // Calculate plt begin
-    if (!_elf->plt_begin) {
-        init_elf_plt(_elf, (uint32_t *)(CallContext->t1 - 0xc), \
-                                (uint64_t *)_elf->got_begin);
-    }
-
     dynamic_level++;
 
 

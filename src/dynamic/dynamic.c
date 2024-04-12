@@ -255,6 +255,14 @@ int create_umain_elf_chain(struct link_map * main_elf)
         // rela.plt only used for func, but .rela.dyn used for variable
         rela_got_num = _elf->l_info[DT_PLTRELSZ]->d_un.d_val / sizeof(Elf64_Rela);
 
+        Elf64_Rela * rela = (Elf64_Rela * )_elf->l_info[DT_JMPREL]->d_un.d_val;
+        Elf64_Sym * sym = (Elf64_Sym * )_elf->l_info[DT_SYMTAB]->d_un.d_val;
+        
+        _elf->plt_begin = sym[ELFW(R_SYM) (rela[0].r_info)].st_value - 0x20;
+        _elf->_plt_start = sym[ELFW(R_SYM) (rela[0].r_info)].st_value;
+        _elf->_plt_end = _elf->_plt_start + 0x10 * _elf->got_num;  
+        
+
         // no got table
         if (rela_got_num == 0) goto no_pltgot;
 
