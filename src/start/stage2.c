@@ -37,7 +37,7 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
         /* code */
         if (!dasics_strcmp(tmp->l_name, _interp_start))
         {
-            dll_fixup_handler = (fixup_entry_t)(tmp->l_addr + 0xac66);
+            dll_fixup_handler = (fixup_entry_t)(tmp->l_addr + 0xb448);
         }
     }
 #endif
@@ -50,12 +50,12 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     
     
     /* open maincall for dynamic */
-    _open_maincall();
+    // _open_maincall();
 
 #ifdef DASICS_DEBUG
     dasics_printf("> [INIT] Init maincall for dynamic successfully\n");
 #endif
-    init_cross_stack();
+    // init_cross_stack();
 
 #ifdef DASICS_DEBUG
     dasics_printf("> [INIT] Init corss stack successfully\n");

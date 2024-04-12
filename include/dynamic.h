@@ -26,6 +26,8 @@ struct func_mem;
 
 typedef struct umain_elf
 {
+   uint64_t *_local_got_table; /* Num of lib call */    
+
    ElfW(Addr) l_addr;		/* Difference between the address in the ELF
             file and the addresses in memory.  */
    char l_name[256];	      /* Module name, for 256 */
@@ -57,7 +59,6 @@ typedef struct umain_elf
    uint64_t got_num     ;
    uint64_t dynamic     ;		/* Dynamic section of the shared object.  */
 
-   uint64_t *_local_got_table; /* Num of lib call */
    struct func_mem **local_func; /* Find func_mem fast */
    int * redirect_switch;       /* Redirect switch */
    struct umain_elf ** target_elf; /* Target elf */
@@ -91,7 +92,12 @@ extern umain_elf_t * _umain_elf_table;
 int create_umain_elf_chain(struct link_map * main_elf);
 void open_memory(umain_elf_t * _main);
 struct link_map * get_main_link();
+extern void dynamic_hook();
+
 void init_elf_plt(umain_elf_t * elf, uint32_t * pltPc, uint64_t * gotAddr);
+
+
+
 
 // check is elf
 static inline int is_elf_format(unsigned char *binary)

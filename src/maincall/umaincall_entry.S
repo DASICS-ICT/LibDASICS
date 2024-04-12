@@ -1,5 +1,6 @@
 #include <asm/asm.h>
 #include <asm/offset.h>
+#include <ucsr.h>
 
 // MAINCALL used registers
 .macro SAVE_MAINCALL
@@ -52,6 +53,24 @@ ENTRY(dasics_umaincall)
     RESTORE_MAINCALL
     jr t1
 END(dasics_umaincall)
+
+#-----------------------------------------------------------------------
+# dynamic hook: dynamic call, set hook for outer function call
+#-----------------------------------------------------------------------
+# t0 will be umain_elf_t
+# t1 will be the offset
+# never use parameter transfer register
+ENTRY(dynamic_hook)
+    ld t2, (t0)
+    add t2, t2, t1
+    ld t2, 16(t2)
+
+#ifdef DASICS_LINUX
+    csrw CSR_DFZRETURN, ra
+#endif
+
+    jr t2
+END(dynamic_hook)
 
 
 #-----------------------------------------------------------------------

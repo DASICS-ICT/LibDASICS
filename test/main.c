@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     // Add exit function 
     
     atexit(exit_function);
-    register_udasics(0);
+    // register_udasics(0);
 
     char * tempelate = "I am messgae which contains a very long message: %d";
 
@@ -53,6 +53,6 @@ int main(int argc, char *argv[]) {
 
     call_and_record(FREE, NULL);
 
-    unregister_udasics();
+    // unregister_udasics();
     return 0;
 }

@@ -47,10 +47,51 @@ static void _fill_module_name(const char * l_name, umain_elf_t * elf)
 }
 
 /*
+ * This function is used for no lazy dynamic call
+ * Found all the target function addr
+ */
+
+static void _fill_local_got(umain_elf_t * elf)
+{
+    for (int i = 2; i < elf->got_num; i++)
+    {
+        /*
+        * We found that the Plt[x] wants to use dely binding to find the fucntion,
+        * and we prepare all the parameters, and jump
+        * 
+        * dll_a0: the got[1], struct link_map of the library
+        * dll_a1: the thrice of the plt table offset
+        * ulib_func: the addr of the ulib function 
+        */
+
+        uint64_t dll_a0 = (uint64_t)elf->map_link;
+        uint64_t dll_a1 = (((uint64_t)(i - 2) * 0x10UL) >> 1) * 3;
+        uint64_t ulib_func = elf->fixup_handler(dll_a0, dll_a1);   
+
+        elf->_local_got_table[i] = ulib_func;
+        // Recover the plt begin
+            // Only elf needed
+        if (elf == _umain_elf_table)
+        {
+            elf->got_begin[i] = (uint64_t)elf->plt_begin;     
+        }
+    }
+
+    // Only elf needed
+    if (elf == _umain_elf_table)
+    {
+        // Finally, the got[0] will be the hook, and got[1] will elf
+        elf->got_begin[0] = (uint64_t)dynamic_hook;
+        elf->got_begin[1] = (uint64_t)elf;        
+    }
+
+}
+
+/*
  * According to the binary to scan the phdr
  *  get all the _*_start, _*_enf
  */
-void _fill_module_map(umain_elf_t * elf)
+static void _fill_module_map(umain_elf_t * elf)
 {
     // binary image
 
@@ -255,14 +296,13 @@ int create_umain_elf_chain(struct link_map * main_elf)
         // rela.plt only used for func, but .rela.dyn used for variable
         rela_got_num = _elf->l_info[DT_PLTRELSZ]->d_un.d_val / sizeof(Elf64_Rela);
 
-        Elf64_Rela * rela = (Elf64_Rela * )_elf->l_info[DT_JMPREL]->d_un.d_val;
-        Elf64_Sym * sym = (Elf64_Sym * )_elf->l_info[DT_SYMTAB]->d_un.d_val;
+        Elf64_Rela * rela = (Elf64_Rela * )(_elf->l_info[DT_JMPREL]->d_un.d_val + _elf->l_addr);
+        Elf64_Sym * sym = (Elf64_Sym * )(_elf->l_info[DT_SYMTAB]->d_un.d_val + _elf->l_addr);
         
-        _elf->plt_begin = sym[ELFW(R_SYM) (rela[0].r_info)].st_value - 0x20;
+        _elf->plt_begin = (uint64_t *)(sym[ELFW(R_SYM) (rela[0].r_info)].st_value  - 0x20);
         _elf->_plt_start = sym[ELFW(R_SYM) (rela[0].r_info)].st_value;
         _elf->_plt_end = _elf->_plt_start + 0x10 * _elf->got_num;  
         
-
         // no got table
         if (rela_got_num == 0) goto no_pltgot;
 
@@ -271,9 +311,14 @@ int create_umain_elf_chain(struct link_map * main_elf)
         _elf->local_func = (struct func_mem **)dasics_malloc(rela_got_num * sizeof(struct func_mem *));
         _elf->redirect_switch = (int *)dasics_malloc(rela_got_num * sizeof(int));
         _elf->target_elf = (umain_elf_t **)dasics_malloc(rela_got_num * sizeof(umain_elf_t *));
+        // Now, we will calculate all JMPREL's value，and copy them to the local got table
+        
+        // _elf->map_link = (struct link_map *)_elf->got_begin[1];
 
         // fill the *_start, *_end of 
         _fill_module_map(_elf);
+
+
 
 
         if (_elf->_local_got_table == NULL || \
@@ -307,6 +352,9 @@ no_pltgot:
             _umain_elf_table->umain_elf_prev = _elf;
         }
 
+        // Linker not do
+        if (dasics_strcmp(_elf->l_name, _interp_start))
+            _fill_local_got(_elf);
     jump:
         _map_init = _map_init->l_next;
 
