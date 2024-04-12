@@ -132,6 +132,7 @@ int dasics_dynamic_call(struct umaincall * CallContext)
 
     dynamic_level++;
 
+    assert(_elf->plt_begin != NULL);
 
     int plt_idx = _is_plt_area(CallContext->t1, _elf);
 
