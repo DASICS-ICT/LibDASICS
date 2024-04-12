@@ -233,9 +233,9 @@ int dasics_vprintf(const char *fmt, va_list _va)
     va_copy(va, _va);
 
     int ret;
-    char buff[256];
+    char buff[1024];
 
-    ret = mini_vsnprintf(buff, 256, fmt, va);
+    ret = mini_vsnprintf(buff, 1024, fmt, va);
 
     buff[ret] = '\0';
 
