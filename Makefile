@@ -15,7 +15,7 @@ DIR_SRC			= src
 DIR_LIB			= lib
 
 DIR_TEST		= test
-UCFLAGS			= -O2 -g -MMD $(INCLUDE) -I$(DIR_TEST)/include -MMD
+UCFLAGS			= -O0 -g -MMD $(INCLUDE) -I$(DIR_TEST)/include -MMD
 # target files
 # LIB FILE, stand alone, not depend on any other standard library
 LIB_FILES_C		= $(wildcard $(DIR_LIB)/*/*.c)
@@ -82,8 +82,7 @@ $(LibDASICS): $(OBJ_FILES)
 
 
 test: $(LibDASICS) $(TEST_SO_OBJ)
-	@$(CC) $(UCFLAGS) $(TEST_FILES) -o ./build/test -T./ld.lds $(LibDASICS) ./build/malloc-free.so 
-
+	@$(CC) -static $(UCFLAGS) $(TEST_FILES) -o ./build/test -T./ld-nested.lds $(LibDASICS)
 	@echo + CC ./build/test
 	@$(OBJDUMP) -d ./build/test > $(DIR_BUILD)/test.txt
 	@echo + OBJDUMP ./build/test

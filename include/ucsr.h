@@ -35,7 +35,7 @@
 
 #define CSR_DLCFG           0x880
 
-#define CSR_DLBOUND0LO      0x890
+#define CSR_DLBOUND0LO      890
 #define CSR_DLBOUND0HI      0x891
 #define CSR_DLBOUND1LO      0x892
 #define CSR_DLBOUND1HI      0x893
@@ -69,7 +69,7 @@
 #define CSR_DLBOUND15HI     0x8af
 
 #define CSR_DMAINCALL       0x8b0
-#define CSR_DRETURNPC       0x8b1
+#define CSR_DRETURNPC       0x8b4
 #define CSR_DFZRETURN       0x8b2
 
 #define CSR_DJBOUND0LO      0x8c0

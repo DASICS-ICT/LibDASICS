@@ -50,6 +50,7 @@ ENTRY(dasics_umaincall)
     ld   t0, umaincall_helper
     jalr t0
     RESTORE_MAINCALL
+    fence.i
     jr t1
 END(dasics_umaincall)
 

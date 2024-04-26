@@ -28,6 +28,11 @@
         .balign 4;                              \
         name:
 
+#define ULIBENTRY(name)                             \
+        .globl name;                            \
+        .balign 4;                              \
+        name:
+
 #define RISCV_PTR		.dword
 #define RISCV_SZPTR		8
 #define RISCV_LGPTR		3

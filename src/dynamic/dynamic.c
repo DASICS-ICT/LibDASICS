@@ -332,6 +332,7 @@ void open_memory(umain_elf_t * _main)
 
 struct link_map * get_main_link()
 {
+#ifdef DASICS_DYNAMIC
     // get the struct link_map
     Elf64_Dyn * dyn =  NULL;
     struct r_debug * debug_extended =  NULL;
@@ -355,6 +356,11 @@ struct link_map * get_main_link()
     }    
 
     return link;
+#else 
+
+    return NULL;
+#endif
+
 }
 
 void init_elf_plt(umain_elf_t * elf, uint32_t * pltPc, uint64_t * gotAddr)
