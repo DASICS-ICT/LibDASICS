@@ -27,6 +27,7 @@ typedef enum {
     Umaincall_PRINT,
     Umaincall_GET_TICK,
     Umaincall_switch,
+    Umaincall_getclock,
     Umaincall_UNKNOWN
 } UmaincallTypes;
 

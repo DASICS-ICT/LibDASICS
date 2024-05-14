@@ -8,6 +8,7 @@
 #include <dasics_stdio.h>
 #include <umaincall.h>
 #include <uwrapper.h>
+#include <time.h>
 
 uint64_t umaincall_helper;
 permission_t obstack[4096];
@@ -390,6 +391,11 @@ uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
             // Do sys_get_ticks
             regs->a0 = (uint64_t)invoke_syscall(248, 0 , 0, 0, 0, 0, 0, 0);
             break;
+
+        case Umaincall_getclock:
+            // Do sys_get_ticks
+            regs->a0 = clock();     
+            break;       
         default:
             printf("\x1b[33m%s\x1b[0m","Warning: Invalid umaincall number %d!\n", type); //could not use printf in kernel
             break;

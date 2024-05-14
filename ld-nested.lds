@@ -43,6 +43,7 @@ SECTIONS
     __ULIBTEXT_BEGIN__ = .;
     *(.ulibtext)
     __ULIB1TEXT_BEGIN__ = .;
+    . = ALIGN(64 / 8);
     *(.ulib1text)
     . = ALIGN(64 / 8);
     __ULIB2TEXT_BEGIN__ = .;

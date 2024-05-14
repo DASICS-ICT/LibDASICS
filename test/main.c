@@ -90,6 +90,7 @@ void ATTR_ULIB2_TEXT dasics_ulib2(void){
 
 void ATTR_ULIB1_TEXT dasics_ulib_nested(void) {
     uint64_t dasicsNestedPreticks = dasics_umaincall(Umaincall_GET_TICK);
+    // uint64_t dasicsNestedPreticks = dasics_umaincall(Umaincall_getclock);
     for (int i = 0; i < 10000; i++)
     {
     #ifdef PRINT_DEBUG
@@ -123,6 +124,8 @@ void ATTR_ULIB1_TEXT dasics_ulib_nested(void) {
     }
     
     uint64_t dasicsNestedAfterticks = dasics_umaincall(Umaincall_GET_TICK);
+    // uint64_t dasicsNestedAfterticks = dasics_umaincall(Umaincall_getclock);
+
     dasics_umaincall(Umaincall_PRINT, "> [RESULT] Nested use ticks: 0x%lx\n", dasicsNestedAfterticks - dasicsNestedPreticks);
 
 }
@@ -134,6 +137,8 @@ void ATTR_ULIB1_TEXT dasics_ulib_maincall(void)
 {
 
     uint64_t dasicsMincallPreticks = dasics_umaincall(Umaincall_GET_TICK);
+    // uint64_t dasicsMincallPreticks = dasics_umaincall(Umaincall_getclock);
+
     for (int i = 0; i < 10000; i++)
     {
         // Set new permission
@@ -180,6 +185,7 @@ void ATTR_ULIB1_TEXT dasics_ulib_maincall(void)
 
     }
     uint64_t dasicsMincallAfterticks = dasics_umaincall(Umaincall_GET_TICK);
+    // uint64_t dasicsMincallAfterticks = dasics_umaincall(Umaincall_getclock);
     
 
     dasics_umaincall(Umaincall_PRINT, "> [RESULT] Mincall use ticks: 0x%lx\n", dasicsMincallAfterticks - dasicsMincallPreticks);
