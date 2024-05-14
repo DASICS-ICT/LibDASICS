@@ -1,6 +1,6 @@
 # compile logic
 CROSS_COMPILE	?= riscv64-unknown-linux-gnu-
-CC				= $(CROSS_COMPILE)clang
+CC				= $(CROSS_COMPILE)gcc
 OBJDUMP			= $(CROSS_COMPILE)objdump
 AR				= $(CROSS_COMPILE)ar
 RANLIB			= $(CROSS_COMPILE)ranlib
