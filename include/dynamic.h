@@ -94,7 +94,7 @@ struct link_map * get_main_link();
 void init_elf_plt(umain_elf_t * elf, uint32_t * pltPc, uint64_t * gotAddr);
 
 // check is elf
-static inline int is_elf_format(unsigned char *binary)
+static inline int is_elf_format(char *binary)
 {
 
    const ElfW(Ehdr) *ehdr = (ElfW(Ehdr) *)binary;

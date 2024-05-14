@@ -1,6 +1,6 @@
 # compile logic
 CROSS_COMPILE	?= riscv64-unknown-linux-gnu-
-CC				= $(CROSS_COMPILE)gcc
+CC				= $(CROSS_COMPILE)clang
 OBJDUMP			= $(CROSS_COMPILE)objdump
 AR				= $(CROSS_COMPILE)ar
 RANLIB			= $(CROSS_COMPILE)ranlib
@@ -8,7 +8,7 @@ RANLIB			= $(CROSS_COMPILE)ranlib
 # C flags
 INCLUDE			= -Iinclude
 
-CFLAGS			= -O2 -g -MMD $(INCLUDE) -DDASICS_LINUX -DDASICS_COPY -DDASICS_DEBUG
+CFLAGS			= -O2 -g -MMD -Wno-c23-extensions -Wno-varargs $(INCLUDE) -DDASICS_LINUX -DDASICS_COPY -DDASICS_DEBUG
 
 ifdef USER_DEFINE
     CFLAGS += -D$(USER_DEFINE)

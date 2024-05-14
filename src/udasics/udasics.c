@@ -179,7 +179,7 @@ uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
         break;
 
         default:
-            printf("\x1b[33m%s\x1b[0m","Warning: Invalid umaincall number %d!\n", type); //could not use printf in kernel
+            printf("\x1b[33m Warning: Invalid umaincall number %d!\n\x1b[0m", type); //could not use printf in kernel
             break;
     }
 

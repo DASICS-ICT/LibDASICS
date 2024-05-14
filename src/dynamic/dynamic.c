@@ -258,7 +258,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
         Elf64_Rela * rela = (Elf64_Rela * )(_elf->l_info[DT_JMPREL]->d_un.d_val + _elf->l_addr);
         Elf64_Sym * sym = (Elf64_Sym * )(_elf->l_info[DT_SYMTAB]->d_un.d_val + _elf->l_addr);
         
-        if (_elf->got_begin[1] = (uint64_t)_map_init)
+        if (_elf->got_begin[1] == (uint64_t)_map_init)
         {
             dasics_printf("[DASICS ERROR]: DASICS dynamic init failed, gotplt[1] should be plt_begin\n");
             while(1);            
