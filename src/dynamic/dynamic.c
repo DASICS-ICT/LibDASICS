@@ -350,6 +350,7 @@ struct link_map * get_main_link()
     // get the struct link_map
     Elf64_Dyn * dyn =  NULL;
     struct r_debug * debug_extended =  NULL;
+#ifdef DYNAMIC
     for(dyn = _DYNAMIC; dyn->d_tag != DT_NULL; ++dyn)
     {
         if(dyn->d_tag == DT_DEBUG)
@@ -357,7 +358,7 @@ struct link_map * get_main_link()
             debug_extended = (struct r_debug *)dyn->d_un.d_ptr;
         }          
     }
-    
+#endif
     struct link_map * link = NULL;
 
     if (debug_extended == NULL)
