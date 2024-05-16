@@ -6,6 +6,8 @@
 #include <uwrapper.h>
 // #define PRINT_DEBUG
 
+#define readcycle csr_read(cycle)
+
 static long invoke_syscall(long sysno, long arg0, long arg1, long arg2,
                            long arg3, long arg4, long arg5, long arg6)
 {
@@ -58,8 +60,8 @@ void foo(void)
     printf("[Constructor] I am a Constructor function\n\n");
 }
 
-#pragma GCC push_options
-#pragma GCC optimize("O0")
+// #pragma GCC push_options
+// #pragma GCC optimize("O0")
 static void ATTR_ULIB1_TEXT dasics_ulib1_printf(uint64_t fmt){
     dasics_umaincall(Umaincall_PRINT,fmt,0,0);
 }
@@ -89,10 +91,14 @@ void ATTR_ULIB2_TEXT dasics_ulib2(void){
 }
 
 void ATTR_ULIB1_TEXT dasics_ulib_nested(void) {
-    uint64_t dasicsNestedPreticks = dasics_umaincall(Umaincall_GET_TICK);
+    // uint64_t dasicsNestedPreticks = dasics_umaincall(Umaincall_GET_TICK);
     // uint64_t dasicsNestedPreticks = dasics_umaincall(Umaincall_getclock);
-    for (int i = 0; i < 10000; i++)
+
+
+    for (int i = 0; i < 100; i++)
     {
+        uint64_t dasicsNestedPreticks = readcycle;
+
     #ifdef PRINT_DEBUG
         dasics_ulib1_printf((uint64_t) ulib1_readonly);
         dasics_ulib1_printf((uint64_t) ulib1_rwbuffer);
@@ -121,12 +127,16 @@ void ATTR_ULIB1_TEXT dasics_ulib_nested(void) {
         dasics_ulib_libcfg_free(idx1);
         dasics_ulib_libcfg_free(idx0);
         dasics_ulib_jumpcfg_free(idx_ulib2);
+        uint64_t dasicsNestedAfterticks = readcycle;
+
+
+        dasics_umaincall(Umaincall_PRINT, "> [RESULT] Nested use ticks: %d\n", dasicsNestedAfterticks - dasicsNestedPreticks);
+
     }
     
-    uint64_t dasicsNestedAfterticks = dasics_umaincall(Umaincall_GET_TICK);
+    // uint64_t dasicsNestedAfterticks = dasics_umaincall(Umaincall_GET_TICK);
     // uint64_t dasicsNestedAfterticks = dasics_umaincall(Umaincall_getclock);
 
-    dasics_umaincall(Umaincall_PRINT, "> [RESULT] Nested use ticks: 0x%lx\n", dasicsNestedAfterticks - dasicsNestedPreticks);
 
 }
 
@@ -136,11 +146,16 @@ void ATTR_ULIB1_TEXT dasics_ulib_nested(void) {
 void ATTR_ULIB1_TEXT dasics_ulib_maincall(void)
 {
 
-    uint64_t dasicsMincallPreticks = dasics_umaincall(Umaincall_GET_TICK);
+    // uint64_t dasicsMincallPreticks = dasics_umaincall(Umaincall_GET_TICK);
     // uint64_t dasicsMincallPreticks = dasics_umaincall(Umaincall_getclock);
 
-    for (int i = 0; i < 10000; i++)
+    // uint64_t dasicsMincallPreticks = readcycle;
+
+
+    for (int i = 0; i < 100; i++)
     {
+        uint64_t dasicsMincallPreticks = readcycle;
+    
         // Set new permission
     #ifdef PRINT_DEBUG
         dasics_ulib1_printf((uint64_t) ulib1_readonly);
@@ -183,16 +198,24 @@ void ATTR_ULIB1_TEXT dasics_ulib_maincall(void)
         dasics_ulib1_printf((uint64_t)ulib2_rwbuffer);    // That's ok
     #endif
 
+        uint64_t dasicsMincallAfterticks = readcycle;
+
+        
+
+        dasics_umaincall(Umaincall_PRINT, "> [RESULT] Mincall use ticks: %d\n", dasicsMincallAfterticks - dasicsMincallPreticks);
+
     }
-    uint64_t dasicsMincallAfterticks = dasics_umaincall(Umaincall_GET_TICK);
+    // uint64_t dasicsMincallAfterticks = dasics_umaincall(Umaincall_GET_TICK);
     // uint64_t dasicsMincallAfterticks = dasics_umaincall(Umaincall_getclock);
+    // uint64_t dasicsMincallAfterticks = readcycle;
+
     
 
-    dasics_umaincall(Umaincall_PRINT, "> [RESULT] Mincall use ticks: 0x%lx\n", dasicsMincallAfterticks - dasicsMincallPreticks);
+    // dasics_umaincall(Umaincall_PRINT, "> [RESULT] Mincall use ticks: 0x%lx\n", dasicsMincallAfterticks - dasicsMincallPreticks);
 
 }
 
-#pragma GCC pop_options
+// #pragma GCC pop_options
 
 const char * test_str = "RISCV";
 const char * format_str = "[%s] Hello riscv world: %d!\n";
