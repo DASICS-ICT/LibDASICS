@@ -26,7 +26,9 @@ struct func_mem;
 
 typedef struct umain_elf
 {
-   uint64_t *_local_got_table; /* Num of lib call */    
+   uint64_t *_local_got_table; /* Num of lib call */   
+   uint64_t *_local_call_time; /* Call num of a outer func */ 
+   uint64_t calculate;
 
    ElfW(Addr) l_addr;		/* Difference between the address in the ELF
             file and the addresses in memory.  */
@@ -73,6 +75,8 @@ typedef struct umain_elf
 
    uint64_t _flags;           /* Define in dasics_link_manager */
 
+   ElfW(Addr) l_relro_addr;
+   ElfW(Addr) l_relro_size; 
 
    /* record the _text, plt, r_only_area, _w_area(imply read) */
    uint64_t _text_start, _text_end;
@@ -93,6 +97,8 @@ int create_umain_elf_chain(struct link_map * main_elf);
 void open_memory(umain_elf_t * _main);
 struct link_map * get_main_link();
 extern void dynamic_hook();
+extern void dynamic_fault();
+
 
 void init_elf_plt(umain_elf_t * elf, uint32_t * pltPc, uint64_t * gotAddr);
 

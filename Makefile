@@ -7,7 +7,7 @@ RANLIB			= $(CROSS_COMPILE)ranlib
 
 # C flags
 INCLUDE			= -Iinclude
-CFLAGS			= -O0 -g -MMD $(INCLUDE)# -DDASICS_LINUX -DDASICS_COPY -DDASICS_DEBUG
+CFLAGS			= -O0 -g -MMD $(INCLUDE) -DDASICS_LINUX -DDASICS_DEBUG
 # build di0
 DIR_PWD			?= 
 DIR_BUILD		= build
@@ -38,7 +38,7 @@ TEST_SO_OBJ		= $(addprefix build/, \
 						$(addsuffix .so, $(basename $(TEST_SO_FILES))))
 
 # Lib target
-LibDASICS		= $(DIR_BUILD)/LibDASICS.a
+LibDASICS		= $(DIR_BUILD)/libDASICS.a
 
 
 .PHONY: all

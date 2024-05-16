@@ -61,14 +61,26 @@ END(dasics_umaincall)
 # t1 will be the offset
 # never use parameter transfer register
 ENTRY(dynamic_hook)
+//  if (_umain_elf_table->calculate == 1)
+//      _umain_elf_table->_local_call_time[$t2 + 2]++;
+    ld t2, 16(t0)
+    beqz t2, jump
+
+    ld t2, 8(t0)
+    add t3, t2, t1
+    ld t2, 16(t3)
+    addi t2, t2, 1
+    sd t2, 16(t3)
+jump:
+
     ld t2, (t0)
     add t2, t2, t1
     ld t2, 16(t2)
 
 #ifdef DASICS_LINUX
-    csrw CSR_DFZRETURN, ra
+    csrw CSR_DRETURNPC, ra
 #endif
-
+    fence.i
     jr t2
 END(dynamic_hook)
 

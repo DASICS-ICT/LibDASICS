@@ -43,7 +43,7 @@
 
     csrr t0, CSR_UTVAL
     sd t0, OFFSET_TRAP_UTVAL(sp)
-
+    fence.i
 .endm
 
 .macro RESTORE_CONTEXT
@@ -85,6 +85,7 @@
     ld t6, OFFSET_TRAP_T6(sp)
 
     addi sp, sp, OFFSET_SIZE
+    fence.i
 .endm
 
 #--------------------------------------------------------------------
@@ -119,3 +120,17 @@ ENTRY(_setup_fault)
     ret
 END(_setup_fault)
 
+
+ENTRY(dynamic_fault)
+    addi sp, sp, -0x8
+    sd t0, (sp)
+
+    csrr t0, CSR_UTVAL
+    csrw CSR_DRETURNPC, t0
+
+    fence.i
+
+    ld t0, (sp)
+    addi sp, sp, 0x8
+    uret
+END(dynamic_fault)

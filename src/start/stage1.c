@@ -34,6 +34,8 @@ void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
 #ifdef DASICS_DEBUG
         dasics_printf("> [INIT] Init syscall_check_table successfully\n");        
 #endif
+
+        _set_auxv_entry(sp, AT_DASICS, 3);
         /* 
          * give all lib area be VALID, READ, WRITE, FREE
          * This is not safe

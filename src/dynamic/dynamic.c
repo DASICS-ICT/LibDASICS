@@ -13,6 +13,7 @@
 #include <stdlib.h>
 
 umain_elf_t * _umain_elf_table = NULL;
+umain_elf_t * dasics_main_elf = NULL;
 int dasics_stage = 0;
 
 extern char _interp_start[];
@@ -53,7 +54,11 @@ static void _fill_module_name(const char * l_name, umain_elf_t * elf)
 
 static void _fill_local_got(umain_elf_t * elf)
 {
-    for (int i = 2; i < elf->got_num; i++)
+    elf->plt_begin = (uint64_t *)elf->got_begin[3];
+    elf->_plt_start = (uint64_t)elf->plt_begin + 0x20;
+    elf->_plt_end = elf->_plt_start + 0x10 * elf->got_num;  
+
+    for (int i = 2; i < elf->got_num + 2; i++)
     {
         /*
         * We found that the Plt[x] wants to use dely binding to find the fucntion,
@@ -71,18 +76,29 @@ static void _fill_local_got(umain_elf_t * elf)
         elf->_local_got_table[i] = ulib_func;
         // Recover the plt begin
             // Only elf needed
-        if (elf == _umain_elf_table)
+        if (elf == dasics_main_elf)
         {
             elf->got_begin[i] = (uint64_t)elf->plt_begin;     
         }
     }
 
     // Only elf needed
-    if (elf == _umain_elf_table)
+    if (elf == dasics_main_elf)
     {
-        // Finally, the got[0] will be the hook, and got[1] will elf
+
+        // Finally, the got[0] will be the hook, and got[1] will elf        
+        // Eable the got's PAGE be readable
+        uint64_t start = ROUNDDOWN(elf->l_relro_addr, PAGE_SIZE);
+        uint64_t end = ROUND(elf->l_relro_addr + elf->l_relro_size, PAGE_SIZE);
+        
+        _dasics_mprotect((void *)start, \
+                         end - start, \
+                         PROT_READ | PROT_WRITE);
         elf->got_begin[0] = (uint64_t)dynamic_hook;
-        elf->got_begin[1] = (uint64_t)elf;        
+        elf->got_begin[1] = (uint64_t)elf;  
+        _dasics_mprotect((void *)start, \
+                         end - start, \
+                         PROT_READ);      
     }
 
 }
@@ -125,9 +141,12 @@ setup:
     {
         #define ADD_TWO(X, Y)((X) + (Y))
         #define ADD_THREE(X, Y, Z)((X) + (Y) + (Z))
-        if (_Phdr[_i].p_type == PT_LOAD)
+
+        switch (_Phdr[_i].p_type)
         {
-            // Only set for the executable
+        case PT_LOAD:
+            /* code */
+                        // Only set for the executable
             if (!_set_map)
             {
                 elf->_map_start = ADD_TWO(_Phdr[_i].p_vaddr, \
@@ -193,6 +212,15 @@ setup:
                                                 _Phdr[_i].p_memsz, \
                                                 elf->l_addr);
             } 
+            break;
+
+        case PT_GNU_RELRO:
+            elf->l_relro_addr = _Phdr[_i].p_vaddr + elf->l_addr;  
+            elf->l_relro_size = _Phdr[_i].p_memsz;
+            break;
+
+        default:
+            break;
         }
     }
 }
@@ -296,28 +324,19 @@ int create_umain_elf_chain(struct link_map * main_elf)
         // rela.plt only used for func, but .rela.dyn used for variable
         rela_got_num = _elf->l_info[DT_PLTRELSZ]->d_un.d_val / sizeof(Elf64_Rela);
 
-        if (_elf->got_begin[1] = (uint64_t)_map_init)
-        {
-            dasics_printf("[DASICS ERROR]: DASICS dynamic init failed, gotplt[1] should be plt_begin\n");
-            while(1);            
-        }
-
-        _elf->plt_begin = (uint64_t *)_elf->got_begin[1];
-        _elf->got_begin[1] = (uint64_t)_map_init;
-        _elf->_plt_start = (uint64_t)_elf->plt_begin + 0x20;
-        _elf->_plt_end = _elf->_plt_start + 0x10 * _elf->got_num;  
         
         // no got table
         if (rela_got_num == 0) goto no_pltgot;
 
         _elf->got_num = rela_got_num;
-        _elf->_local_got_table = (uint64_t *)dasics_malloc(rela_got_num * sizeof(uint64_t));
-        _elf->local_func = (struct func_mem **)dasics_malloc(rela_got_num * sizeof(struct func_mem *));
-        _elf->redirect_switch = (int *)dasics_malloc(rela_got_num * sizeof(int));
-        _elf->target_elf = (umain_elf_t **)dasics_malloc(rela_got_num * sizeof(umain_elf_t *));
+        uint64_t alloc_num = rela_got_num + 2;
+        _elf->_local_got_table = (uint64_t *)dasics_malloc(alloc_num * sizeof(uint64_t) );
+        _elf->local_func = (struct func_mem **)dasics_malloc(alloc_num * sizeof(struct func_mem *));
+        _elf->redirect_switch = (int *)dasics_malloc(alloc_num * sizeof(int));
+        _elf->target_elf = (umain_elf_t **)dasics_malloc(alloc_num* sizeof(umain_elf_t *));
+        _elf->_local_call_time = (uint64_t *)dasics_malloc(alloc_num * sizeof(uint64_t) );
         // Now, we will calculate all JMPREL's value，and copy them to the local got table
-        
-        // _elf->map_link = (struct link_map *)_elf->got_begin[1];
+        _elf->calculate = 0;
 
         // fill the *_start, *_end of 
         _fill_module_map(_elf);
@@ -332,11 +351,20 @@ int create_umain_elf_chain(struct link_map * main_elf)
             while(1);
         } 
 
-        dasics_memset(_elf->_local_got_table, 0, rela_got_num * sizeof(uint64_t));
-        dasics_memset(_elf->local_func, 0, rela_got_num * sizeof(struct func_mem *));
-        dasics_memset(_elf->redirect_switch, 0, rela_got_num * sizeof(int));
-        dasics_memset(_elf->target_elf, 0, rela_got_num * sizeof(umain_elf_t *));
-        
+        dasics_memset(_elf->_local_got_table, 0, alloc_num * sizeof(uint64_t));
+        dasics_memset(_elf->local_func, 0, alloc_num * sizeof(struct func_mem *));
+        dasics_memset(_elf->redirect_switch, 0, alloc_num * sizeof(int));
+        dasics_memset(_elf->target_elf, 0, alloc_num * sizeof(umain_elf_t *));
+        dasics_memset(_elf->_local_call_time, 0, alloc_num * sizeof(uint64_t));
+
+
+        if (_umain_elf_table == NULL)
+            dasics_main_elf = _elf;
+
+        // Linker not do
+        if (dasics_strcmp(_elf->l_name, _interp_start))
+            _fill_local_got(_elf);
+
 no_pltgot:
         // Add into chain
         if (_umain_elf_table == NULL) 
@@ -354,9 +382,7 @@ no_pltgot:
             _umain_elf_table->umain_elf_prev = _elf;
         }
 
-        // Linker not do
-        if (dasics_strcmp(_elf->l_name, _interp_start))
-            _fill_local_got(_elf);
+
     jump:
         _map_init = _map_init->l_next;
 
@@ -367,7 +393,6 @@ no_pltgot:
 
 }
 
-#include <sys/mman.h>
 void open_memory(umain_elf_t * _main)
 {
     ElfW(Phdr) * _Phdr = (ElfW(Phdr) *)_main->l_phdr;
@@ -377,7 +402,7 @@ void open_memory(umain_elf_t * _main)
         if (_Phdr[_i].p_type == PT_LOAD)
             if (_Phdr[_i].p_flags & PF_W)
             {
-                mprotect((void *)ROUNDDOWN(_Phdr[_i].p_vaddr, PAGE_SIZE), 
+                _dasics_mprotect((void *)ROUNDDOWN(_Phdr[_i].p_vaddr, PAGE_SIZE), 
                         ROUND(_Phdr[_i].p_vaddr + _Phdr[_i].p_memsz, PAGE_SIZE) \
                         - ROUNDDOWN(_Phdr[_i].p_vaddr, PAGE_SIZE),
                         PROT_READ | PROT_WRITE
