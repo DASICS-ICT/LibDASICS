@@ -26,6 +26,10 @@ struct func_mem;
 
 typedef struct umain_elf
 {
+   uint64_t *_local_got_table; /* Num of lib call */   
+   uint64_t *_local_call_time; /* Call num of a outer func */ 
+   uint64_t calculate;
+
    ElfW(Addr) l_addr;		/* Difference between the address in the ELF
             file and the addresses in memory.  */
    char l_name[256];	      /* Module name, for 256 */
@@ -57,7 +61,6 @@ typedef struct umain_elf
    uint64_t got_num     ;
    uint64_t dynamic     ;		/* Dynamic section of the shared object.  */
 
-   uint64_t *_local_got_table; /* Num of lib call */
    struct func_mem **local_func; /* Find func_mem fast */
    int * redirect_switch;       /* Redirect switch */
    struct umain_elf ** target_elf; /* Target elf */
@@ -72,6 +75,8 @@ typedef struct umain_elf
 
    uint64_t _flags;           /* Define in dasics_link_manager */
 
+   ElfW(Addr) l_relro_addr;
+   ElfW(Addr) l_relro_size; 
 
    /* record the _text, plt, r_only_area, _w_area(imply read) */
    uint64_t _text_start, _text_end;

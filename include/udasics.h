@@ -1,6 +1,10 @@
 #ifndef _UDASICS_H_
 #define _UDASICS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include <stdint.h>
 #include "ucsr.h"
@@ -62,5 +66,9 @@ extern void lib_call(void* func_name, ...);
 extern void azone_call(void* func_name);
 
 #define LIBCFG_ALLOC(flag, base, len) (dasics_libcfg_alloc(flag,((uint64_t)(base)),((uint64_t)(base)) + ((uint64_t)(len))));
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

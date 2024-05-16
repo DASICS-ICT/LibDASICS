@@ -33,6 +33,7 @@ int _open_maincall()
         /* got will be filled dasics_umaincall */
         for (int _i = 2; _i < _map->got_num; _i++)
         {            
+            if (_map->got_begin[_i] != (uint64_t)_map->plt_begin) continue;
             _map->got_begin[_i] = (uint64_t)dasics_umaincall;
             _map->local_func[_i] = NULL;
         }              
@@ -193,6 +194,10 @@ int dasics_dynamic_call(struct umaincall * CallContext)
         _elf->got_begin[plt_idx + 2] = (uint64_t)dasics_umaincall;
     } else 
     {
+        if (_elf->target_elf[plt_idx + 2] == NULL)
+        {
+            _elf->target_elf[plt_idx + 2] = _get_area(_elf->_local_got_table[plt_idx + 2]);
+        }
         /**
          * Now, the got has been filled with the lib function address in the memory
          * we will check it.
@@ -216,21 +221,21 @@ int dasics_dynamic_call(struct umaincall * CallContext)
 
 
     // Add memory support
-    if (!(target_elf->_flags & MAIN_AREA) && target_elf != _elf)
-    {
-        if (_elf->local_func[plt_idx + 2])
-            target_elf->namespace_func = _elf->local_func[plt_idx + 2];
-        else 
-        {
-            set_global_func_man(target_elf, target);
-            // Next time 
-            _elf->local_func[plt_idx + 2] = target_elf->namespace_func; 
-        }
-    }
+    // if (!(target_elf->_flags & MAIN_AREA) && target_elf != _elf)
+    // {
+    //     if (_elf->local_func[plt_idx + 2])
+    //         target_elf->namespace_func = _elf->local_func[plt_idx + 2];
+    //     else 
+    //     {
+    //         set_global_func_man(target_elf, target);
+    //         // Next time 
+    //         _elf->local_func[plt_idx + 2] = target_elf->namespace_func; 
+    //     }
+    // }
 
     // dasics_printf("[LOG]: DASICS lib (%s), name: %s\n", _elf->real_name, _get_lib_name(_elf, plt_idx));
 
-    cross_call(_elf, target_elf, target_name, CallContext);
+    // cross_call(_elf, target_elf, target_name, CallContext);
 
 
     dynamic_level--;

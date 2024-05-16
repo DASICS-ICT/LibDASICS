@@ -44,7 +44,7 @@ TEST_SO_OBJ		= $(addprefix build/, \
 						$(addsuffix .so, $(basename $(TEST_SO_FILES))))
 
 # Lib target
-LibDASICS		= $(DIR_BUILD)/LibDASICS.a
+LibDASICS		= $(DIR_BUILD)/libDASICS.a
 
 
 .PHONY: all

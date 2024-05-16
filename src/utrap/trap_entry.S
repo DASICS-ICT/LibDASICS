@@ -43,7 +43,7 @@
 
     csrr t0, CSR_UTVAL
     sd t0, OFFSET_TRAP_UTVAL(sp)
-
+    fence.i
 .endm
 
 .macro RESTORE_CONTEXT
@@ -85,6 +85,7 @@
     ld t6, OFFSET_TRAP_T6(sp)
 
     addi sp, sp, OFFSET_SIZE
+    fence.i
 .endm
 
 #--------------------------------------------------------------------
