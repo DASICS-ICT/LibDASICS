@@ -10,6 +10,7 @@
 int handle_DasicsULoadFault(struct ucontext_trap * regs)
 {
     int idx = 0;
+    uint16_t c_ld;
 //     umain_got_t * _got_entry = _get_area(regs->uepc);
 // #ifdef DASICS_DEBUG
 //     if (_got_entry)
@@ -37,7 +38,7 @@ dasics_static_load:
     #define CLWSP_MASK  0x4002
 
     // Jump load instruction for future excution
-    uint16_t c_ld = *((uint16_t *)regs->uepc);
+    c_ld = *((uint16_t *)regs->uepc);
     if ((c_ld & CLD_INCMASK) == CLD_MASK || \
         (c_ld & CLD_INCMASK) == CLDSP_MASK || \
         (c_ld & CLD_INCMASK) == CLW_MASK || \
@@ -63,6 +64,7 @@ dasics_static_load:
 int handle_DasicsUStoreFault(struct ucontext_trap * regs)
 {
     int idx = 0;
+    uint16_t c_sd;
 //     umain_got_t * _got_entry = _get_area(regs->uepc);
 // // #ifdef DASICS_DEBUG
 //     dasics_printf("[ufault info]: hit write ufault uepc: 0x%lx, address: 0x%lx \n", regs->uepc, regs->utval);
@@ -87,7 +89,7 @@ dasics_static_store:
     #define CSWSP_MASK  0xc002
 
     // Jump store instruction for future excution
-    uint16_t c_sd = *((uint16_t *)regs->uepc);
+    c_sd = *((uint16_t *)regs->uepc);
     if ((c_sd & CSD_INCMASK) == CSD_MASK || \
         (c_sd & CSD_INCMASK) == CSDSP_MASK || \
         (c_sd & CSD_INCMASK) == CSW_MASK || \

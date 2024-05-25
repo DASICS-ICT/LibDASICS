@@ -53,6 +53,8 @@ static void _fill_module_name(const char * l_name, umain_elf_t * elf)
 void _fill_module_map(umain_elf_t * elf)
 {
     // binary image
+    ElfW(Phdr) * _Phdr;
+    ElfW(Half) Phnum;
 
     if (!elf->l_addr)
     {
@@ -70,8 +72,8 @@ void _fill_module_map(umain_elf_t * elf)
     elf->l_phnum = elf->l_ehdr->e_phnum;
 
 setup:
-    ElfW(Phdr) * _Phdr = (ElfW(Phdr) *)elf->l_phdr;
-    ElfW(Half) Phnum = elf->l_phnum;
+    _Phdr = (ElfW(Phdr) *)elf->l_phdr;
+    Phnum = elf->l_phnum;
 
     int _set_r = 0;
     int _set_w = 0;
