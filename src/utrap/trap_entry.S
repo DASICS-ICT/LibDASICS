@@ -101,11 +101,18 @@ END(__dasics_uret)
 #--------------------------------------------------------------------
 ENTRY(dasics_ufault_entry) 
     SAVE_CONTEXT
-    mv a0, sp
+    // handle syscall fault alone
+    csrr t0, CSR_UCAUSE
+    li t1, 30 // EXC_DASICS_UECALL_FAULT
+    beq t0, t1, 1f
+
+    mv a0, sp 
     la t0, dasics_ufault_handler
     la ra, __dasics_uret
     jr t0
     ret
+1:
+    call invoke_syscall
 END(dasics_ufault_entry)
 
 #-----------------------------------------------------------------------
@@ -113,24 +120,26 @@ END(dasics_ufault_entry)
 #-----------------------------------------------------------------------
 ENTRY(_setup_fault)
     SAVE_CONTEXT
+    // handle syscall fault alone
+    csrr t0, CSR_UCAUSE
+    li t1, 30 // EXC_DASICS_UECALL_FAULT
+    beq t0, t1, 1f
+
     mv a0, sp
     la ra, __dasics_uret
     la t0, dasics_start_fault
     jr t0
     ret
+1:
+    call invoke_syscall
 END(_setup_fault)
 
 
-ENTRY(dynamic_fault)
-    addi sp, sp, -0x8
-    sd t0, (sp)
-
-    csrr t0, CSR_UTVAL
-    csrw CSR_DRETURNPC, t0
-
-    fence.i
-
-    ld t0, (sp)
-    addi sp, sp, 0x8
+# Deal invoke_syscall carefully
+ENTRY(invoke_syscall)
+    mv a0, sp
+    call handle_DasicsUEcallFault
+    RESTORE_CONTEXT
+    ecall 
     uret
-END(dynamic_fault)
+END(invoke_syscall)
