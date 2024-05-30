@@ -11,7 +11,7 @@ ecall_check_t syscall_check[__NR_syscalls];
 int default_ecall_check_handler(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
 {
     #ifdef DASICS_DEBUG
-        dasics_printf("[DEBUG]: catch user syscall %d\n", a7);
+        // dasics_printf("[DEBUG]: catch user syscall %d\n", a7);
     #endif
     return 0;    
 }

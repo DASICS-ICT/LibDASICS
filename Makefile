@@ -7,7 +7,7 @@ RANLIB			= $(CROSS_COMPILE)ranlib
 
 # C flags
 INCLUDE			= -Iinclude
-CFLAGS			= -O0 -g -MMD $(INCLUDE) -DDASICS_LINUX -DDASICS_DEBUG
+CFLAGS			= -O2 -g -MMD $(INCLUDE) -DDASICS_LINUX -DDASICS_DEBUG
 # build di0
 DIR_PWD			?= 
 DIR_BUILD		= build
