@@ -86,6 +86,7 @@ int handle_DasicsUStoreFault(struct ucontext_trap * regs);
 int handle_DasicsUEcallFault(struct ucontext_trap * regs);
 
 
+extern long invoke_syscall(struct ucontext_trap * regs);
 
 
 
