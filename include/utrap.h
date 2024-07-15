@@ -76,6 +76,7 @@ struct ucontext_trap
 #define EXC_DASICS_UECALL_FAULT     30
 #define EXC_DASICS_SECALL_FAULT     31
 
+typedef int (*utrap_handler)(struct ucontext_trap * regs);
 
 /*
  * Three types of U-exception types

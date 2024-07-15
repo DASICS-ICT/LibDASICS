@@ -10,6 +10,12 @@
 
 uint64_t umaincall_helper;
 
+utrap_handler udasics_ecall_fault_handler = handle_DasicsUEcallFault;
+utrap_handler udasics_load_fault_handler  = handle_DasicsULoadFault;
+utrap_handler udasics_store_fault_handler = handle_DasicsUStoreFault;
+utrap_handler udasics_fetch_fault_handler = handle_DasicsUFetchFault;
+
+
 #define BOUND_REG_READ(hi,lo,idx)   \
         case idx:  \
             lo = csr_read(0x890 + idx * 2);  \
@@ -108,6 +114,31 @@ void unregister_udasics(void)
         free(current);
     }
 }
+
+void resgister_uecall_fault_handler(utrap_handler ecall_fault_handler)
+{
+    if (ecall_fault_handler != NULL)
+        udasics_ecall_fault_handler = ecall_fault_handler;
+
+}
+void resgister_uload_fault_handler(utrap_handler load_fault_handler)
+{
+    if (load_fault_handler != NULL)
+        udasics_load_fault_handler = load_fault_handler;
+}
+
+void resgister_ustore_fault_handler(utrap_handler store_fault_handler)
+{
+    if (store_fault_handler != NULL)
+        udasics_store_fault_handler = store_fault_handler;
+}
+
+void resgister_ufetch_fault_handler(utrap_handler fetch_fault_handler)
+{
+    if (fetch_fault_handler != NULL)
+        udasics_fetch_fault_handler = fetch_fault_handler;
+}
+
 
 static int bound_coverage_cmp(const void *a, const void *b)
 {
@@ -262,7 +293,7 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
     switch (regs->ucause)
     {
     case EXC_DASICS_UFETCH_FAULT:
-        error = handle_DasicsUFetchFault(regs);
+        error = udasics_fetch_fault_handler(regs);
         break;
     
     case EXC_DASICS_ULOAD_FAULT:
@@ -271,12 +302,12 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
         if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
             uint64_t hi, lo;
             LIBBOUND_LOOKUP(hi, lo, csr_idx, READ);
-            printf("[DASICS EXCEPTION]Info: dasics uload fault OK! new csr idx is %d, lo = %#lx, hi = %#lx\n", \
+            dasics_printf("[DASICS EXCEPTION]Info: dasics uload fault OK! new csr idx is %d, lo = %#lx, hi = %#lx\n", \
                 csr_idx, lo, hi);
             return;
         }
 
-        error = handle_DasicsULoadFault(regs);
+        error = udasics_load_fault_handler(regs);
         break;
 
     case EXC_DASICS_USTORE_FAULT:
@@ -285,16 +316,16 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
         if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
             uint64_t hi, lo;
             LIBBOUND_LOOKUP(hi, lo, csr_idx, READ);
-            printf("[DASICS EXCEPTION]Info: dasics ustore fault OK! new csr idx is %d, lo = %#lx, hi = %#lx\n", \
+            dasics_printf("[DASICS EXCEPTION]Info: dasics ustore fault OK! new csr idx is %d, lo = %#lx, hi = %#lx\n", \
                 csr_idx, lo, hi);
             return;
         }      
 
-        error = handle_DasicsUStoreFault(regs);
+        error = udasics_store_fault_handler(regs);
         break;
     
     case EXC_DASICS_UECALL_FAULT:
-        error = handle_DasicsUEcallFault(regs);
+        error = udasics_ecall_fault_handler(regs);
         break;
         
     default:
@@ -481,3 +512,5 @@ void dasics_print_cfg_register(int32_t handle)
 {
 	printf("DASICS uLib CFG Registers: handle:%x  config: %x \n",handle,dasics_libcfg_get(handle));
 }
+
+

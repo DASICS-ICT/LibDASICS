@@ -7,6 +7,7 @@ extern "C" {
 
 #include <stdio.h>
 #include <stdint.h>
+#include <utrap.h>
 #include "ucsr.h"
 #include "uattr.h"
 
@@ -31,12 +32,19 @@ typedef enum {
     Umaincall_UNKNOWN
 } UmaincallTypes;
 
+// source but don't include 
+struct umaincall;
+
 // DASICS open/close
 void register_udasics(uint64_t funcptr);
 void unregister_udasics(void);
 
-// source but don't include 
-struct umaincall;
+// DASICS user fault handler register
+void resgister_uecall_fault_handler(utrap_handler ecall_fault_handler);
+void resgister_uload_fault_handler(utrap_handler load_fault_handler);
+void resgister_ustore_fault_handler(utrap_handler store_fault_handler);
+void resgister_ufetch_fault_handler(utrap_handler fetch_fault_handler);
+
 
 // DASICS maincall
 uint64_t dasics_umaincall_helper(struct umaincall * regs, ...);
@@ -54,10 +62,13 @@ uint32_t dasics_libcfg_get(int32_t idx);
 int32_t  dasics_libcfg_free_all();
 void dasics_print_cfg_register(int32_t idx);
 
+// TODO
+int32_t dasics_libcfg_active(int32_t idx);
+
 // DASICS jump bounds configure
 int32_t dasics_jumpcfg_alloc(uint64_t lo, uint64_t hi);
 int32_t dasics_jumpcfg_free(int32_t idx);
-
+int32_t dasics_jumpcfg_active(int32_t idx);
 
 // extern uint64_t umaincall_helper;
 extern void dasics_ufault_entry(void);

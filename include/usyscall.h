@@ -1,6 +1,10 @@
 #ifndef _INCLUDE_USYSCALL_H
 #define _INCLUDE_USYSCALL_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <syscall.h>
 #include <stdint.h>
 
@@ -32,5 +36,9 @@ int default_ecall_error_handler();
 void init_syscall_check();
 
 int register_syscall_check(int sysno, ecall_check_handler check_handler, ecall_error_handler error_handler);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
