@@ -8,6 +8,7 @@
 #include <dasics_stdio.h>
 #include <dasics_start.h>
 #include <dmalloc.h>
+#include <udasics.h>
 
 //STD
 #include <stdlib.h>
@@ -76,30 +77,21 @@ static void _fill_local_got(umain_elf_t * elf)
         elf->_local_got_table[i] = ulib_func;
         // Recover the plt begin
             // Only elf needed
-        if (elf == dasics_main_elf)
-        {
-            elf->got_begin[i] = (uint64_t)elf->plt_begin;     
-        }
+        elf->got_begin[i] = (uint64_t)elf->plt_begin;     
     }
 
-    // Only elf needed
-    if (elf == dasics_main_elf)
-    {
 
-        // Finally, the got[0] will be the hook, and got[1] will elf        
-        // Eable the got's PAGE be readable
-        uint64_t start = ROUNDDOWN(elf->l_relro_addr, PAGE_SIZE);
-        uint64_t end = ROUND(elf->l_relro_addr + elf->l_relro_size, PAGE_SIZE);
-        
-        _dasics_mprotect((void *)start, \
-                         end - start, \
-                         PROT_READ | PROT_WRITE);
-        // elf->got_begin[0] = (uint64_t)dynamic_hook;
-        elf->got_begin[1] = (uint64_t)elf;  
-        _dasics_mprotect((void *)start, \
-                         end - start, \
-                         PROT_READ);      
-    }
+    uint64_t start = ROUNDDOWN(elf->l_relro_addr, PAGE_SIZE);
+    uint64_t end = ROUND(elf->l_relro_addr + elf->l_relro_size, PAGE_SIZE);
+    
+    _dasics_mprotect((void *)start, \
+                        end - start, \
+                        PROT_READ | PROT_WRITE);
+    elf->got_begin[0] = (uint64_t)dasics_umaincall;
+    elf->got_begin[1] = (uint64_t)elf;  
+    _dasics_mprotect((void *)start, \
+                        end - start, \
+                        PROT_READ);      
 
 }
 
@@ -252,6 +244,24 @@ static void _find_copy_lib(umain_elf_t * elf)
     while(1);      
 }
 
+/* Fill target elf addr */
+static void _fill_target_elf()
+{
+    umain_elf_t * tmp_elf = _umain_elf_table;
+
+    do
+    {
+        /* code */
+        for (int i = 0; i < tmp_elf->got_num + 2; i++)
+        {
+            /* code */
+            tmp_elf->target_elf[i + 2] = _get_area(tmp_elf->_local_got_table[i + 2]);
+        }
+        
+    } while (tmp_elf != _umain_elf_table);
+
+}
+
 /*
  * This fuinction is used to init umain dasics_link_map
  * include the exe, linker, all library
@@ -390,6 +400,9 @@ no_pltgot:
 
     }
     
+    // fill target elf addr
+    _fill_target_elf();
+
     
     return 0;
 

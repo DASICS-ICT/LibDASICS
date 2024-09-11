@@ -3,12 +3,14 @@
 #include <umaincall.h>
 #include <udasics.h>
 #include <dynamic.h>
+#include <mem.h>
 #include <dasics_start.h>
 #include <dasics_string.h>
 
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <dlfcn.h>
 
 struct func_mem * global_func_mem = NULL;
 
@@ -203,4 +205,38 @@ int handle_lib_mem(umain_elf_t *_elf, const char * name, struct umaincall * call
     
     
     return 1;
+}
+
+int init_mem_handler()
+{
+    void *handle = dlopen("libc.so.6", RTLD_LAZY);
+    if (!handle) {
+        fprintf(stderr, "Error opening libc: %s\n", dlerror());
+        return 1;
+    }
+
+    udasics_malloc_handler = dlsym(handle, "malloc");
+    if (!udasics_malloc_handler) {
+        fprintf(stderr, "Error finding malloc: %s\n", dlerror());
+        dlclose(handle);
+        return 1;
+    }
+
+    udasics_free_handler = dlsym(handle, "free");
+    if (!udasics_free_handler) {
+        fprintf(stderr, "Error finding free: %s\n", dlerror());
+        dlclose(handle);
+        return 1;
+    }
+
+    udasics_realloc_handler = dlsym(handle, "realloc");
+    if (!udasics_realloc_handler) {
+        fprintf(stderr, "Error finding realloc: %s\n", dlerror());
+        dlclose(handle);
+        return 1;
+    }
+
+    dlclose(handle);
+
+    return 0;    
 }

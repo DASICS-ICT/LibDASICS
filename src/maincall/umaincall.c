@@ -7,6 +7,7 @@
 #include <dasics_string.h>
 #include <cross.h>
 #include <ufuncmem.h>
+#include <mem.h>
 
 // STD
 #include <stdlib.h>
@@ -22,26 +23,26 @@ int _open_maincall()
     umaincall_helper = (uint64_t)dasics_umaincall_helper;
     csr_write(0x8b0, (uint64_t)dasics_umaincall);
 
-    umain_elf_t *_map = _umain_elf_table;
+    // umain_elf_t *_map = _umain_elf_table;
 
-    if (!_umain_elf_table) return 0;
+    // if (!_umain_elf_table) return 0;
 
-    do {   
-        if ((_map ->_flags & LINK_AREA) || ((_map->_flags & MAIN_AREA) && !(_map->_flags & ELF_AREA)))
-            goto giveup;
+    // do {   
+    //     if ((_map ->_flags & LINK_AREA) || ((_map->_flags & MAIN_AREA) && !(_map->_flags & ELF_AREA)))
+    //         goto giveup;
 
-        /* got will be filled dasics_umaincall */
-        for (int _i = 2; _i < _map->got_num; _i++)
-        {            
-            if (_map->got_begin[_i] != (uint64_t)_map->plt_begin) continue;
-            _map->got_begin[_i] = (uint64_t)dasics_umaincall;
-            _map->local_func[_i] = NULL;
-        }              
+    //     /* got will be filled dasics_umaincall */
+    //     for (int _i = 2; _i < _map->got_num; _i++)
+    //     {            
+    //         if (_map->got_begin[_i] != (uint64_t)_map->plt_begin) continue;
+    //         _map->got_begin[_i] = (uint64_t)dasics_umaincall;
+    //         _map->local_func[_i] = NULL;
+    //     }              
 
 
-    giveup:
-        _map = _map->umain_elf_next;
-    } while (_map != _umain_elf_table);
+    // giveup:
+    //     _map = _map->umain_elf_next;
+    // } while (_map != _umain_elf_table);
 
     return 0;
 }
@@ -126,16 +127,23 @@ int dasics_dynamic_call(struct umaincall * CallContext)
         return 1;
     }
 
-    umain_elf_t * _elf = _get_area(CallContext->t1);
+    // umain_elf_t * _elf = _get_area(CallContext->t1);
+    umain_elf_t * _elf = (umain_elf_t *)CallContext->t0;
+
     
     // Judge dynamic call
-    if (!_elf || *(uint32_t *)CallContext->t1 != NOP) return 0;
+    if (CallContext->a0 == DASICS_HOOK_MAGIC || \
+        !_elf || \
+        CallContext->t3 != (reg_t)dasics_umaincall) 
+        return 0;
 
     dynamic_level++;
 
     assert(_elf->plt_begin != NULL);
 
-    int plt_idx = _is_plt_area(CallContext->t1, _elf);
+    // int plt_idx = _is_plt_area(CallContext->t1, _elf);
+    int plt_idx = CallContext->t1 / 8;
+
 
     if (plt_idx == -1) 
     {
@@ -148,75 +156,45 @@ int dasics_dynamic_call(struct umaincall * CallContext)
     umain_elf_t *target_elf = NULL;
     const char * target_name = _get_lib_name(_elf, plt_idx);
 
-    if (!handle_lib_mem(_elf, target_name, CallContext))
-    {
-        return 1;
-    }
+    // if (!handle_lib_mem(_elf, target_name, CallContext))
+    // {
+    //     return 1;
+    // }
 
-    /* First time call */ 
-    if (!_elf->_local_got_table[plt_idx + 2])
-    {
-        /*
-        * We found that the Plt[x] wants to use dely binding to find the fucntion,
-        * and we prepare all the parameters, and jump
-        * 
-        * dll_a0: the got[1], struct link_map of the library
-        * dll_a1: the thrice of the plt table offset
-        * ulib_func: the addr of the ulib function 
-        */
-        uint64_t dll_a0 = (uint64_t)_elf->map_link;
-        uint64_t dll_a1 = (((reg_t)plt_idx * 0x10UL) >> 1) * 3;
-        uint64_t ulib_func = _elf->fixup_handler(dll_a0, dll_a1);
-        ulib_func = _call_reloc(_elf, ulib_func);
-        // change the target by user force
-        uint64_t force_func = ulib_func;
-        // if (dynamic_level == 1)
-        force_func = force_redirect(_elf, plt_idx, ulib_func);
-
-        target_elf = _get_area(force_func);
-        target = force_func;
-        
-        /* saved */
-        _elf->_local_got_table[plt_idx + 2] = target;
-        _elf->target_elf[plt_idx + 2] = target_elf;
-
-        // Dasics call no need to redirect
-        if (dynamic_level != 1 && _elf->redirect_switch[plt_idx + 2])
-        {
-            if (target_elf->_copy_lib_elf)
-            {
-                target = target - target_elf->l_addr + target_elf->_copy_lib_elf->l_addr;
-                target_elf = target_elf->_copy_lib_elf;                
-            }
-        }
-
-        /* reset got */
-        _elf->got_begin[plt_idx + 2] = (uint64_t)dasics_umaincall;
-    } else 
-    {
-        if (_elf->target_elf[plt_idx + 2] == NULL)
-        {
-            _elf->target_elf[plt_idx + 2] = _get_area(_elf->_local_got_table[plt_idx + 2]);
-        }
+    // {
+        // if (_elf->target_elf[plt_idx + 2] == NULL)
+        // {
+        //     _elf->target_elf[plt_idx + 2] = _get_area(_elf->_local_got_table[plt_idx + 2]);
+        // }
         /**
          * Now, the got has been filled with the lib function address in the memory
          * we will check it.
          */
         target = _elf->_local_got_table[plt_idx + 2]; 
-        target_elf = _elf->target_elf[plt_idx + 2];     
+        // target_elf = _elf->target_elf[plt_idx + 2];    
+        // assert(target != 0);
+        // assert(target_elf != NULL); 
 
+        if (target == 0)
+        {dasics_printf("target be null!\n"); while(1);}
         // Dasics call no need to redirect
-        if (dynamic_level != 1 && _elf->redirect_switch[plt_idx + 2])
-        {
-            if (target_elf->_copy_lib_elf)
-            {
-                target = target - target_elf->l_addr + target_elf->_copy_lib_elf->l_addr;
-                target_elf = target_elf->_copy_lib_elf;                
-            }
-        } 
-    }
+        // if (dynamic_level != 1 && _elf->redirect_switch[plt_idx + 2])
+        // {
+        //     if (target_elf->_copy_lib_elf)
+        //     {
+        //         target = target - target_elf->l_addr + target_elf->_copy_lib_elf->l_addr;
+        //         target_elf = target_elf->_copy_lib_elf;                
+        //     }
+        // } 
+    // }
 
     CallContext->t1 = target;
+    if (_elf == _umain_elf_table)
+    {
+        csr_write(0x8b4, CallContext->ra);
+        asm("fence.i");
+    }
+        
 
 
 

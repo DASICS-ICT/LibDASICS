@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <udasics.h>
 
+extern uint64_t umaincall_helper;
 uint64_t user_sp = 0;
 /* 
  * if we get the _dll_linker from the auxv which means that 
@@ -50,7 +51,9 @@ void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
         // Transfer executive authority to dynamic linker
         RESET_ENTRY(sp, _dll_linker);
     }
-    
+    umaincall_helper = (uint64_t)dasics_umaincall_helper;
+    csr_write(0x8b0, (uint64_t)dasics_umaincall);
+
     if (_dll_linker)
     {
         if (fini) atexit(fini);

@@ -5,6 +5,7 @@
 .macro SAVE_MAINCALL
     addi sp, sp,  -OFFSET_UMAINCALL
 
+    sd t0, OFFSET_UMAINCALL_T0(sp)
     sd t1, OFFSET_UMAINCALL_T1(sp)
     sd t3, OFFSET_UMAINCALL_T3(sp)
     sd ra, OFFSET_UMAINCALL_RA(sp)
@@ -23,6 +24,7 @@
 
 
 .macro RESTORE_MAINCALL
+    ld t0, OFFSET_UMAINCALL_T0(sp)
     ld t1, OFFSET_UMAINCALL_T1(sp)
     ld t3, OFFSET_UMAINCALL_T3(sp)
     ld ra, OFFSET_UMAINCALL_RA(sp)

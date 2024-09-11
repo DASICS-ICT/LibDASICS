@@ -58,9 +58,11 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 #endif
     init_cross_stack();
 
-// #ifdef DASICS_DEBUG
-//     dasics_printf("> [INIT] Init corss stack successfully\n");
-// #endif
+    
+
+#ifdef DASICS_DEBUG
+    dasics_printf("> [INIT] Init corss stack successfully\n");
+#endif
 
 #ifdef DASICS_COPY
     /* begin to init copy of the trust lib */
@@ -94,9 +96,6 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     original_jumpcfg_free_all();
 
     /* open dynamic's got read jurisdiction */
-    original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R, \
-                        (uint64_t)_umain_elf_table->got_begin, \
-                        (uint64_t)_umain_elf_table->got_begin + sizeof(uint64_t) * (_umain_elf_table->got_num + 2));
     original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R | DASICS_LIBCFG_W, \
                 0, \
                 TASK_SIZE);

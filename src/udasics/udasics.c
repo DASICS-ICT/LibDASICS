@@ -1,12 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <assert.h>
 // #include <machine/syscall.h>
 #include "udasics.h"
 #include "uthash.h"
 #include <utrap.h>
 #include <dasics_stdio.h>
 #include <umaincall.h>
+#include <mem.h>
+#include <openssl_mem.h>
 
 uint64_t umaincall_helper;
 
@@ -14,6 +17,11 @@ utrap_handler udasics_ecall_fault_handler = handle_DasicsUEcallFault;
 utrap_handler udasics_load_fault_handler  = handle_DasicsULoadFault;
 utrap_handler udasics_store_fault_handler = handle_DasicsUStoreFault;
 utrap_handler udasics_fetch_fault_handler = handle_DasicsUFetchFault;
+
+malloc_handler udasics_malloc_handler = NULL;
+realloc_handler udasics_realloc_handler = NULL;
+free_handler udasics_free_handler = NULL;
+
 
 
 #define BOUND_REG_READ(hi,lo,idx)   \
@@ -187,12 +195,16 @@ static int dasics_bound_checker(uint64_t lo, uint64_t hi, int perm)
 }
 
 
+
+
 uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
 {
     // uint64_t dasics_return_pc = csr_read(0x8b1);            // DasicsReturnPC
     // uint64_t dasics_free_zone_return_pc = csr_read(0x8b2);  // DasicsFreeZoneReturnPC
     // Judge This is a dynamic call
     if (dasics_dynamic_call(regs)) return 0;
+
+    if (dasics_openssl_umaincall_hook(regs)) return 0;
 
     uint64_t retval = 0;
 

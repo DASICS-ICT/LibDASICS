@@ -37,7 +37,7 @@ void * handle_lib_malloc(struct umaincall * callContext, struct func_mem * mem);
 int handle_lib_realloc(struct umaincall * callContext, struct func_mem * mem);
 int handle_lib_free(struct umaincall * callContext, struct func_mem * mem);
 int set_global_func_man(umain_elf_t *entry, uint64_t func);
-
+int init_mem_handler();
 
 
 #endif

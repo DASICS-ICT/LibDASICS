@@ -10,8 +10,8 @@ static void * mmap_chunk()
     int64_t addr = (int64_t)_dasics_mmap(0, \
                             CHUNK_SIZE, \
                             PROT_READ | PROT_WRITE, \
-                            MAP_PRIVATE | MAP_ANONYMOUS, 
-                            -1,
+                            MAP_PRIVATE | MAP_ANONYMOUS, \
+                            -1, \
                             0);
     if (addr <= 0) 
     {
