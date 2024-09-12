@@ -85,3 +85,23 @@ int dasics_openssl_umaincall_hook(struct umaincall * regs)
 
     return 0;
 }
+
+
+void * umain_malloc_hook(size_t size)
+{
+    dasics_printf("[LOG]: umain_malloc_hook\n");
+    return udasics_malloc_handler(size);
+}
+
+
+void * umain_realloc_hook(void * addr, size_t new_size)
+{
+    dasics_printf("[LOG]: umain_reaalloc_hook\n");
+    return udasics_realloc_handler(addr, new_size);
+}
+
+void umain_free_hook(void * addr)
+{
+    dasics_printf("[LOG]: umain_free_hook\n");
+    udasics_free_handler(addr);
+}

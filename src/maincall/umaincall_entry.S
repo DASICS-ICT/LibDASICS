@@ -36,8 +36,10 @@
     ld a5, OFFSET_UMAINCALL_A5(sp)
     ld a6, OFFSET_UMAINCALL_A6(sp)
     ld a7, OFFSET_UMAINCALL_A7(sp)
+    ld sp, OFFSET_UMAINCALL_SP(sp)
 
-    addi sp, sp,  OFFSET_UMAINCALL
+
+#    addi sp, sp,  OFFSET_UMAINCALL
 .endm
 
 

@@ -9,6 +9,7 @@
 #include <dasics_start.h>
 #include <dmalloc.h>
 #include <udasics.h>
+#include <mem.h>
 
 //STD
 #include <stdlib.h>
@@ -48,11 +49,41 @@ static void _fill_module_name(const char * l_name, umain_elf_t * elf)
 
 }
 
+static int _fill_mem_got_hook(umain_elf_t * elf, int plt_idx)
+{
+    // Main area not hook
+    if (elf->_flags & MAIN_AREA) return 0;
+    // Use plt_idx -2 to  found the name
+    int idx_elf = plt_idx - 2;
+
+    if (!dasics_strcmp(_get_lib_name(elf, idx_elf), "malloc"))
+    {
+        elf->_local_got_table[plt_idx] = (uint64_t)umain_malloc_hook;
+        dasics_printf("[LOG]: Hook %s's malloc function\n", elf->real_name);
+        return 1;
+    }
+
+    if (!dasics_strcmp(_get_lib_name(elf, idx_elf), "free"))
+    {
+        elf->_local_got_table[plt_idx] = (uint64_t)umain_free_hook;
+        dasics_printf("[LOG]: Hook %s's free function\n", elf->real_name);
+        return 1;
+    }
+
+    if (!dasics_strcmp(_get_lib_name(elf, idx_elf), "realloc"))
+    {
+        elf->_local_got_table[plt_idx] = (uint64_t)umain_realloc_hook;
+        dasics_printf("[LOG]: Hook %s's realloc function\n", elf->real_name);
+        return 1;
+    }
+
+    return 0;
+}
+
 /*
  * This function is used for no lazy dynamic call
  * Found all the target function addr
  */
-
 static void _fill_local_got(umain_elf_t * elf)
 {
     elf->plt_begin = (uint64_t *)elf->got_begin[3];
@@ -69,6 +100,7 @@ static void _fill_local_got(umain_elf_t * elf)
         * dll_a1: the thrice of the plt table offset
         * ulib_func: the addr of the ulib function 
         */
+        if (_fill_mem_got_hook(elf, i)) goto down;
 
         uint64_t dll_a0 = (uint64_t)elf->map_link;
         uint64_t dll_a1 = (((uint64_t)(i - 2) * 0x10UL) >> 1) * 3;
@@ -77,6 +109,7 @@ static void _fill_local_got(umain_elf_t * elf)
         elf->_local_got_table[i] = ulib_func;
         // Recover the plt begin
             // Only elf needed
+    down:
         elf->got_begin[i] = (uint64_t)elf->plt_begin;     
     }
 
@@ -252,12 +285,13 @@ static void _fill_target_elf()
     do
     {
         /* code */
-        for (int i = 0; i < tmp_elf->got_num + 2; i++)
+        for (int i = 0; i < tmp_elf->got_num; i++)
         {
             /* code */
             tmp_elf->target_elf[i + 2] = _get_area(tmp_elf->_local_got_table[i + 2]);
+            tmp_elf->target_func_name[i + 2] = _get_lib_name(tmp_elf, i);
         }
-        
+        tmp_elf = tmp_elf->umain_elf_next;
     } while (tmp_elf != _umain_elf_table);
 
 }
@@ -348,6 +382,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
         _elf->redirect_switch = (int *)dasics_malloc(alloc_num * sizeof(int));
         _elf->target_elf = (umain_elf_t **)dasics_malloc(alloc_num* sizeof(umain_elf_t *));
         _elf->_local_call_time = (uint64_t *)dasics_malloc(alloc_num * sizeof(uint64_t) );
+        _elf->target_func_name = (char **)dasics_malloc(alloc_num * sizeof(char *));
         // Now, we will calculate all JMPREL's value，and copy them to the local got table
         _elf->calculate = 0;
 
@@ -369,6 +404,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
         dasics_memset(_elf->redirect_switch, 0, alloc_num * sizeof(int));
         dasics_memset(_elf->target_elf, 0, alloc_num * sizeof(umain_elf_t *));
         dasics_memset(_elf->_local_call_time, 0, alloc_num * sizeof(uint64_t));
+        dasics_memset(_elf->target_func_name, 0, alloc_num * sizeof(char *));
 
 
         if (_umain_elf_table == NULL)

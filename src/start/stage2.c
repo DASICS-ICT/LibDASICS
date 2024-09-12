@@ -4,6 +4,7 @@
 #include <dynamic.h>
 #include <umaincall.h>
 #include <cross.h>
+#include <ufuncmem.h>
 
 void print_exit_func_num();
 // STD
@@ -47,6 +48,7 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     dasics_printf("> [INIT] dll_fixup_handler: 0x%lx\n", (uint64_t)dll_fixup_handler);
 #endif
 
+    init_mem_handler();
     create_umain_elf_chain(link);
     
     

@@ -64,6 +64,7 @@ typedef struct umain_elf
    struct func_mem **local_func; /* Find func_mem fast */
    int * redirect_switch;       /* Redirect switch */
    struct umain_elf ** target_elf; /* Target elf */
+   char **target_func_name;
 
    struct func_mem * namespace_func;
 

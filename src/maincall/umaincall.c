@@ -52,14 +52,19 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
 {
 
     //TODO Add Cross-library calls here
-    if ((_entry != _target) &&  // mean Cross call
-        !(
-            (_entry->_flags & MAIN_AREA) &&
-            (_target->_flags & MAIN_AREA)
-         )                              // the entry and target both are trusted
+    if ((_entry != _target) && \
+        // &&// mean Cross call
+        // !(
+        //     (_entry->_flags & MAIN_AREA) &&
+        //     (_target->_flags & MAIN_AREA)
+        //  )                              // the entry and target both are trusted
+        !(_target->_flags & MAIN_AREA) 
+        // // &&
+        // // !(_entry->_flags & MAIN_AREA)
         )
     {
         // dasics_printf("[LOG]: This is a cross call\n");
+        
         struct cross tmp;
         int idx_lib = 0;
         int idx_jmp = 0;
@@ -69,16 +74,16 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         tmp.ra = CallContext->ra;
         tmp.func = _target->namespace_func;
         
-        tmp.jmpcfg[idx_jmp++] = dasics_jumpcfg_alloc(_target->_plt_start, _target->_text_end);
+        // tmp.jmpcfg[idx_jmp++] = dasics_jumpcfg_alloc(_target->_plt_start, _target->_text_end);
 
-        tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_V, \
-                                        _target->_r_start,\
-                                        _target->_r_end);
-        tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
-                                        _target->_w_start, \
-                                        _target->_w_end);
+        // tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_V, \
+        //                                 _target->_r_start,\
+        //                                 _target->_r_end);
+        // tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+        //                                 _target->_w_start, \
+        //                                 _target->_w_end);
         
-        tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 4 * PAGE_SIZE, 4 * PAGE_SIZE);
+        // tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 4 * PAGE_SIZE, 4 * PAGE_SIZE);
         // if (!dasics_strcmp(name, "memset"))
         // {
         //     memset_num++;
@@ -94,9 +99,11 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         // }
 
         tmp.handle_num = idx_lib;
-
+        
         // Push 
         push_cross(&tmp);
+        
+        dasics_printf("[LOG]: DASICS lib (%s), target elf: %s name: %s\n", _entry->real_name, _target->real_name, name);
 
         CallContext->ra = (reg_t)dasics_umaincall;
 
@@ -118,15 +125,6 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
 
 int dasics_dynamic_call(struct umaincall * CallContext)
 {
-    if (!_umain_elf_table) return 0;
-
-    // dasics umaincall return 
-    if (CallContext->ra == (reg_t)dasics_umaincall) 
-    {
-        dasics_dynamic_return(CallContext);
-        return 1;
-    }
-
     // umain_elf_t * _elf = _get_area(CallContext->t1);
     umain_elf_t * _elf = (umain_elf_t *)CallContext->t0;
 
@@ -134,8 +132,17 @@ int dasics_dynamic_call(struct umaincall * CallContext)
     // Judge dynamic call
     if (CallContext->a0 == DASICS_HOOK_MAGIC || \
         !_elf || \
-        CallContext->t3 != (reg_t)dasics_umaincall) 
-        return 0;
+        CallContext->t3 != (reg_t)dasics_umaincall)
+        {
+            // dasics umaincall return 
+            if (CallContext->ra == (reg_t)dasics_umaincall) 
+            {
+                dasics_dynamic_return(CallContext);
+                return 1;
+            }
+            return 0;
+        }
+        
 
     dynamic_level++;
 
@@ -143,7 +150,8 @@ int dasics_dynamic_call(struct umaincall * CallContext)
 
     // int plt_idx = _is_plt_area(CallContext->t1, _elf);
     int plt_idx = CallContext->t1 / 8;
-
+    // Not Maincall
+    CallContext->t3 = 0;
 
     if (plt_idx == -1) 
     {
@@ -154,42 +162,19 @@ int dasics_dynamic_call(struct umaincall * CallContext)
     /* Result */ 
     uint64_t target = 0;
     umain_elf_t *target_elf = NULL;
-    const char * target_name = _get_lib_name(_elf, plt_idx);
+    const char * target_name = NULL;
 
-    // if (!handle_lib_mem(_elf, target_name, CallContext))
-    // {
-    //     return 1;
-    // }
+    // Now, we will got the target and so on 
+    target = _elf->_local_got_table[plt_idx + 2]; 
+    target_elf = _elf->target_elf[plt_idx + 2];    
+    target_name = _elf->target_func_name[plt_idx + 2]; 
+    assert(target != 0);
+    assert(target_elf != NULL); 
+    assert(target_name != NULL);
 
-    // {
-        // if (_elf->target_elf[plt_idx + 2] == NULL)
-        // {
-        //     _elf->target_elf[plt_idx + 2] = _get_area(_elf->_local_got_table[plt_idx + 2]);
-        // }
-        /**
-         * Now, the got has been filled with the lib function address in the memory
-         * we will check it.
-         */
-        target = _elf->_local_got_table[plt_idx + 2]; 
-        // target_elf = _elf->target_elf[plt_idx + 2];    
-        // assert(target != 0);
-        // assert(target_elf != NULL); 
-
-        if (target == 0)
-        {dasics_printf("target be null!\n"); while(1);}
-        // Dasics call no need to redirect
-        // if (dynamic_level != 1 && _elf->redirect_switch[plt_idx + 2])
-        // {
-        //     if (target_elf->_copy_lib_elf)
-        //     {
-        //         target = target - target_elf->l_addr + target_elf->_copy_lib_elf->l_addr;
-        //         target_elf = target_elf->_copy_lib_elf;                
-        //     }
-        // } 
-    // }
 
     CallContext->t1 = target;
-    if (_elf == _umain_elf_table)
+    if (_elf == _umain_elf_table && !(target_elf->_flags & MAIN_AREA))
     {
         csr_write(0x8b4, CallContext->ra);
         asm("fence.i");
@@ -211,9 +196,9 @@ int dasics_dynamic_call(struct umaincall * CallContext)
     //     }
     // }
 
-    // dasics_printf("[LOG]: DASICS lib (%s), name: %s\n", _elf->real_name, _get_lib_name(_elf, plt_idx));
+    // dasics_printf("[LOG]: DASICS lib (%s), target elf: %s name: %s\n", _elf->real_name, target_elf->real_name, target_name);
 
-    // cross_call(_elf, target_elf, target_name, CallContext);
+    cross_call(_elf, target_elf, target_name, CallContext);
 
 
     dynamic_level--;
