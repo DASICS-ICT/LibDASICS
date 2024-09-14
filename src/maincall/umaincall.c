@@ -8,6 +8,9 @@
 #include <cross.h>
 #include <ufuncmem.h>
 #include <mem.h>
+#include <openssl_mem.h>
+#include <ctype.h>
+#include <errno.h>
 
 // STD
 #include <stdlib.h>
@@ -50,7 +53,6 @@ int _open_maincall()
 
 void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, struct umaincall * CallContext)
 {
-
     //TODO Add Cross-library calls here
     if ((_entry != _target) && \
         // &&// mean Cross call
@@ -64,7 +66,27 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         )
     {
         // dasics_printf("[LOG]: This is a cross call\n");
-        
+        static int openssl_flag = 0;
+        if (openssl_flag == 0 && openssl_self_heap != NULL)
+        {
+            umain_elf_t * libcrypto = _get_area_by_name("libcrypto.so.1.0.0");
+            umain_elf_t * libssl = _get_area_by_name("libssl.so.1.0.0");
+            umain_elf_t * libc = _get_area_by_name("libc.so.6");        
+            assert(libcrypto != NULL);
+            assert(libssl != NULL);
+            assert(libc != NULL); 
+            register void *tp asm ("tp");
+
+            dasics_printf("Set openssl self heap begin: 0x%lx, end: 0x%lx\n", (uint64_t)openssl_self_heap, (uint64_t)openssl_self_heap + openssl_full_size);
+            LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, (uint64_t)openssl_self_heap, openssl_full_size);
+            LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, tp, PAGE_SIZE);
+            LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, libc->_r_start, libc->_w_end);
+            // dasics_printf("Set openssl library data: 0x%lx, 0x%lx\n", libcrypto->_r_start, libssl->_w_end);
+            LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, libcrypto->_r_start, libcrypto->_w_end);
+            dasics_jumpcfg_alloc(libcrypto->_r_start, libssl->_w_end);
+            openssl_flag = 1;
+        }
+
         struct cross tmp;
         int idx_lib = 0;
         int idx_jmp = 0;
@@ -76,34 +98,21 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         
         // tmp.jmpcfg[idx_jmp++] = dasics_jumpcfg_alloc(_target->_plt_start, _target->_text_end);
 
-        // tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_V, \
-        //                                 _target->_r_start,\
-        //                                 _target->_r_end);
-        // tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
-        //                                 _target->_w_start, \
-        //                                 _target->_w_end);
+        tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_V, \
+                                        _target->_r_start,\
+                                        _target->_r_end);
+        tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+                                        _target->_w_start, \
+                                        _target->_w_end);
         
-        // tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 4 * PAGE_SIZE, 4 * PAGE_SIZE);
-        // if (!dasics_strcmp(name, "memset"))
-        // {
-        //     memset_num++;
-        //     tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R, CallContext->a0, CallContext->a2)
-        // }
-
-        // if (!dasics_strcmp(name, "memcpy"))
-        // {
-        //     memcpy_num++;
-        //     // dasics_printf("dst: 0x%lx, src: 0x%lx, length: 0x%lx\n", CallContext->a0, CallContext->a1, CallContext->a2);
-        //     tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R, CallContext->a0, CallContext->a2);
-        //     tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R, CallContext->a1, CallContext->a2);
-        // }
+        tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 4 * PAGE_SIZE, 4 * PAGE_SIZE);
 
         tmp.handle_num = idx_lib;
         
         // Push 
         push_cross(&tmp);
         
-        dasics_printf("[LOG]: DASICS lib (%s), target elf: %s name: %s\n", _entry->real_name, _target->real_name, name);
+        dasics_printf("[LOG]: DASICS lib (%s), return address: 0x%lx target elf: %s name: %s\n", _entry->real_name, CallContext->ra, _target->real_name, name);
 
         CallContext->ra = (reg_t)dasics_umaincall;
 

@@ -7,6 +7,7 @@
 #include <elf.h>
 #include <list.h>
 #include <dasics_stdio.h>
+#include <dasics_string.h>
 
 #define PAGE_SIZE 0x1000
 
@@ -135,6 +136,23 @@ static inline umain_elf_t * _get_area(uint64_t pc)
     return NULL;
 }
 
+static inline umain_elf_t * _get_area_by_name(const char * name)
+{
+   umain_elf_t * _elf = _umain_elf_table;
+
+   if (_umain_elf_table == NULL) return NULL; 
+
+   do {
+        if (!dasics_strcmp(_elf->real_name, name))
+            return _elf;
+        _elf = _elf->umain_elf_next;
+
+    } while (_elf != _umain_elf_table);
+    
+    
+    return NULL;    
+}
+
 /*
  * This function is used to get the library's func name by the index
  */
@@ -155,6 +173,8 @@ static inline char * _get_lib_name(umain_elf_t * entry, uint64_t plt_idx)
 
     return strtab + sym->st_name;
 }
+
+
 
 /*
  * This function is used to figure out which plt[x] the uepc was seted,

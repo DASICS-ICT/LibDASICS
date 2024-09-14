@@ -98,10 +98,10 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     original_jumpcfg_free_all();
 
     /* open dynamic's got read jurisdiction */
-    original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R | DASICS_LIBCFG_W, \
-                0, \
-                TASK_SIZE);
-    original_jumpcfg_alloc(TASK_SIZE/2, TASK_SIZE);
+    // original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R | DASICS_LIBCFG_W, \
+    //             0, \
+    //             TASK_SIZE);
+    // original_jumpcfg_alloc(TASK_SIZE/2, TASK_SIZE);
 
     // setup user ufault handler 
     csr_write(0x005, (uint64_t)dasics_ufault_entry);
