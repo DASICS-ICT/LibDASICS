@@ -112,7 +112,7 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         // Push 
         push_cross(&tmp);
         
-        dasics_printf("[LOG]: DASICS lib (%s), return address: 0x%lx target elf: %s name: %s\n", _entry->real_name, CallContext->ra, _target->real_name, name);
+        // dasics_printf("[LOG]: DASICS lib (%s), return address: 0x%lx target elf: %s name: %s\n", _entry->real_name, CallContext->ra, _target->real_name, name);
 
         CallContext->ra = (reg_t)dasics_umaincall;
 

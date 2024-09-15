@@ -8,6 +8,7 @@
 #include <sys/mman.h>
 #include <dasics_stdio.h>
 #include <dasics_string.h>
+#include <openssl/ssl.h>
 
 void * openssl_self_heap = NULL;
 uint64_t openssl_malloc_size = 0;
@@ -28,6 +29,8 @@ void init_openssl_self_heap(uint64_t size)
     }
     openssl_full_size = size;
     openssl_self_heap = self_heap;
+    update_self_heap_metadata(self_heap, size);
+
 }
 
 int dasics_openssl_umaincall_hook(struct umaincall * regs)
@@ -48,9 +51,10 @@ int dasics_openssl_umaincall_hook(struct umaincall * regs)
             assert(openssl_malloc_size < openssl_full_size);
             uint64_t p = ROUND(regs->a2, 8);
             regs->a0 = (uint64_t)openssl_self_heap;
-            dasics_printf("Malloc: malloc %lx\n",  regs->a0);
+            // dasics_printf("Malloc: malloc %lx\n",  regs->a0);
             openssl_self_heap = (void *)((uint64_t)openssl_self_heap + p);
             openssl_malloc_size += p;
+            update_self_heap_used(openssl_malloc_size);
             break;
         }
         case DASICS_FREE_HOOK:
@@ -67,9 +71,10 @@ int dasics_openssl_umaincall_hook(struct umaincall * regs)
             uint64_t p = ROUND(regs->a3, 8);
             regs->a0 = (uint64_t)openssl_self_heap;
             dasics_memcpy(openssl_self_heap, (void *)regs->a2, regs->a3);
-            dasics_printf("Malloc: malloc %lx\n",  regs->a0);
+            // dasics_printf("Malloc: malloc %lx\n",  regs->a0);
             openssl_self_heap = (void *)((uint64_t)openssl_self_heap + p);
             openssl_malloc_size += p;
+            update_self_heap_used(openssl_malloc_size);
             break;
         }
         default:

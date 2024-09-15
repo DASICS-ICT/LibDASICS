@@ -72,7 +72,7 @@ void pop_cross(struct umaincall * maincallContext)
     umain_elf_t * target = cross_handle->target;
     umain_elf_t * entry = cross_handle->begin;
 
-    dasics_printf("[RETURN]: RETURN from %s to %s\n", target->real_name, entry->real_name);
+    // dasics_printf("[RETURN]: RETURN from %s to %s\n", target->real_name, entry->real_name);
     // struct func_mem * mem = NULL;
 
     // // if entry is untrusted, update global_func_mem

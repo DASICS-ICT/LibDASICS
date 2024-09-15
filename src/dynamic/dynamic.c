@@ -59,21 +59,21 @@ static int _fill_mem_got_hook(umain_elf_t * elf, int plt_idx)
     if (!dasics_strcmp(_get_lib_name(elf, idx_elf), "malloc"))
     {
         elf->_local_got_table[plt_idx] = (uint64_t)umain_malloc_hook;
-        dasics_printf("[LOG]: Hook %s's malloc function\n", elf->real_name);
+        // dasics_printf("[LOG]: Hook %s's malloc function\n", elf->real_name);
         return 1;
     }
 
     if (!dasics_strcmp(_get_lib_name(elf, idx_elf), "free"))
     {
         elf->_local_got_table[plt_idx] = (uint64_t)umain_free_hook;
-        dasics_printf("[LOG]: Hook %s's free function\n", elf->real_name);
+        // dasics_printf("[LOG]: Hook %s's free function\n", elf->real_name);
         return 1;
     }
 
     if (!dasics_strcmp(_get_lib_name(elf, idx_elf), "realloc"))
     {
         elf->_local_got_table[plt_idx] = (uint64_t)umain_realloc_hook;
-        dasics_printf("[LOG]: Hook %s's realloc function\n", elf->real_name);
+        // dasics_printf("[LOG]: Hook %s's realloc function\n", elf->real_name);
         return 1;
     }
 
