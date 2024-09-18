@@ -106,8 +106,10 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     // setup user ufault handler 
     csr_write(0x005, (uint64_t)dasics_ufault_entry);
 
-    atexit(&print_exit_func_num);
+    // atexit(&print_exit_func_num);
     _umain_elf_table->calculate = 1;
+
+    LIBCFG_ALLOC(DASICS_LIBCFG_V | DASICS_LIBCFG_V | DASICS_LIBCFG_W, sp - 100 * PAGE_SIZE, 100 * PAGE_SIZE);
 
 #endif
 

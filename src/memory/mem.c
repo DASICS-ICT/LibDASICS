@@ -9,10 +9,21 @@
 #include <dasics_stdio.h>
 #include <dasics_string.h>
 #include <openssl/ssl.h>
+#include <dynamic.h>
+#include <udasics.h>
 
 void * openssl_self_heap = NULL;
 uint64_t openssl_malloc_size = 0;
 uint64_t openssl_full_size = 0;
+
+struct elf_msg
+{
+   uint64_t _text_start, _text_end;
+   uint64_t _plt_start, _plt_end;
+   uint64_t _r_start, _r_end;
+   uint64_t _w_start, _w_end; 
+   uint64_t _map_start, _map_end;
+};
 
 void init_openssl_self_heap(uint64_t size)
 {
@@ -30,6 +41,23 @@ void init_openssl_self_heap(uint64_t size)
     openssl_full_size = size;
     openssl_self_heap = self_heap;
     update_self_heap_metadata(self_heap, size);
+
+    umain_elf_t * openssl = _get_area_by_name("libssl.so.1.0.0");
+    assert(openssl != NULL);
+    struct elf_msg openssl_elf;
+    openssl_elf._text_start = openssl->_text_start;
+    openssl_elf._text_end = openssl->_text_end;
+    openssl_elf._plt_start = openssl->_plt_start;
+    openssl_elf._plt_end = openssl->_plt_end;
+    openssl_elf._r_start = openssl->_r_start;
+    openssl_elf._r_end = openssl->_r_end;
+    openssl_elf._w_start = openssl->_w_start;
+    openssl_elf._w_end = openssl->_w_end;
+    openssl_elf._map_start = openssl->_map_start;
+    openssl_elf._map_end = openssl->_map_end;
+
+    init_elf_info(&openssl_elf);
+    init_dasics_maincall((void *)&dasics_umaincall);
 
 }
 

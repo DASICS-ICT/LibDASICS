@@ -78,11 +78,12 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
             register void *tp asm ("tp");
 
             dasics_printf("Set openssl self heap begin: 0x%lx, end: 0x%lx\n", (uint64_t)openssl_self_heap, (uint64_t)openssl_self_heap + openssl_full_size);
+            dasics_printf("Set TLS begin: 0x%lx, end: 0x%lx\n", tp, tp + PAGE_SIZE);
             LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, (uint64_t)openssl_self_heap, openssl_full_size);
             LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, tp, PAGE_SIZE);
             LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, libc->_r_start, libc->_w_end);
-            // dasics_printf("Set openssl library data: 0x%lx, 0x%lx\n", libcrypto->_r_start, libssl->_w_end);
-            LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, libcrypto->_r_start, libcrypto->_w_end);
+            dasics_printf("Set openssl library data: 0x%lx, 0x%lx\n", libcrypto->_r_start, libssl->_w_end);
+            LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, libcrypto->_r_start, libssl->_w_end);
             dasics_jumpcfg_alloc(libcrypto->_r_start, libssl->_w_end);
             openssl_flag = 1;
         }
@@ -98,14 +99,14 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         
         // tmp.jmpcfg[idx_jmp++] = dasics_jumpcfg_alloc(_target->_plt_start, _target->_text_end);
 
-        tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_V, \
-                                        _target->_r_start,\
-                                        _target->_r_end);
-        tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
-                                        _target->_w_start, \
-                                        _target->_w_end);
+        // tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_V, \
+        //                                 _target->_r_start,\
+        //                                 _target->_r_end);
+        // tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+        //                                 _target->_w_start, \
+        //                                 _target->_w_end);
         
-        tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 4 * PAGE_SIZE, 4 * PAGE_SIZE);
+        // tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 16 * PAGE_SIZE, 16 * PAGE_SIZE);
 
         tmp.handle_num = idx_lib;
         

@@ -13,7 +13,7 @@ int handle_DasicsUFetchFault(struct ucontext_trap * regs)
     uint64_t dasics_free_zone_return_pc = csr_read(0x8b2);  // DasicsFreeZoneReturnPC
 
 
-    // dasics_printf("DASICS_EXCEPTION: utval: 0x%lx, record: 0x%lx\n", regs->utval, dasics_return_pc);
+    dasics_printf("DASICS_EXCEPTION: utval: 0x%lx, record: 0x%lx\n", regs->utval, dasics_return_pc);
     
 
 

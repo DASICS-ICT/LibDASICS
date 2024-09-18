@@ -82,6 +82,11 @@
 #define CSR_DJBOUND3HI      0x8c7
 #define CSR_DJCFG           0x8c8
 
+#define CSR_MEMLEVEL        0x8cc
+#define CSR_JMPLEVEL        0x8cd
+
+#define LEVEL_MASK          0x3
+
 #define csr_read(reg) ({ unsigned long __tmp; \
   asm volatile ("csrr %0, " #reg : "=r"(__tmp)); \
   __tmp; })

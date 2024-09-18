@@ -10,6 +10,7 @@
 #include <umaincall.h>
 #include <mem.h>
 #include <openssl_mem.h>
+#include <hook.h>
 
 uint64_t umaincall_helper;
 
@@ -197,6 +198,7 @@ static int dasics_bound_checker(uint64_t lo, uint64_t hi, int perm)
 
 
 
+
 uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
 {
     // uint64_t dasics_return_pc = csr_read(0x8b1);            // DasicsReturnPC
@@ -205,6 +207,8 @@ uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
     if (dasics_dynamic_call(regs)) return 0;
 
     if (dasics_openssl_umaincall_hook(regs)) return 0;
+
+    if (dasics_func_pointer_hook(regs)) return 0;
 
     uint64_t retval = 0;
 
@@ -309,29 +313,29 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
         break;
     
     case EXC_DASICS_ULOAD_FAULT:
-        csr_idx = dasics_ldst_checker(regs->utval, 1);
+        // csr_idx = dasics_ldst_checker(regs->utval, 1);
 
-        if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
-            uint64_t hi, lo;
-            LIBBOUND_LOOKUP(hi, lo, csr_idx, READ);
-            dasics_printf("[DASICS EXCEPTION]Info: dasics uload fault OK! new csr idx is %d, lo = %#lx, hi = %#lx\n", \
-                csr_idx, lo, hi);
-            return;
-        }
+        // if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
+        //     uint64_t hi, lo;
+        //     LIBBOUND_LOOKUP(hi, lo, csr_idx, READ);
+        //     dasics_printf("[DASICS EXCEPTION]Info: dasics uload fault OK! new csr idx is %d, lo = %#lx, hi = %#lx\n", \
+        //         csr_idx, lo, hi);
+        //     return;
+        // }
 
         error = udasics_load_fault_handler(regs);
         break;
 
     case EXC_DASICS_USTORE_FAULT:
-        csr_idx = dasics_ldst_checker(regs->utval, 0);
+        // csr_idx = dasics_ldst_checker(regs->utval, 0);
 
-        if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
-            uint64_t hi, lo;
-            LIBBOUND_LOOKUP(hi, lo, csr_idx, READ);
-            dasics_printf("[DASICS EXCEPTION]Info: dasics ustore fault OK! new csr idx is %d, lo = %#lx, hi = %#lx\n", \
-                csr_idx, lo, hi);
-            return;
-        }      
+        // if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
+        //     uint64_t hi, lo;
+        //     LIBBOUND_LOOKUP(hi, lo, csr_idx, READ);
+        //     dasics_printf("[DASICS EXCEPTION]Info: dasics ustore fault OK! new csr idx is %d, lo = %#lx, hi = %#lx\n", \
+        //         csr_idx, lo, hi);
+        //     return;
+        // }      
 
         error = udasics_store_fault_handler(regs);
         break;
@@ -351,6 +355,7 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
 
 int32_t dasics_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi) {
     uint64_t libcfg = csr_read(0x880);  // DasicsLibCfg
+    uint64_t memlevel = csr_read(0x8cc); // DasicsMemLevel
     int32_t max_cfgs = DASICS_LIBCFG_WIDTH;
     int32_t step = 4;
 
@@ -378,12 +383,17 @@ int32_t dasics_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi) {
 
     // Kick out the oldest victim if we cannot find one available place
     if (victim == max_cfgs) {
+        dasics_printf("Malloc libcfg failed, libcfg: 0x%lx\n", libcfg);
+        exit(1);
         // victim = dasics_oldest_victim();
         victim = rand() % DASICS_LIBCFG_WIDTH;
     }
 
     // Write libbound
     LIBBOUND_LOOKUP(hi, lo, victim, WRITE);
+    memlevel &= (~(LEVEL_MASK << (victim * 2)));
+    csr_write(0x8cc, memlevel);
+
 
     // Write config
     libcfg &= ~(DASICS_LIBCFG_MASK << (victim * step));
@@ -467,8 +477,11 @@ uint32_t dasics_libcfg_get(int32_t handle) {
 int32_t dasics_jumpcfg_alloc(uint64_t lo, uint64_t hi)
 {
     uint64_t jumpcfg = csr_read(0x8c8);    // DasicsJumpCfg
+    uint64_t jmplevel = csr_read(0x8cd);    // DasicsJumpLevel
     int32_t max_cfgs = DASICS_JUMPCFG_WIDTH;
     int32_t step = 16;
+
+
 
     for (int32_t idx = 0; idx < max_cfgs; ++idx) {
         uint64_t curr_cfg = (jumpcfg >> (idx * step)) & DASICS_JUMPCFG_MASK;
@@ -495,6 +508,8 @@ int32_t dasics_jumpcfg_alloc(uint64_t lo, uint64_t hi)
                 default:
                     break;
             }
+            jmplevel &= (~(LEVEL_MASK << (idx * 2)));
+            csr_write(0x8cd, jmplevel);
 
             jumpcfg &= ~(DASICS_JUMPCFG_MASK << (idx * step));
             jumpcfg |= DASICS_JUMPCFG_V << (idx * step);
