@@ -9,6 +9,7 @@
 void print_exit_func_num();
 // STD
 #include <stdlib.h>
+#include <assert.h>
 
 fixup_entry_t dll_fixup_handler;
 
@@ -109,11 +110,27 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     // atexit(&print_exit_func_num);
     _umain_elf_table->calculate = 1;
 
-    LIBCFG_ALLOC(DASICS_LIBCFG_V | DASICS_LIBCFG_V | DASICS_LIBCFG_W, sp - 100 * PAGE_SIZE, 100 * PAGE_SIZE);
+    LIBCFG_ALLOC(DASICS_LIBCFG_V | DASICS_LIBCFG_R | DASICS_LIBCFG_W, sp - 100 * PAGE_SIZE, 100 * PAGE_SIZE);
 
 #endif
 
-    
+    umain_elf_t * libcrypto = _get_area_by_name("libcrypto.so.1.0.0");
+    umain_elf_t * libssl = _get_area_by_name("libssl.so.1.0.0");
+    umain_elf_t * libc = _get_area_by_name("libc.so.6");        
+    assert(libcrypto != NULL);
+    assert(libssl != NULL);
+    assert(libc != NULL); 
+    register void *tp asm ("tp");
+
+    dasics_printf("Set TLS begin: 0x%lx, end: 0x%lx\n", tp, tp + PAGE_SIZE);
+    // LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, (uint64_t)openssl_self_heap, openssl_full_size);
+    // LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, 0, TASK_SIZE);
+    LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, tp, PAGE_SIZE);
+    LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, libc->_r_start, libc->_w_end);
+    dasics_printf("Set openssl library data: 0x%lx, 0x%lx\n", libcrypto->_r_start, libssl->_w_end);
+    LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, libcrypto->_r_start, libssl->_w_end);
+    dasics_jumpcfg_alloc(libcrypto->_r_start, libssl->_w_end);
+
 }
 
 void print_exit_func_num()

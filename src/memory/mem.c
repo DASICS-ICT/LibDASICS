@@ -41,7 +41,8 @@ void init_openssl_self_heap(uint64_t size)
     openssl_full_size = size;
     openssl_self_heap = self_heap;
     update_self_heap_metadata(self_heap, size);
-
+    dasics_printf("Set openssl self heap begin: 0x%lx, end: 0x%lx\n", (uint64_t)openssl_self_heap, (uint64_t)openssl_self_heap + openssl_full_size);
+    LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, openssl_self_heap, openssl_full_size);
     umain_elf_t * openssl = _get_area_by_name("libssl.so.1.0.0");
     assert(openssl != NULL);
     struct elf_msg openssl_elf;
@@ -64,7 +65,7 @@ void init_openssl_self_heap(uint64_t size)
 int dasics_openssl_umaincall_hook(struct umaincall * regs)
 {
     assert(openssl_self_heap != NULL);
-    uint64_t dasics_return_pc = csr_read(0x8b4);            // DasicsReturnPC
+    // uint64_t dasics_return_pc = csr_read(0x8b4);            // DasicsReturnPC
     // uint64_t dasics_free_zone_return_pc = csr_read(0x8b2);  // DasicsFreeZoneReturnPC
     if (regs->a0 == DASICS_HOOK_MAGIC)
     {
@@ -77,9 +78,10 @@ int dasics_openssl_umaincall_hook(struct umaincall * regs)
             // regs->a0 = (uint64_t)malloc(regs->a2);
             // regs->a0 = (uint64_t)openssl_self_heap
             assert(openssl_malloc_size < openssl_full_size);
-            uint64_t p = ROUND(regs->a2, 8);
+            uint64_t p = ROUND(regs->a2, 64);
             regs->a0 = (uint64_t)openssl_self_heap;
             // dasics_printf("Malloc: malloc %lx\n",  regs->a0);
+            // dasics_memset(openssl_self_heap, 0, p);
             openssl_self_heap = (void *)((uint64_t)openssl_self_heap + p);
             openssl_malloc_size += p;
             update_self_heap_used(openssl_malloc_size);
@@ -89,6 +91,9 @@ int dasics_openssl_umaincall_hook(struct umaincall * regs)
         {
             // Do nothing
             // free((void *)regs->a2);
+            // if ((void *)regs->a2 != NULL)
+            //     dasics_memset((void *)regs->a2, 0, 64);
+            // dasics_printf("[OPENSSL FREE]: Free 0x%lx\n", regs->a2);
             break;
         }
             
@@ -96,7 +101,7 @@ int dasics_openssl_umaincall_hook(struct umaincall * regs)
         {
             // regs->a0 = (uint64_t)realloc((void *)regs->a2, regs->a3);
             assert(openssl_malloc_size < openssl_full_size);
-            uint64_t p = ROUND(regs->a3, 8);
+            uint64_t p = ROUND(regs->a3, 64);
             regs->a0 = (uint64_t)openssl_self_heap;
             dasics_memcpy(openssl_self_heap, (void *)regs->a2, regs->a3);
             // dasics_printf("Malloc: malloc %lx\n",  regs->a0);
@@ -110,8 +115,8 @@ int dasics_openssl_umaincall_hook(struct umaincall * regs)
             break;
         }
         regs->t1 = regs->ra;
-        csr_write(0x8b4, dasics_return_pc);             // DasicsReturnPC
-        asm("fence.i");
+        // csr_write(0x8b4, dasics_return_pc);             // DasicsReturnPC
+        // asm("fence.i");
         // csr_write(0x8b2, dasics_free_zone_return_pc);   // DasicsFreeZoneReturnPC        
         return 1;
     }

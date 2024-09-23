@@ -66,36 +66,39 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         )
     {
         // dasics_printf("[LOG]: This is a cross call\n");
-        static int openssl_flag = 0;
-        if (openssl_flag == 0 && openssl_self_heap != NULL)
-        {
-            umain_elf_t * libcrypto = _get_area_by_name("libcrypto.so.1.0.0");
-            umain_elf_t * libssl = _get_area_by_name("libssl.so.1.0.0");
-            umain_elf_t * libc = _get_area_by_name("libc.so.6");        
-            assert(libcrypto != NULL);
-            assert(libssl != NULL);
-            assert(libc != NULL); 
-            register void *tp asm ("tp");
+        // static int openssl_flag = 0;
+        // // if (openssl_flag == 0 && openssl_self_heap != NULL)
 
-            dasics_printf("Set openssl self heap begin: 0x%lx, end: 0x%lx\n", (uint64_t)openssl_self_heap, (uint64_t)openssl_self_heap + openssl_full_size);
-            dasics_printf("Set TLS begin: 0x%lx, end: 0x%lx\n", tp, tp + PAGE_SIZE);
-            LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, (uint64_t)openssl_self_heap, openssl_full_size);
-            LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, tp, PAGE_SIZE);
-            LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, libc->_r_start, libc->_w_end);
-            dasics_printf("Set openssl library data: 0x%lx, 0x%lx\n", libcrypto->_r_start, libssl->_w_end);
-            LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, libcrypto->_r_start, libssl->_w_end);
-            dasics_jumpcfg_alloc(libcrypto->_r_start, libssl->_w_end);
-            openssl_flag = 1;
-        }
+        // if (openssl_flag == 0)
+        // {
+        //     umain_elf_t * libcrypto = _get_area_by_name("libcrypto.so.1.0.0");
+        //     umain_elf_t * libssl = _get_area_by_name("libssl.so.1.0.0");
+        //     umain_elf_t * libc = _get_area_by_name("libc.so.6");        
+        //     assert(libcrypto != NULL);
+        //     assert(libssl != NULL);
+        //     assert(libc != NULL); 
+        //     register void *tp asm ("tp");
+
+        //     dasics_printf("Set openssl self heap begin: 0x%lx, end: 0x%lx\n", (uint64_t)openssl_self_heap, (uint64_t)openssl_self_heap + openssl_full_size);
+        //     dasics_printf("Set TLS begin: 0x%lx, end: 0x%lx\n", tp, tp + PAGE_SIZE);
+        //     // LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, (uint64_t)openssl_self_heap, openssl_full_size);
+        //     LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, 0, TASK_SIZE);
+        //     LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, tp, PAGE_SIZE);
+        //     LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, libc->_r_start, libc->_w_end);
+        //     dasics_printf("Set openssl library data: 0x%lx, 0x%lx\n", libcrypto->_r_start, libssl->_w_end);
+        //     LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_R | DASICS_LIBCFG_V, libcrypto->_r_start, libssl->_w_end);
+        //     dasics_jumpcfg_alloc(libcrypto->_r_start, libssl->_w_end);
+        //     openssl_flag = 1;
+        // }
 
         struct cross tmp;
-        int idx_lib = 0;
-        int idx_jmp = 0;
-        dasics_memset(&tmp, 0, sizeof(struct cross));
-        tmp.begin = _entry;
-        tmp.target = _target;
+        // int idx_lib = 0;
+        // int idx_jmp = 0;
+        // dasics_memset(&tmp, 0, sizeof(struct cross));
+        // tmp.begin = _entry;
+        // tmp.target = _target;
         tmp.ra = CallContext->ra;
-        tmp.func = _target->namespace_func;
+        // tmp.func = _target->namespace_func;
         
         // tmp.jmpcfg[idx_jmp++] = dasics_jumpcfg_alloc(_target->_plt_start, _target->_text_end);
 
@@ -108,7 +111,7 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         
         // tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 16 * PAGE_SIZE, 16 * PAGE_SIZE);
 
-        tmp.handle_num = idx_lib;
+        // tmp.handle_num = idx_lib;
         
         // Push 
         push_cross(&tmp);
@@ -117,20 +120,21 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
 
         CallContext->ra = (reg_t)dasics_umaincall;
 
-        if (!_target->namespace_func) return;
-        // Alloc bound
-        struct bound_table * bounds = _target->namespace_func->mem;
+        // if (!_target->namespace_func) return;
+        // // Alloc bound
+        // struct bound_table * bounds = _target->namespace_func->mem;
 
-        for (int i = 0; i <_target->namespace_func->bound_max; i++)
-        {
-            /* code */
-            if (bounds[i].addr)
-                bounds[i].handler = LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_V, bounds[i].addr, bounds[i].length);
-        }        
+        // for (int i = 0; i <_target->namespace_func->bound_max; i++)
+        // {
+        //     /* code */
+        //     if (bounds[i].addr)
+        //         bounds[i].handler = LIBCFG_ALLOC(DASICS_LIBCFG_W | DASICS_LIBCFG_V, bounds[i].addr, bounds[i].length);
+        // }        
     }
 }
 
 
+    static int openssl_flag = 0;
 
 
 int dasics_dynamic_call(struct umaincall * CallContext)
@@ -163,52 +167,31 @@ int dasics_dynamic_call(struct umaincall * CallContext)
     // Not Maincall
     CallContext->t3 = 0;
 
-    if (plt_idx == -1) 
-    {
-        dasics_printf("[ERROR]: DASICS ERROR, dasics_dynamic error\n");
-        exit(1);
-    } 
     // Begin DASICS_ dynamic func 
     /* Result */ 
     uint64_t target = 0;
     umain_elf_t *target_elf = NULL;
-    const char * target_name = NULL;
+    // const char * target_name = NULL;
 
     // Now, we will got the target and so on 
     target = _elf->_local_got_table[plt_idx + 2]; 
     target_elf = _elf->target_elf[plt_idx + 2];    
-    target_name = _elf->target_func_name[plt_idx + 2]; 
-    assert(target != 0);
-    assert(target_elf != NULL); 
-    assert(target_name != NULL);
+    // target_name = _elf->target_func_name[plt_idx + 2]; 
+    // assert(target != 0);
+    // assert(target_elf != NULL); 
+    // assert(target_name != NULL);
 
 
     CallContext->t1 = target;
-    if (_elf == _umain_elf_table && !(target_elf->_flags & MAIN_AREA))
-    {
-        csr_write(0x8b4, CallContext->ra);
-        asm("fence.i");
-    }
+    // if (_elf == _umain_elf_table && !(target_elf->_flags & MAIN_AREA))
+    // {
+    //     csr_write(0x8b4, CallContext->ra);
+    //     asm("fence.i");
+    // }
         
 
 
-
-    // Add memory support
-    // if (!(target_elf->_flags & MAIN_AREA) && target_elf != _elf)
-    // {
-    //     if (_elf->local_func[plt_idx + 2])
-    //         target_elf->namespace_func = _elf->local_func[plt_idx + 2];
-    //     else 
-    //     {
-    //         set_global_func_man(target_elf, target);
-    //         // Next time 
-    //         _elf->local_func[plt_idx + 2] = target_elf->namespace_func; 
-    //     }
-    // }
-
-    // dasics_printf("[LOG]: DASICS lib (%s), target elf: %s name: %s\n", _elf->real_name, target_elf->real_name, target_name);
-
-    cross_call(_elf, target_elf, target_name, CallContext);
+    cross_call(_elf, target_elf, NULL, CallContext);
 
 
     dynamic_level--;

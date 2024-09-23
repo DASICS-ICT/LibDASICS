@@ -55,22 +55,22 @@ void pop_cross(struct umaincall * maincallContext)
     struct cross * cross_handle =(struct cross *)cross_stack; 
 
     // Realse Bounds
-    for (int i = 0; i < cross_handle->handle_num; i++)
-    {
-        if (cross_handle->handle[i])
-            assert(dasics_libcfg_free(cross_handle->handle[i]) == 0);        
-    }
+    // for (int i = 0; i < cross_handle->handle_num; i++)
+    // {
+    //     if (cross_handle->handle[i])
+    //         assert(dasics_libcfg_free(cross_handle->handle[i]) == 0);        
+    // }
     maincallContext->ra = cross_handle->ra;
 
     // Free Jmp
-    for (int i = 0; i < DASICS_JUMPCFG_WIDTH; i++)
-    {
-        if (cross_handle->jmpcfg[i])
-            assert(dasics_jumpcfg_free(cross_handle->jmpcfg[i]) == 0);
-    }
+    // for (int i = 0; i < DASICS_JUMPCFG_WIDTH; i++)
+    // {
+    //     if (cross_handle->jmpcfg[i])
+    //         assert(dasics_jumpcfg_free(cross_handle->jmpcfg[i]) == 0);
+    // }
     
-    umain_elf_t * target = cross_handle->target;
-    umain_elf_t * entry = cross_handle->begin;
+    // umain_elf_t * target = cross_handle->target;
+    // umain_elf_t * entry = cross_handle->begin;
 
     // dasics_printf("[RETURN]: RETURN from %s to %s\n", target->real_name, entry->real_name);
     // struct func_mem * mem = NULL;

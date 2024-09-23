@@ -54,6 +54,7 @@ ENTRY(dasics_umaincall)
     ld   t0, umaincall_helper
     jalr t0
     RESTORE_MAINCALL
+    // .word 0x0003100b // jr t1
     jr t1
 END(dasics_umaincall)
 
