@@ -187,12 +187,12 @@ static int dasics_bound_checker(uint64_t lo, uint64_t hi, int perm)
 }
 
 
-uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
+void dasics_umaincall_helper(struct umaincall * regs, ...)
 {
     // uint64_t dasics_return_pc = csr_read(0x8b1);            // DasicsReturnPC
     // uint64_t dasics_free_zone_return_pc = csr_read(0x8b2);  // DasicsFreeZoneReturnPC
     // Judge This is a dynamic call
-    if (dasics_dynamic_call(regs)) return 0;
+    if (dasics_dynamic_call(regs)) return;
 
     uint64_t retval = 0;
 
@@ -205,7 +205,7 @@ uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
     {
         case Umaincall_PRINT: {
             const char *format = va_arg(args, const char *);
-            vprintf(format, args);
+            retval = vprintf(format, args);
         }
         break;
 
@@ -215,12 +215,11 @@ uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
     }
 
     regs->t1 = regs->ra;
+    regs->a0 = retval;
     // csr_write(0x8b1, dasics_return_pc);             // DasicsReturnPC
     // csr_write(0x8b2, dasics_free_zone_return_pc);   // DasicsFreeZoneReturnPC
 
     va_end(args);
-
-    return retval;
 }
 
 static int dasics_oldest_victim(void) {
