@@ -31,7 +31,7 @@ int _open_maincall()
             goto giveup;
 
         /* got will be filled dasics_umaincall */
-        for (int _i = 2; _i < _map->got_num; _i++)
+        for (int _i = 2; _i < _map->got_num + 2; _i++)
         {            
             if (_map->got_begin[_i] != (uint64_t)_map->plt_begin) continue;
             _map->got_begin[_i] = (uint64_t)dasics_umaincall;
