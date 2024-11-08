@@ -27,7 +27,7 @@ int handle_DasicsULoadFault(struct ucontext_trap * regs)
 //         if (_umain_got_table == NULL) goto dasics_static_load;
 //         exit(1);
 //     }
-    dasics_printf("[DASICS_EXCEPTION]: Load fault: 0x%lx, pc: %lx\n", regs->utval, regs->uepc);
+    dasics_printf("[DASICS_EXCEPTION]: Load fault: 0x%lx, pc: 0x%lx\n", regs->utval, regs->uepc);
 
 
 dasics_static_load:
@@ -76,7 +76,7 @@ int handle_DasicsUStoreFault(struct ucontext_trap * regs)
 //         if (_umain_got_table == NULL) goto dasics_static_store;
 //         exit(1);
 //     }
-    printf("[DASICS_EXCEPTION]: Store fault: 0x%lx pc: %lx\n", regs->utval, regs->uepc);
+    printf("[DASICS_EXCEPTION]: Store fault: 0x%lx pc: 0x%lx\n", regs->utval, regs->uepc);
 
 dasics_static_store:
     #define SD_INCMASK 0x00000003

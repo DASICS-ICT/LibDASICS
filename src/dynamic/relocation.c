@@ -19,7 +19,7 @@ static int _find_idx_by_name(umain_elf_t * target, const char *name)
     {
         if (!dasics_strcmp(_get_lib_name(target, i), name))
         {
-            return i - 2;
+            return i;
         }
     }
 
@@ -115,14 +115,6 @@ int add_redirect_item(const char *func_name)
 
     umain_elf_t * target = _umain_elf_table->target_elf[idx+2];
 
-    if (!target) return 0;
- 
-    if (target->_copy_lib_elf)
-    {
-        _umain_elf_table->_local_got_table[idx + 2] = target->_copy_lib_elf->l_addr + \
-                (_umain_elf_table->_local_got_table[idx + 2] - target->l_addr);
-        _umain_elf_table->target_elf[idx+2] =  target->_copy_lib_elf;
-    }    
 
     return 0;
 }
@@ -141,14 +133,6 @@ int delete_redirect_item(const char *func_name)
     _umain_elf_table->redirect_switch[idx + 2] = 0;
     umain_elf_t * target = _umain_elf_table->target_elf[idx+2];
 
-    if (!target) return 0;
- 
-    if (target->_copy_lib_elf)
-    {
-        _umain_elf_table->_local_got_table[idx + 2] = target->_copy_lib_elf->l_addr + \
-                (_umain_elf_table->_local_got_table[idx + 2] - target->l_addr);
-        _umain_elf_table->target_elf[idx+2] =  target->_copy_lib_elf;
-    }
 
     return 0;
 }
