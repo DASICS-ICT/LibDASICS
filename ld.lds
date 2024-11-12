@@ -7,7 +7,7 @@ OUTPUT_FORMAT("elf64-littleriscv", "elf64-littleriscv",
 	      "elf64-littleriscv")
 OUTPUT_ARCH(riscv)
 ENTRY(_check_dasics)
-SEARCH_DIR("=/home/wh/riscv/riscv64-unknown-linux-gnu/riscv64-unknown-linux-gnu/lib64/lp64d"); SEARCH_DIR("=/home/wh/riscv/riscv64-unknown-linux-gnu/riscv64-unknown-linux-gnu/lib64"); SEARCH_DIR("=/usr/local/lib64/lp64d"); SEARCH_DIR("=/usr/local/lib64"); SEARCH_DIR("=/lib64/lp64d"); SEARCH_DIR("=/lib64"); SEARCH_DIR("=/usr/lib64/lp64d"); SEARCH_DIR("=/usr/lib64"); SEARCH_DIR("=/home/wh/riscv/riscv64-unknown-linux-gnu/riscv64-unknown-linux-gnu/lib"); SEARCH_DIR("=/usr/local/lib"); SEARCH_DIR("=/lib"); SEARCH_DIR("=/usr/lib");
+SEARCH_DIR("=/usr/local/lib64/lp64d"); SEARCH_DIR("=/usr/local/lib64"); SEARCH_DIR("=/lib64/lp64d"); SEARCH_DIR("=/lib64"); SEARCH_DIR("=/usr/lib64/lp64d"); SEARCH_DIR("=/usr/lib64"); SEARCH_DIR("=/usr/local/lib"); SEARCH_DIR("=/lib"); SEARCH_DIR("=/usr/lib");
 SECTIONS
 {
   /* Read-only sections, merged into text segment: */
