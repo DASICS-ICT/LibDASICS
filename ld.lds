@@ -104,8 +104,10 @@ SECTIONS
   PROVIDE (__etext = .);
   PROVIDE (_etext = .);
   PROVIDE (etext = .);
+  PROVIDE (__RODATA_BEGIN__ = .);
   .rodata         : { *(.rodata .rodata.* .gnu.linkonce.r.*) }
   .rodata1        : { *(.rodata1) }
+  PROVIDE (__RODATA_END__ = .);
   .sdata2         :
   {
     *(.sdata2 .sdata2.* .gnu.linkonce.s2.*)
