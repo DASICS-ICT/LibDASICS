@@ -157,7 +157,7 @@ static int dasics_bound_checker(uint64_t lo, uint64_t hi, int perm)
     // Fill bounds array with permission matched libbounds
     for (idx = 0; idx < max_cfgs; ++idx) {
         uint32_t cfg = dasics_libcfg_get(idx);
-        if (cfg == -1 || (cfg & DASICS_LIBCFG_V) == 0) {
+        if ((cfg & DASICS_LIBCFG_V) == 0) {
             continue;
         }
         else if ((cfg & (perm | DASICS_LIBCFG_V)) != DASICS_LIBCFG_V) {
@@ -445,7 +445,7 @@ uint32_t dasics_libcfg_get(int32_t handle) {
     HASH_FIND_INT(bounds_table, &handle, entry);
 
     if (NULL == entry) {
-        return -1;
+        return 0;
     } else {
         return entry->priv;
     }
