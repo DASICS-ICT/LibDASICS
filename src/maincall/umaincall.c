@@ -114,7 +114,7 @@ int dasics_dynamic_call(struct umaincall * CallContext)
     // Now, we will got the target and so on 
     target = _elf->_local_got_table[plt_idx + 2]; 
     target_elf = _elf->target_elf[plt_idx + 2];    
-    const char * target_name = _get_lib_name(_elf, plt_idx);
+    const char * target_name = _elf->target_func_name[plt_idx + 2];
 
     if (_elf->redirect_switch[plt_idx + 2] && redirect_switch)
     {
