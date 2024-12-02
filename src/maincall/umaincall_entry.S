@@ -112,6 +112,10 @@ END(dynamic_hook)
 #-----------------------------------------------------------------------
 # never use parameter transfer register
 ENTRY(restore_main)
+    la t4, dynamic_level
+    li t5, 0xffffffffff
+    sd t5, 0(t4)
+
     li t4, 0
     li t5, 0x4000000000
     li t6, 0xb

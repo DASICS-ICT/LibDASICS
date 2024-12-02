@@ -69,7 +69,6 @@ int main(int argc, char *argv[]) {
     // printf("%s\n", dst);
 
 
-    // unregister_udasics();
 	if(setjmp(j_buf)){
 		printf("World!");
 	}else {
