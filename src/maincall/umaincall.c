@@ -15,7 +15,7 @@
 #include <string.h>
 #include <assert.h>
 
-int dynamic_level = 0;
+long long int dynamic_level = -1;
 uint64_t memset_num = 0;
 uint64_t memcpy_num = 0;
 
@@ -52,16 +52,16 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         tmp.ra = CallContext->ra;
         tmp.func = _target->namespace_func;
         
-        tmp.jmpcfg[idx_jmp++] = dasics_jumpcfg_alloc(_target->_plt_start, _target->_text_end);
+        // tmp.jmpcfg[idx_jmp++] = dasics_jumpcfg_alloc(_target->_plt_start, _target->_text_end);
 
-        tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_V, \
-                                        _target->_r_start,\
-                                        _target->_r_end);
-        tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
-                                        _target->_w_start, \
-                                        _target->_w_end);
+        // tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_V, \
+        //                                 _target->_r_start,\
+        //                                 _target->_r_end);
+        // tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+        //                                 _target->_w_start, \
+        //                                 _target->_w_end);
         
-        tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 16 * PAGE_SIZE, 16 * PAGE_SIZE);
+        // tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 16 * PAGE_SIZE, 16 * PAGE_SIZE);
 
         tmp.handle_num = idx_lib;
         
@@ -71,7 +71,8 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         // dasics_printf("[LOG]: DASICS lib (%s), return address: 0x%lx target elf: %s name: %s\n", _entry->real_name, CallContext->ra, _target->real_name, name);
 
         CallContext->ra = (reg_t)dasics_umaincall;
-  
+        csr_write(0x8b1 , CallContext->ra);
+
     }
 }
 
@@ -115,6 +116,8 @@ int dasics_dynamic_call(struct umaincall * CallContext)
     target = _elf->_local_got_table[plt_idx + 2]; 
     target_elf = _elf->target_elf[plt_idx + 2];    
     const char * target_name = _elf->target_func_name[plt_idx + 2];
+
+    // dasics_printf("%s: %s\n", __func__, target_name);
 
     if (_elf->redirect_switch[plt_idx + 2] && redirect_switch)
     {

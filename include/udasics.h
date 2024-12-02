@@ -69,6 +69,8 @@ int32_t dasics_libcfg_active(int32_t idx);
 int32_t dasics_jumpcfg_alloc(uint64_t lo, uint64_t hi);
 int32_t dasics_jumpcfg_free(int32_t idx);
 int32_t dasics_jumpcfg_active(int32_t idx);
+extern void restore_main();
+
 
 // extern uint64_t umaincall_helper;
 extern void dasics_ufault_entry(void);

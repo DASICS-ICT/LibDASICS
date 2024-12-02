@@ -56,7 +56,7 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 #ifdef DASICS_DEBUG
     dasics_printf("> [INIT] Init maincall for dynamic successfully\n");
 #endif
-    init_cross_stack();
+    // init_cross_stack();
 
 // #ifdef DASICS_DEBUG
 //     dasics_printf("> [INIT] Init corss stack successfully\n");
@@ -92,11 +92,14 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 
     original_libcfg_free_all();
     original_jumpcfg_free_all();
+    // extern uint64_t _got_start, _got_end;
+    // original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R | DASICS_LIBCFG_W, 0, TASK_SIZE);
+    // original_jumpcfg_alloc(TASK_SIZE / 2, TASK_SIZE);
 
     // setup user ufault handler 
     csr_write(0x005, (uint64_t)dasics_ufault_entry);
 
-    atexit(&print_exit_func_num);
+    // atexit(&print_exit_func_num);
     _umain_elf_table->calculate = 1;
 
 #endif

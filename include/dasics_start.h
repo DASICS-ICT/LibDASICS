@@ -14,6 +14,7 @@ extern void _check_dasics();
 extern void _setup_mainlib_entry();
 extern void _setup_copy_lib_entry();
 extern void _setup_fault();
+extern void dynamic_hook();
 
 // DASICS INIT STAGE FALUT AND LIB BOUNDS
 int32_t original_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi);
@@ -43,7 +44,7 @@ void dasics_start_fault(struct ucontext_trap * regs);
             asm volatile ("ret");          \
         })
 
-#define TASK_SIZE 0X4000000000
+#define TASK_SIZE 0x4000000000
 
 
 // DASICS module flag

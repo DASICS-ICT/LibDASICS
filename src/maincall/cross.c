@@ -8,6 +8,7 @@
 #include <dasics_start.h>
 #include <dasics_string.h>
 #include <ufuncmem.h>
+#include <dmalloc.h>
 
 uint64_t cross_stack = 0;
 uint64_t cross_stack_base = 0;
@@ -17,7 +18,12 @@ void init_cross_stack()
 {
     int malloc_size = (sizeof(struct cross) + \
                         sizeof(int) * DASICS_LIBCFG_WIDTH) * MAX_DEPTH;
-    cross_stack_base = (uint64_t)malloc(malloc_size);
+    cross_stack_base = (int64_t)_dasics_mmap(0, \
+                            malloc_size, \
+                            PROT_READ | PROT_WRITE, \
+                            MAP_PRIVATE | MAP_ANONYMOUS, 
+                            -1,
+                            0);//(uint64_t)malloc(malloc_size);
 
     if(!cross_stack_base)
     {

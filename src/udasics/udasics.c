@@ -296,29 +296,29 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
         break;
     
     case EXC_DASICS_ULOAD_FAULT:
-        csr_idx = dasics_ldst_checker(regs->utval, 1);
+        // csr_idx = dasics_ldst_checker(regs->utval, 1);
 
-        if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
-            uint64_t hi, lo;
-            LIBBOUND_LOOKUP(hi, lo, csr_idx, READ);
-            dasics_printf("[DASICS EXCEPTION]Info: dasics uload fault OK! new csr idx is %d, lo = %#lx, hi = %#lx\n", \
-                csr_idx, lo, hi);
-            return;
-        }
+        // if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
+        //     uint64_t hi, lo;
+        //     LIBBOUND_LOOKUP(hi, lo, csr_idx, READ);
+        //     dasics_printf("[DASICS EXCEPTION]Info: dasics uload fault OK! new csr idx is %d, lo = %#lx, hi = %#lx\n", \
+        //         csr_idx, lo, hi);
+        //     return;
+        // }
 
         error = udasics_load_fault_handler(regs);
         break;
 
     case EXC_DASICS_USTORE_FAULT:
-        csr_idx = dasics_ldst_checker(regs->utval, 0);
+        // csr_idx = dasics_ldst_checker(regs->utval, 0);
 
-        if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
-            uint64_t hi, lo;
-            LIBBOUND_LOOKUP(hi, lo, csr_idx, READ);
-            dasics_printf("[DASICS EXCEPTION]Info: dasics ustore fault OK! new csr idx is %d, lo = %#lx, hi = %#lx\n", \
-                csr_idx, lo, hi);
-            return;
-        }      
+        // if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
+        //     uint64_t hi, lo;
+        //     LIBBOUND_LOOKUP(hi, lo, csr_idx, READ);
+        //     dasics_printf("[DASICS EXCEPTION]Info: dasics ustore fault OK! new csr idx is %d, lo = %#lx, hi = %#lx\n", \
+        //         csr_idx, lo, hi);
+        //     return;
+        // }      
 
         error = udasics_store_fault_handler(regs);
         break;

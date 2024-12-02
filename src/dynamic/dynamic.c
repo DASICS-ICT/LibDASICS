@@ -13,6 +13,8 @@
 //STD
 #include <stdlib.h>
 
+
+uint64_t dynamic_hook_ra;
 umain_elf_t * _umain_elf_table = NULL;
 umain_elf_t * dasics_main_elf = NULL;
 int dasics_stage = 0;
@@ -77,21 +79,27 @@ static void _fill_local_got(umain_elf_t * elf)
         // Recover the plt begin
             // Only elf needed
     down:
-        elf->got_begin[i] = (uint64_t)elf->plt_begin;     
+        if (elf == dasics_main_elf)
+            elf->got_begin[i] = (uint64_t)elf->plt_begin;    
+        else 
+            elf->got_begin[i] = ulib_func;
     }
 
+    if (elf == dasics_main_elf)
+    {
+        uint64_t start = ROUNDDOWN(elf->l_relro_addr, PAGE_SIZE);
+        uint64_t end = ROUND(elf->l_relro_addr + elf->l_relro_size, PAGE_SIZE);
+        
+        _dasics_mprotect((void *)start, \
+                            end - start, \
+                            PROT_READ | PROT_WRITE);
+        elf->got_begin[0] = (uint64_t)&dynamic_hook;
+        elf->got_begin[1] = (uint64_t)elf;  
+        _dasics_mprotect((void *)start, \
+                            end - start, \
+                            PROT_READ);              
+    }
 
-    uint64_t start = ROUNDDOWN(elf->l_relro_addr, PAGE_SIZE);
-    uint64_t end = ROUND(elf->l_relro_addr + elf->l_relro_size, PAGE_SIZE);
-    
-    _dasics_mprotect((void *)start, \
-                        end - start, \
-                        PROT_READ | PROT_WRITE);
-    elf->got_begin[0] = (uint64_t)dasics_umaincall;
-    elf->got_begin[1] = (uint64_t)elf;  
-    _dasics_mprotect((void *)start, \
-                        end - start, \
-                        PROT_READ);      
 
 }
 
