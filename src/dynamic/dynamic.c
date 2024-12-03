@@ -80,7 +80,7 @@ static void _fill_local_got(umain_elf_t * elf)
             // Only elf needed
     down:
         if (elf == dasics_main_elf)
-            elf->got_begin[i] = (uint64_t)elf->plt_begin;    
+            elf->got_begin[i] = (uint64_t)&dynamic_hook;    
         else 
             elf->got_begin[i] = ulib_func;
     }
@@ -97,7 +97,8 @@ static void _fill_local_got(umain_elf_t * elf)
         elf->got_begin[1] = (uint64_t)elf;  
         _dasics_mprotect((void *)start, \
                             end - start, \
-                            PROT_READ);              
+                            PROT_READ);             
+
     }
 
 

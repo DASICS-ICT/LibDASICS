@@ -102,8 +102,8 @@ END(__dasics_uret)
 ENTRY(dasics_ufault_entry) 
     SAVE_CONTEXT
     // handle syscall fault alone
-    csrr t0, CSR_UCAUSE
-    li t1, 30 // EXC_DASICS_UECALL_FAULT
+    csrr t0, CSR_DFREASON
+    li t1, 1 // DFR_ECALL_DASICS_FAULT
     beq t0, t1, 1f
 
     mv a0, sp 

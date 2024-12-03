@@ -15,14 +15,20 @@
 #include <string.h>
 #include <assert.h>
 
+#define GOT_NUM 4096
 long long int dynamic_level = -1;
 uint64_t memset_num = 0;
 uint64_t memcpy_num = 0;
+uint64_t _local_table[GOT_NUM] = {0};
 
 int _open_maincall()
 {
     umaincall_helper = (uint64_t)dasics_umaincall_helper;
     csr_write(0x8b0, (uint64_t)dasics_umaincall);
+    // _local_table = _umain_elf_table->_local_got_table;
+    int copy_size = sizeof(uint64_t) * (_umain_elf_table ->got_num + 2);
+    assert((_umain_elf_table ->got_num + 2) < GOT_NUM);
+    dasics_memcpy(_local_table, _umain_elf_table->_local_got_table, copy_size);
     return 0;
 }
 

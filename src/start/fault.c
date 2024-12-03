@@ -8,11 +8,12 @@ void dasics_start_fault(struct ucontext_trap * regs)
 
     uint64_t dasics_return_pc = csr_read(0x8b1);            // DasicsReturnPC
     uint64_t dasics_free_zone_return_pc = csr_read(0x8b2);  // DasicsFreeZoneReturnPC
+    uint64_t dasics_dfreason = csr_read(0x8b3);             // DasicsDFreason
     
 
-    switch (regs->ucause)
+    switch (dasics_dfreason)
     {
-    case EXC_DASICS_UFETCH_FAULT:
+    case DFR_JUMP_DASICS_FAULT:
         /* code */
         if (dasics_return_pc != regs->utval)
         {
@@ -26,7 +27,7 @@ void dasics_start_fault(struct ucontext_trap * regs)
         }
         break;
 
-    case EXC_DASICS_UECALL_FAULT:
+    case DFR_ECALL_DASICS_FAULT:
         // jump ecall
         regs->uepc += 4;    
         regs->a0 = invoke_syscall(regs);

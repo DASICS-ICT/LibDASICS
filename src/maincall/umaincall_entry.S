@@ -54,15 +54,27 @@ ENTRY(dynamic_hook)
     addi t5, t5, 1
     sd t5, 0(t4)
 
-    ld t2, (t0)
-    add t2, t2, t1
-    ld t2, 16(t2)
+//    ld t2, (t0)
+//    add t2, t2, t1
+//    ld t2, 16(t2)
 
 // #ifdef DASICS_LINUX
 //     csrw CSR_DRETURNPC, ra
 // #endif
 //     fence.i
 //     jr t2
+    // Calculate index
+    la t0, _plt_start
+    addi t1, t1, -0xc
+    sub t1, t1, t0
+    srli t1, t1, 1
+
+    // get function addr
+    la t2, _local_table
+    add t1, t2, t1
+    ld t2, 0(t1)
+
+
     li t4, 0
     li t5, 0x4000000000
     li t6, 0xb
