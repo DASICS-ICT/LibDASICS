@@ -15,7 +15,7 @@ int force_redirect_switch = 0;
 
 static int _find_idx_by_name(umain_elf_t * target, const char *name)
 {
-    for (int  i = 0; i < target->got_num - 2; i++)
+    for (int  i = 0; i < target->got_num; i++)
     {
         if (!dasics_strcmp(_get_lib_name(target, i), name))
         {

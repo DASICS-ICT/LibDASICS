@@ -14,8 +14,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <spec.h>
 
-#define GOT_NUM 4096
 long long int dynamic_level = -1;
 uint64_t memset_num = 0;
 uint64_t memcpy_num = 0;

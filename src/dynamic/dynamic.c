@@ -239,7 +239,7 @@ static void _find_copy_lib(umain_elf_t * elf)
     }
 
     do {
-        if ((tmp->_flags & MAIN_AREA) && \
+        if (/*(tmp->_flags & MAIN_AREA) && \ */
             !dasics_strcmp(tmp->l_name, elf->l_name))
         {
             tmp->_copy_lib_elf = elf;
@@ -299,7 +299,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
         }
 
         // DASICS_COPY_STAGE will use stdlib and avoid to change BRK
-        umain_elf_t * _elf = dasics_stage == DASICS_COPY_LIB ? (umain_elf_t *)malloc(sizeof(umain_elf_t)) :
+        umain_elf_t * _elf = /*dasics_stage == DASICS_COPY_LIB ? (umain_elf_t *)malloc(sizeof(umain_elf_t)) :*/
                              (umain_elf_t *)dasics_malloc(sizeof(umain_elf_t));
 
         dasics_memset(_elf, 0, sizeof(umain_elf_t));
@@ -325,13 +325,11 @@ int create_umain_elf_chain(struct link_map * main_elf)
         ElfW(Addr) map_base = _elf->l_addr; 
         if (map_base < (uint64_t)_start) _elf->_flags |= MAIN_AREA;
         else 
-        {
             _elf->_flags |= LIB_AREA;
-            // Find copy lib
-            if (dasics_stage == 2)
-            {
-                _find_copy_lib(_elf);
-            }
+        // Find copy lib
+        if (dasics_stage == 2)
+        {
+            _find_copy_lib(_elf);
         }
 
         if (!map_base)  _elf->_flags |= ELF_AREA;

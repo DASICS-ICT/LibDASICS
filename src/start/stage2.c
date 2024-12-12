@@ -56,11 +56,6 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 #ifdef DASICS_DEBUG
     dasics_printf("> [INIT] Init maincall for dynamic successfully\n");
 #endif
-    // init_cross_stack();
-
-// #ifdef DASICS_DEBUG
-//     dasics_printf("> [INIT] Init corss stack successfully\n");
-// #endif
 
 #ifdef DASICS_COPY
     /* begin to init copy of the trust lib */
@@ -74,7 +69,7 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     if (fini)
         atexit(fini);
     /* change dasics_flag to 2 let linker just map trust lib on untrusted area*/
-    _set_auxv_entry(sp, AT_DASICS, 2);
+    _set_auxv_entry(sp, AT_DASICS, 4);
     // Stage 2
     dasics_stage = 2;
     /* Go to stage 3 */
