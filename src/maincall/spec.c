@@ -52,6 +52,7 @@ void ignore_simple_function()
                 }
                 // reloc addr
                 target->got_begin[j + 2] = reloc_addr;
+                break;
             }
         }
 
