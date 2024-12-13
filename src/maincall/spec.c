@@ -14,6 +14,10 @@ char * ignore_func[] =
     "strcmp",
     "strncpy",
     "strncmp",
+    "__sigsetjmp",
+    "siglongjmp",
+    "strchr",
+    "strtol",
     NULL
 };
 

@@ -93,6 +93,7 @@ extern fixup_entry_t dll_fixup_handler;
 extern fixup_entry_t dll_fixup_handler_lib;
 extern uint64_t user_sp;
 extern umain_elf_t * _umain_elf_table;
+extern uint64_t tp_stage1_ld;
 
 // Creat Umain elf 
 int create_umain_elf_chain(struct link_map * main_elf);

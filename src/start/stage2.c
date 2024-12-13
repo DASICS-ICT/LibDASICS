@@ -13,6 +13,7 @@ fixup_entry_t dll_fixup_handler;
 
 rtld_fini dll_fini;
 
+uint64_t tp_stage1_ld;
 /*
  * for the stage two, we will set a utrap function 
  * for the stage3, and some prepare
@@ -56,6 +57,9 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 #ifdef DASICS_DEBUG
     dasics_printf("> [INIT] Init maincall for dynamic successfully\n");
 #endif
+
+    // load tp
+    asm volatile("mv %0, tp": "=r"(tp_stage1_ld)::);
 
 #ifdef DASICS_COPY
     /* begin to init copy of the trust lib */
