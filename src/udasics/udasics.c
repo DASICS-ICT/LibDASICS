@@ -289,13 +289,17 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
     // Save some registers that should be saved by callees
     int error;
     int csr_idx;
-    switch (regs->ucause)
+
+    uint64_t dasics_dfreason = csr_read(0x8b3);             // DasicsDFreason
+
+
+    switch (dasics_dfreason)
     {
-    case EXC_DASICS_UFETCH_FAULT:
+    case DFR_JUMP_DASICS_FAULT:
         error = udasics_fetch_fault_handler(regs);
         break;
     
-    case EXC_DASICS_ULOAD_FAULT:
+    case DFR_LOAD_DASICS_FAULT:
         csr_idx = dasics_ldst_checker(regs->utval, 1);
 
         if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
@@ -309,7 +313,7 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
         error = udasics_load_fault_handler(regs);
         break;
 
-    case EXC_DASICS_USTORE_FAULT:
+    case DFR_STORE_DASICS_FAULT:
         csr_idx = dasics_ldst_checker(regs->utval, 0);
 
         if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
@@ -323,7 +327,7 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
         error = udasics_store_fault_handler(regs);
         break;
     
-    case EXC_DASICS_UECALL_FAULT:
+    case DFR_ECALL_DASICS_FAULT:
         error = udasics_ecall_fault_handler(regs);
         break;
         

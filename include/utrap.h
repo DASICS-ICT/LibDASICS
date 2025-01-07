@@ -67,14 +67,16 @@ struct ucontext_trap
 #define OFFSET_SIZE         (8*20)
 
 /* DASICS exceptions */
-#define EXC_DASICS_UFETCH_FAULT     24
-#define EXC_DASICS_SFETCH_FAULT     25
-#define EXC_DASICS_ULOAD_FAULT      26
-#define EXC_DASICS_SLOAD_FAULT      27
-#define EXC_DASICS_USTORE_FAULT     28
-#define EXC_DASICS_SSTORE_FAULT     29
-#define EXC_DASICS_UECALL_FAULT     30
-#define EXC_DASICS_SECALL_FAULT     31
+#define EXC_DASICS_UCHECK_FAULT     24
+
+/* DASICS ufault reasons */
+#define DFR_NO_DASICS_FAULT 		0
+#define DFR_ECALL_DASICS_FAULT 		1
+#define DFR_LOAD_DASICS_FAULT 		2
+#define DFR_STORE_DASICS_FAULT 		3
+#define DFR_JUMP_DASICS_FAULT 		4
+#define DFR_LOAD_MPK_FAULT 			5
+#define DFR_STORE_MPK_FAULT 		6
 
 typedef int (*utrap_handler)(struct ucontext_trap * regs);
 
