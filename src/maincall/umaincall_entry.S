@@ -47,8 +47,12 @@
 ENTRY(dasics_umaincall)
     SAVE_MAINCALL 
     mv   a0, sp
+    // Let's do dasics_dynamic_call first
+    call dasics_dynamic_call
+    bnez a0, 1f
     ld   t0, umaincall_helper
     jalr t0
+1:
     RESTORE_MAINCALL
     jr t1
 END(dasics_umaincall)

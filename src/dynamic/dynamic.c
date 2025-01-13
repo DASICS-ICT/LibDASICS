@@ -17,6 +17,7 @@ umain_elf_t * dasics_main_elf = NULL;
 int dasics_stage = 0;
 
 extern char _interp_start[];
+extern uint64_t _start[];
 
 // Fill dynamic section
 static void _fill_dynamic_section(ElfW(Dyn) **l_info, ElfW(Dyn) *l_ld)
@@ -78,7 +79,14 @@ static void _fill_local_got(umain_elf_t * elf)
             // Only elf needed
         if (elf == dasics_main_elf)
         {
-            elf->got_begin[i] = (uint64_t)elf->plt_begin;     
+            // The got_begin will jump direct without umaincall hook
+            if (ulib_func < (uint64_t)_start)
+            {
+                elf->got_begin[i] = ulib_func;
+            } else 
+            {
+                elf->got_begin[i] = (uint64_t)elf->plt_begin;     
+            }
         }
     }
 
@@ -261,7 +269,6 @@ int create_umain_elf_chain(struct link_map * main_elf)
     struct link_map * _map_init = main_elf;
 
     // Judge trust area
-    extern uint64_t _start[];
     // Build all chain
     while (_map_init != NULL)
     {
