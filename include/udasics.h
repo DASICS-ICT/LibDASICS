@@ -47,7 +47,7 @@ void resgister_ufetch_fault_handler(utrap_handler fetch_fault_handler);
 
 
 // DASICS maincall
-uint64_t dasics_umaincall_helper(struct umaincall * regs, ...);
+uint64_t dasics_umaincall_helper(UmaincallTypes type, ...);
 
 // source but don't include 
 struct ucontext_trap;

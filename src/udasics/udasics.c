@@ -187,7 +187,7 @@ static int dasics_bound_checker(uint64_t lo, uint64_t hi, int perm)
 }
 
 
-uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
+uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
 {
     // uint64_t dasics_return_pc = csr_read(0x8b1);            // DasicsReturnPC
     // uint64_t dasics_free_zone_return_pc = csr_read(0x8b2);  // DasicsFreeZoneReturnPC
@@ -195,7 +195,6 @@ uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
     uint64_t retval = 0;
 
     va_list args;
-    UmaincallTypes type = (UmaincallTypes)regs->a0;
 
     va_start(args, type);
 
@@ -212,7 +211,6 @@ uint64_t dasics_umaincall_helper(struct umaincall * regs, ...)
             break;
     }
 
-    regs->t1 = regs->ra;
     // csr_write(0x8b1, dasics_return_pc);             // DasicsReturnPC
     // csr_write(0x8b2, dasics_free_zone_return_pc);   // DasicsFreeZoneReturnPC
 

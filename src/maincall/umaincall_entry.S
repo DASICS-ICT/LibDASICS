@@ -50,10 +50,10 @@ ENTRY(dasics_umaincall)
     // Let's do dasics_dynamic_call first
     call dasics_dynamic_call
     bnez a0, 1f
+    RESTORE_MAINCALL
     ld   t0, umaincall_helper
     jalr t0
 1:
-    RESTORE_MAINCALL
     jr t1
 END(dasics_umaincall)
 
