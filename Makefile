@@ -8,7 +8,7 @@ RANLIB			= $(CROSS_COMPILE)ranlib
 # C flags
 INCLUDE			= -Iinclude
 
-CFLAGS			= -O2 -g -MMD -Wno-c23-extensions -Wno-varargs $(INCLUDE) -DDASICS_LINUX -DDASICS_COPY -DDASICS_DEBUG
+CFLAGS			= -O2 -g -MMD -Wno-c23-extensions -Wno-varargs $(INCLUDE) -DDASICS_LINUX -DDASICS_DEBUG
 
 ifdef USER_DEFINE
     CFLAGS += -D$(USER_DEFINE)
