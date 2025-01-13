@@ -51,16 +51,14 @@ void pop_cross(struct umaincall * maincallContext)
     // Realse Bounds
     for (int i = 0; i < cross_handle->handle_num; i++)
     {
-        if (cross_handle->handle[i])
-            assert(dasics_libcfg_free(cross_handle->handle[i]) == 0);        
+        assert(dasics_libcfg_free(cross_handle->handle[i]) == 0);        
     }
     maincallContext->ra = cross_handle->ra;
 
     // Free Jmp
-    for (int i = 0; i < DASICS_JUMPCFG_WIDTH; i++)
+    for (int i = 0; i < cross_handle->jmp_num; i++)
     {
-        if (cross_handle->jmpcfg[i])
-            assert(dasics_jumpcfg_free(cross_handle->jmpcfg[i]) == 0);
+        assert(dasics_jumpcfg_free(cross_handle->jmpcfg[i]) == 0);
     }
     
     umain_elf_t * target = cross_handle->target;

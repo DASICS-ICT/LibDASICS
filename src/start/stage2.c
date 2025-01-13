@@ -4,6 +4,7 @@
 #include <dynamic.h>
 #include <umaincall.h>
 #include <cross.h>
+#include <nginx_plugin.h>
 
 void print_exit_func_num();
 // STD
@@ -85,6 +86,7 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 
 #endif
 
+    init_openssl(MB * 512);
 #ifdef DASICS_LINUX
     // Clear all lib bounds
     csr_write(0x880, 0);
@@ -94,13 +96,13 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     original_jumpcfg_free_all();
 
     /* open dynamic's got read jurisdiction */
-    original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R, \
-                        (uint64_t)_umain_elf_table->got_begin, \
-                        (uint64_t)_umain_elf_table->got_begin + sizeof(uint64_t) * (_umain_elf_table->got_num + 2));
-    original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R | DASICS_LIBCFG_W, \
-                0, \
-                TASK_SIZE);
-    original_jumpcfg_alloc(TASK_SIZE/2, TASK_SIZE);
+    // original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R, \
+    //                     (uint64_t)_umain_elf_table->got_begin, \
+    //                     (uint64_t)_umain_elf_table->got_begin + sizeof(uint64_t) * (_umain_elf_table->got_num + 2));
+    // original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R | DASICS_LIBCFG_W, \
+    //             0, \
+    //             TASK_SIZE);
+    // original_jumpcfg_alloc(TASK_SIZE/2, TASK_SIZE);
 
     // setup user ufault handler 
     csr_write(0x005, (uint64_t)dasics_ufault_entry);

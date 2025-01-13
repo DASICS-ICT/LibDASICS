@@ -26,6 +26,7 @@ struct cross {
     int handle_num;
     int32_t jmpcfg[DASICS_JUMPCFG_WIDTH];
     // Jumpcall's handler
+    int jmp_num;
     int handle[DASICS_LIBCFG_WIDTH];
 };
 
