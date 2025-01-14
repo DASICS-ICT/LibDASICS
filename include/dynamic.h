@@ -65,6 +65,7 @@ typedef struct umain_elf
    struct func_mem **local_func; /* Find func_mem fast */
    int * redirect_switch;       /* Redirect switch */
    struct umain_elf ** target_elf; /* Target elf */
+   char **target_func_name;
 
    struct func_mem * namespace_func;
 
@@ -141,7 +142,7 @@ static inline umain_elf_t * _get_area_by_name(const char * name)
 
    if (_umain_elf_table == NULL) return NULL; 
 
-    do {
+   do {
         if (!dasics_strcmp(_elf->real_name, name))
             return _elf;
         _elf = _elf->umain_elf_next;
@@ -172,6 +173,8 @@ static inline char * _get_lib_name(umain_elf_t * entry, uint64_t plt_idx)
 
     return strtab + sym->st_name;
 }
+
+
 
 /*
  * This function is used to figure out which plt[x] the uepc was seted,

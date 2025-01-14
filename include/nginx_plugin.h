@@ -9,6 +9,7 @@ struct bound_t
 {
     uint64_t lo;
     uint64_t hi;
+    uint64_t flags;
 };
 
 struct openssl_elf_area
@@ -26,4 +27,6 @@ void init_openssl(uint64_t size);
 void * openssl_malloc(uint64_t size);
 void openssl_free(void * ptr);
 void * openssl_realloc(void * ptr, uint64_t size);
+void * openssl_calloc(uint64_t size);
+
 #endif

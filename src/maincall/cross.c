@@ -61,34 +61,34 @@ void pop_cross(struct umaincall * maincallContext)
         assert(dasics_jumpcfg_free(cross_handle->jmpcfg[i]) == 0);
     }
     
-    umain_elf_t * target = cross_handle->target;
-    umain_elf_t * entry = cross_handle->begin;
+    // umain_elf_t * target = cross_handle->target;
+    // umain_elf_t * entry = cross_handle->begin;
 
-    struct func_mem * mem = NULL;
+    // struct func_mem * mem = NULL;
 
-    // if entry is untrusted, update global_func_mem
-    if (!(target->_flags & MAIN_AREA))
-    {
-        mem = target->namespace_func;
-    }
+    // // if entry is untrusted, update global_func_mem
+    // if (!(target->_flags & MAIN_AREA))
+    // {
+    //     mem = target->namespace_func;
+    // }
 
-    // if target is untrusted, cleart bounds
-    if (!(target->_flags & MAIN_AREA))
-    {
-        if (mem)
-        {
-            // Alloc bound
-            struct bound_table * bounds = mem->mem;
+    // // if target is untrusted, cleart bounds
+    // if (!(target->_flags & MAIN_AREA))
+    // {
+    //     if (mem)
+    //     {
+    //         // Alloc bound
+    //         struct bound_table * bounds = mem->mem;
 
 
-            for (int i = 0; i < mem->bound_max; i++)
-            {
-                /* code */
-                if (bounds[i].addr)
-                    assert(dasics_libcfg_free(bounds[i].handler) != -1);
-            }        
-        }
-    }
+    //         for (int i = 0; i < mem->bound_max; i++)
+    //         {
+    //             /* code */
+    //             if (bounds[i].addr)
+    //                 assert(dasics_libcfg_free(bounds[i].handler) != -1);
+    //         }        
+    //     }
+    // }
 
     // Free stack area
     cross_stack += sizeof(struct cross);

@@ -19,7 +19,7 @@ static int _find_idx_by_name(umain_elf_t * target, const char *name)
     {
         if (!dasics_strcmp(_get_lib_name(target, i), name))
         {
-            return i - 2;
+            return i;
         }
     }
 
@@ -30,6 +30,7 @@ static int _find_idx_by_name(umain_elf_t * target, const char *name)
 /* This func is used to reloc the target */
 uint64_t _call_reloc(umain_elf_t *elf, uint64_t target)
 {
+    if (_umain_elf_table == NULL) return 0;
     /* Get the target area of the target addr */
     umain_elf_t * _target_got = _get_area(target);
     if (_target_got == NULL)
@@ -96,6 +97,7 @@ int add_redirect_item(const char *func_name)
     //     dasics_printf("[Warning]: There has exited one redirect item: %s\n", func_name);
     //     return 0;
     // }
+    if (_umain_elf_table == NULL) return 0;
 
     // Never redirect __libc_start_main
     if (!dasics_strcmp(func_name, "__libc_start_main"))
@@ -115,14 +117,6 @@ int add_redirect_item(const char *func_name)
 
     umain_elf_t * target = _umain_elf_table->target_elf[idx+2];
 
-    if (!target) return 0;
- 
-    if (target->_copy_lib_elf)
-    {
-        _umain_elf_table->_local_got_table[idx + 2] = target->_copy_lib_elf->l_addr + \
-                (_umain_elf_table->_local_got_table[idx + 2] - target->l_addr);
-        _umain_elf_table->target_elf[idx+2] =  target->_copy_lib_elf;
-    }    
 
     return 0;
 }
@@ -130,6 +124,8 @@ int add_redirect_item(const char *func_name)
 /* Delete one item from list */ 
 int delete_redirect_item(const char *func_name)
 {
+    if (_umain_elf_table == NULL) return 0;
+
     int idx = _find_idx_by_name(_umain_elf_table, func_name);
 
     if (idx == -1)
@@ -141,14 +137,6 @@ int delete_redirect_item(const char *func_name)
     _umain_elf_table->redirect_switch[idx + 2] = 0;
     umain_elf_t * target = _umain_elf_table->target_elf[idx+2];
 
-    if (!target) return 0;
- 
-    if (target->_copy_lib_elf)
-    {
-        _umain_elf_table->_local_got_table[idx + 2] = target->_copy_lib_elf->l_addr + \
-                (_umain_elf_table->_local_got_table[idx + 2] - target->l_addr);
-        _umain_elf_table->target_elf[idx+2] =  target->_copy_lib_elf;
-    }
 
     return 0;
 }
@@ -156,6 +144,8 @@ int delete_redirect_item(const char *func_name)
 /* Force relocation */
 uint64_t force_redirect(umain_elf_t * entry, int idx, uint64_t target)
 {
+    if (_umain_elf_table == NULL) return 0;
+
     if (!redirect_switch) return target;
 
 
@@ -189,6 +179,8 @@ uint64_t force_redirect(umain_elf_t * entry, int idx, uint64_t target)
 // Open teh switch
 int open_redirect()
 {
+    if (_umain_elf_table == NULL) return 0;
+
     redirect_switch = 1;
     return 0;
 }
@@ -196,6 +188,8 @@ int open_redirect()
 // Close the switch
 int close_redirect()
 {
+    if (_umain_elf_table == NULL) return 0;
+
     redirect_switch = 0;
     return 0;
 }

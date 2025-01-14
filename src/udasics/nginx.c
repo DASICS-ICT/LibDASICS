@@ -5,7 +5,6 @@
 #include <sys/mman.h>
 #include <dasics_stdio.h>
 #include <dasics_string.h>
-#include <openssl/ssl.h>
 #include <dynamic.h>
 #include <udasics.h>
 #include <nginx_plugin.h>
@@ -42,17 +41,22 @@ void reloc_openssl()
     // Reloc malloc, free, realloc
     for (int i = 2; i < libcrypto->got_num + 2; i++)
     {
-        if (!dasics_strcmp(_get_lib_name(libcrypto, i - 2), "malloc"))
+        char * name = libcrypto->target_func_name[i];
+        if (!dasics_strcmp(name, "malloc"))
         {
             libcrypto->_local_got_table[i] = (uint64_t)openssl_malloc;
         }
-        if (!dasics_strcmp(_get_lib_name(libcrypto, i - 2), "free"))
+        if (!dasics_strcmp(name, "free"))
         {
             libcrypto->_local_got_table[i] = (uint64_t)openssl_free;
         }
-        if (!dasics_strcmp(_get_lib_name(libcrypto, i - 2), "realloc"))
+        if (!dasics_strcmp(name, "realloc"))
         {
             libcrypto->_local_got_table[i] = (uint64_t)openssl_realloc;
+        }
+        if (!dasics_strcmp(name, "calloc"))
+        {
+            libcrypto->_local_got_table[i] = (uint64_t)openssl_calloc;
         }
     }
     
@@ -65,7 +69,8 @@ void collect_openssl()
     umain_elf_t * libcrypto = _get_area_by_name("libcrypto.so.3");
     assert(libcrypto != NULL);
     umain_elf_t * libc = _get_area_by_name("libc.so.6");
-    assert(libc != NULL);    
+    assert(libc != NULL); 
+    umain_elf_t * linker = _get_area_by_name("ld-linux-riscv64-lp64d.so.1");   
     // text
     if (openssl->_text_start < libcrypto->_text_end)
     {
@@ -82,18 +87,27 @@ void collect_openssl()
     // rw_start
     openssl_area.rw_bound[idx_rw].lo = openssl->_r_start;
     openssl_area.rw_bound[idx_rw].hi = openssl->_w_end;
-    idx_rw++;
+    openssl_area.rw_bound[idx_rw++].flags = DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V;
+
     openssl_area.rw_bound[idx_rw].lo = libcrypto->_r_start;
     openssl_area.rw_bound[idx_rw].hi = libcrypto->_w_end;
-    idx_rw++;
+    openssl_area.rw_bound[idx_rw++].flags = DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V;
+
     openssl_area.rw_bound[idx_rw].lo = libc->_r_start;
     openssl_area.rw_bound[idx_rw].hi = libc->_w_end;
-    idx_rw++;
+    openssl_area.rw_bound[idx_rw++].flags = DASICS_LIBCFG_R | DASICS_LIBCFG_V;
     // tp
     openssl_area.rw_bound[idx_rw].lo = tp;
     openssl_area.rw_bound[idx_rw].hi = tp + PAGE_SIZE;
-    idx_rw++;
-
+    openssl_area.rw_bound[idx_rw++].flags = DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V;
+    // openssl_heap
+    openssl_area.rw_bound[idx_rw].lo = (uint64_t)openssl_self_heap;
+    openssl_area.rw_bound[idx_rw].hi = (uint64_t)openssl_self_heap + openssl_full_size;
+    openssl_area.rw_bound[idx_rw++].flags = DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V;
+    // linker
+    // openssl_area.rw_bound[idx_rw].lo = linker->_r_start;
+    // openssl_area.rw_bound[idx_rw].hi = linker->_w_end;
+    // openssl_area.rw_bound[idx_rw++].flags = DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V;
     openssl_area.rw_num = idx_rw;
 }
 
@@ -137,6 +151,13 @@ void * openssl_malloc(uint64_t size)
     openssl_self_heap =  (void *)((uint64_t)openssl_self_heap + ROUND(size, 16));
     openssl_malloc_size += ROUND(size, 16);
     return ret;
+}
+
+void * openssl_calloc(uint64_t size)
+{
+    void * ptr = openssl_malloc(size);
+    dasics_memset(ptr, 0, size);
+    return ptr;    
 }
 
 void openssl_free(void * ptr)

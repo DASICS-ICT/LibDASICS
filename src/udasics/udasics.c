@@ -157,7 +157,7 @@ static int dasics_bound_checker(uint64_t lo, uint64_t hi, int perm)
     // Fill bounds array with permission matched libbounds
     for (idx = 0; idx < max_cfgs; ++idx) {
         uint32_t cfg = dasics_libcfg_get(idx);
-        if (cfg == -1 || (cfg & DASICS_LIBCFG_V) == 0) {
+        if ((cfg & DASICS_LIBCFG_V) == 0) {
             continue;
         }
         else if ((cfg & (perm | DASICS_LIBCFG_V)) != DASICS_LIBCFG_V) {
@@ -202,7 +202,7 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
     {
         case Umaincall_PRINT: {
             const char *format = va_arg(args, const char *);
-            vprintf(format, args);
+            retval = vprintf(format, args);
         }
         break;
 
@@ -215,8 +215,6 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
     // csr_write(0x8b2, dasics_free_zone_return_pc);   // DasicsFreeZoneReturnPC
 
     va_end(args);
-
-    return retval;
 }
 
 static int dasics_oldest_victim(void) {
@@ -286,13 +284,17 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
     // Save some registers that should be saved by callees
     int error;
     int csr_idx;
-    switch (regs->ucause)
+
+    uint64_t dasics_dfreason = csr_read(0x8b3);             // DasicsDFreason
+
+
+    switch (dasics_dfreason)
     {
-    case EXC_DASICS_UFETCH_FAULT:
+    case DFR_JUMP_DASICS_FAULT:
         error = udasics_fetch_fault_handler(regs);
         break;
     
-    case EXC_DASICS_ULOAD_FAULT:
+    case DFR_LOAD_DASICS_FAULT:
         csr_idx = dasics_ldst_checker(regs->utval, 1);
 
         if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
@@ -306,7 +308,7 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
         error = udasics_load_fault_handler(regs);
         break;
 
-    case EXC_DASICS_USTORE_FAULT:
+    case DFR_STORE_DASICS_FAULT:
         csr_idx = dasics_ldst_checker(regs->utval, 0);
 
         if (0 <= csr_idx && csr_idx < DASICS_LIBCFG_WIDTH) {
@@ -320,7 +322,7 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
         error = udasics_store_fault_handler(regs);
         break;
     
-    case EXC_DASICS_UECALL_FAULT:
+    case DFR_ECALL_DASICS_FAULT:
         error = udasics_ecall_fault_handler(regs);
         break;
         
@@ -442,7 +444,7 @@ uint32_t dasics_libcfg_get(int32_t handle) {
     HASH_FIND_INT(bounds_table, &handle, entry);
 
     if (NULL == entry) {
-        return -1;
+        return 0;
     } else {
         return entry->priv;
     }

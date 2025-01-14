@@ -11,6 +11,8 @@ int handle_DasicsULoadFault(struct ucontext_trap * regs)
 {
     int idx = 0;
     uint16_t c_ld;
+    uint32_t _ld;
+
 //     umain_got_t * _got_entry = _get_area(regs->uepc);
 // #ifdef DASICS_DEBUG
 //     if (_got_entry)
@@ -25,27 +27,22 @@ int handle_DasicsULoadFault(struct ucontext_trap * regs)
 //         if (_umain_got_table == NULL) goto dasics_static_load;
 //         exit(1);
 //     }
-    printf("[DASICS_EXCEPTION]: Load fault: 0x%lx, pc: %lx\n", regs->utval, regs->uepc);
+    dasics_printf("[DASICS_EXCEPTION]: Load fault: 0x%lx, pc: 0x%lx\n", regs->utval, regs->uepc);
+
 
 dasics_static_load:
     
 
-    #define CLD_INCMASK 0xe003
-
-    #define CLD_MASK    0x6000
-    #define CLDSP_MASK  0x6002
-    #define CLW_MASK    0x4000
-    #define CLWSP_MASK  0x4002
+    #define LD_INCMASK 0x00000003
 
     // Jump load instruction for future excution
     c_ld = *((uint16_t *)regs->uepc);
-    if ((c_ld & CLD_INCMASK) == CLD_MASK || \
-        (c_ld & CLD_INCMASK) == CLDSP_MASK || \
-        (c_ld & CLD_INCMASK) == CLW_MASK || \
-        (c_ld & CLD_INCMASK) == CLWSP_MASK)
-        regs->uepc += 2;
-    else 
+    _ld = *((uint32_t *)regs->uepc);
+
+    if ((_ld & LD_INCMASK) == LD_INCMASK)
         regs->uepc += 4;
+    else 
+        regs->uepc += 2;
 
     
     if (idx == -1)
@@ -65,6 +62,7 @@ int handle_DasicsUStoreFault(struct ucontext_trap * regs)
 {
     int idx = 0;
     uint16_t c_sd;
+    uint32_t _sd;
 //     umain_got_t * _got_entry = _get_area(regs->uepc);
 // // #ifdef DASICS_DEBUG
 //     dasics_printf("[ufault info]: hit write ufault uepc: 0x%lx, address: 0x%lx \n", regs->uepc, regs->utval);
@@ -78,25 +76,21 @@ int handle_DasicsUStoreFault(struct ucontext_trap * regs)
 //         if (_umain_got_table == NULL) goto dasics_static_store;
 //         exit(1);
 //     }
-    printf("[DASICS_EXCEPTION]: Store fault: 0x%lx pc: %lx\n", regs->utval, regs->uepc);
+    printf("[DASICS_EXCEPTION]: Store fault: 0x%lx pc: 0x%lx\n", regs->utval, regs->uepc);
 
 dasics_static_store:
-    #define CSD_INCMASK 0xe003
+    #define SD_INCMASK 0x00000003
 
-    #define CSD_MASK    0xe000
-    #define CSDSP_MASK  0xe002
-    #define CSW_MASK    0xc000
-    #define CSWSP_MASK  0xc002
-
-    // Jump store instruction for future excution
+    // Jump load instruction for future excution
     c_sd = *((uint16_t *)regs->uepc);
-    if ((c_sd & CSD_INCMASK) == CSD_MASK || \
-        (c_sd & CSD_INCMASK) == CSDSP_MASK || \
-        (c_sd & CSD_INCMASK) == CSW_MASK || \
-        (c_sd & CSD_INCMASK) == CSWSP_MASK)
-        regs->uepc += 2;
-    else 
+    _sd = *((uint32_t *)regs->uepc);
+
+    if ((_sd & SD_INCMASK) == SD_INCMASK)
         regs->uepc += 4;
+    else 
+        regs->uepc += 2;
+
+
     if (idx == -1)
     {
         dasics_printf("[error]: no more libbounds!!\n");

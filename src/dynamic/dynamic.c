@@ -8,6 +8,7 @@
 #include <dasics_stdio.h>
 #include <dasics_start.h>
 #include <dmalloc.h>
+#include <udasics.h>
 
 //STD
 #include <stdlib.h>
@@ -52,10 +53,9 @@ static void _fill_module_name(const char * l_name, umain_elf_t * elf)
  * This function is used for no lazy dynamic call
  * Found all the target function addr
  */
-
 static void _fill_local_got(umain_elf_t * elf)
 {
-    elf->plt_begin = (uint64_t *)elf->got_begin[3];
+    elf->plt_begin = (uint64_t *)elf->got_begin[2];
     elf->_plt_start = (uint64_t)elf->plt_begin + 0x20;
     elf->_plt_end = elf->_plt_start + 0x10 * elf->got_num;  
 
@@ -77,7 +77,7 @@ static void _fill_local_got(umain_elf_t * elf)
         elf->_local_got_table[i] = ulib_func;
         // Recover the plt begin
             // Only elf needed
-        if (elf == dasics_main_elf)
+        if (elf == dasics_main_elf || elf->_flags & MAIN_AREA)
         {
             // The got_begin will jump direct without umaincall hook
             if (ulib_func < (uint64_t)_start)
@@ -87,27 +87,22 @@ static void _fill_local_got(umain_elf_t * elf)
             {
                 elf->got_begin[i] = (uint64_t)elf->plt_begin;     
             }
-        }
+        } else 
+            elf->got_begin[i] = (uint64_t)elf->plt_begin; 
     }
 
-    // Only elf needed
-    if (elf == dasics_main_elf)
-    {
 
-        // Finally, the got[0] will be the hook, and got[1] will elf        
-        // Eable the got's PAGE be readable
-        uint64_t start = ROUNDDOWN(elf->l_relro_addr, PAGE_SIZE);
-        uint64_t end = ROUND(elf->l_relro_addr + elf->l_relro_size, PAGE_SIZE);
-        
-        _dasics_mprotect((void *)start, \
-                         end - start, \
-                         PROT_READ | PROT_WRITE);
-        // elf->got_begin[0] = (uint64_t)dynamic_hook;
-        elf->got_begin[1] = (uint64_t)elf;  
-        _dasics_mprotect((void *)start, \
-                         end - start, \
-                         PROT_READ);      
-    }
+    uint64_t start = ROUNDDOWN(elf->l_relro_addr, PAGE_SIZE);
+    uint64_t end = ROUND(elf->l_relro_addr + elf->l_relro_size, PAGE_SIZE);
+    
+    _dasics_mprotect((void *)start, \
+                        end - start, \
+                        PROT_READ | PROT_WRITE);
+    elf->got_begin[0] = (uint64_t)dasics_umaincall;
+    elf->got_begin[1] = (uint64_t)elf;  
+    _dasics_mprotect((void *)start, \
+                        end - start, \
+                        PROT_READ);      
 
 }
 
@@ -260,6 +255,30 @@ static void _find_copy_lib(umain_elf_t * elf)
     while(1);      
 }
 
+/* Fill target elf addr */
+static void _fill_target_elf()
+{
+    umain_elf_t * tmp_elf = _umain_elf_table;
+
+    do
+    {
+        /* code */
+        for (int i = 0; i < tmp_elf->got_num; i++)
+        {
+            /* code */
+            tmp_elf->target_elf[i + 2] = _get_area(tmp_elf->_local_got_table[i + 2]);
+            tmp_elf->target_func_name[i + 2] = _get_lib_name(tmp_elf, i);
+            // if (tmp_elf == _umain_elf_table && (tmp_elf->target_elf[i + 2]->_flags & MAIN_AREA))
+            // {
+            //     tmp_elf->got_begin[i + 2] = tmp_elf->_local_got_table[i+2];
+            // }
+
+        }
+        tmp_elf = tmp_elf->umain_elf_next;
+    } while (tmp_elf != _umain_elf_table);
+
+}
+
 /*
  * This fuinction is used to init umain dasics_link_map
  * include the exe, linker, all library
@@ -273,7 +292,12 @@ int create_umain_elf_chain(struct link_map * main_elf)
     while (_map_init != NULL)
     {
         /* Dasics Copy stage don't do main elf again */
-        if (dasics_stage == DASICS_COPY_LIB && !_map_init->l_addr) goto jump;
+        if (dasics_stage == DASICS_COPY_LIB && !_map_init->l_addr)
+        {
+            // Correct the main
+            _fill_local_got(_umain_elf_table);
+            goto jump;
+        }
 
         // DASICS_COPY_STAGE will use stdlib and avoid to change BRK
         umain_elf_t * _elf = dasics_stage == DASICS_COPY_LIB ? (umain_elf_t *)malloc(sizeof(umain_elf_t)) :
@@ -345,6 +369,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
         _elf->redirect_switch = (int *)dasics_malloc(alloc_num * sizeof(int));
         _elf->target_elf = (umain_elf_t **)dasics_malloc(alloc_num* sizeof(umain_elf_t *));
         _elf->_local_call_time = (uint64_t *)dasics_malloc(alloc_num * sizeof(uint64_t) );
+        _elf->target_func_name = (char **)dasics_malloc(alloc_num * sizeof(char *));
         // Now, we will calculate all JMPREL's value，and copy them to the local got table
         _elf->calculate = 0;
 
@@ -366,6 +391,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
         dasics_memset(_elf->redirect_switch, 0, alloc_num * sizeof(int));
         dasics_memset(_elf->target_elf, 0, alloc_num * sizeof(umain_elf_t *));
         dasics_memset(_elf->_local_call_time, 0, alloc_num * sizeof(uint64_t));
+        dasics_memset(_elf->target_func_name, 0, alloc_num * sizeof(char *));
 
 
         if (_umain_elf_table == NULL)
@@ -397,6 +423,9 @@ no_pltgot:
 
     }
     
+    // fill target elf addr
+    _fill_target_elf();
+
     
     return 0;
 

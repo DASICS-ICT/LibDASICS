@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <udirect.h>
 #include <udasics.h>
-#include <malloc-free.h>
+#include <uattr.h>
+#include <string.h>
 
 static void foo(void) __attribute__ ((constructor));
 
@@ -12,46 +13,56 @@ void exit_function() {
 
 void foo(void)
 {
-    printf("[Constructor] I am a Constructor function\n\n");
+    printf("[Constructor] I am a Constructor function\n");
 }
 
 const char * test_str = "RISCV";
 const char * format_str = "[%s] Hello riscv world: %d!\n";
+static char dst[256] = {0};
+
+#pragma
+ATTR_ULIB_TEXT int my_memcpy()
+{
+    // copy 
+    memcpy(dst, test_str, strlen(test_str));
+
+    return 0;
+}
+
+
 int main(int argc, char *argv[]) {
     // Add exit function 
-    
     atexit(exit_function);
     register_udasics(0);
 
-    char * tempelate = "I am messgae which contains a very long message: %d";
+    int size = strlen(test_str);
 
-    char buff[256];
+    add_redirect_item("memcpy"); // memcpy
+    add_redirect_item("strlen"); // strlen
+    open_redirect();
+    register uint64_t sp asm("sp");
 
-    dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
-                    (uint64_t)buff, \
-                    (uint64_t)buff +256);
-    int i;
-    for (i = 0; i < 8; i++)
-    {
-        sprintf(buff, tempelate, i);
-        call_and_record(MALLOC, buff);
-    }
+    int idx0 = (int)LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_V, &test_str, sizeof(test_str));
+    int idx1 = (int)LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_V, test_str, size);
+    int idx2 = (int)LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, dst, 256);
+    int idx3 = (int)LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, sp - 0x1000, 0x1000);
 
 
-    // Free one
-    call_and_record(FREE, NULL);
+    printf("[LOG]: call my_memcpy\n");
+    lib_call(my_memcpy);
 
-    // Realloc one
-    call_and_record(REALLOC, NULL);
+    dasics_libcfg_free(idx0);
+    dasics_libcfg_free(idx1);
+    dasics_libcfg_free(idx2);
+    dasics_libcfg_free(idx3);
 
-    // Free one
-    call_and_record(FREE, NULL);
 
+    close_redirect();
+    delete_redirect_item("memcpy"); // memcpy
+    delete_redirect_item("strlen"); // strlen
 
-    // sprintf(buff, tempelate, i);
-    call_and_record(MALLOC, buff);
+    printf("%s\n", dst);
 
-    call_and_record(FREE, NULL);
 
     unregister_udasics();
     return 0;
