@@ -67,8 +67,10 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         
         // Push 
         push_cross(&tmp);
-        
-        // dasics_printf("[LOG]: DASICS lib (%s), return address: 0x%lx target elf: %s name: %s\n", _entry->real_name, CallContext->ra, _target->real_name, name);
+
+    #ifdef DASICS_DEBUG
+        dasics_printf("[LOG]: DASICS lib (%s), return address: 0x%lx target elf: %s name: %s\n", _entry->real_name, CallContext->ra, _target->real_name, name);
+    #endif
 
         CallContext->ra = (reg_t)dasics_umaincall;
   
@@ -125,8 +127,15 @@ int dasics_dynamic_call(struct umaincall * CallContext)
     CallContext->t1 = target;
     
 
-
-    cross_call(_elf, target_elf, target_name, CallContext);
+    if (handle_lib_mem(_elf, target_name, CallContext) == 0) 
+    { // successfully mem call
+#ifdef DASICS_DEBUG 
+        dasics_printf("[LOG]: %s:%s mem call\n", _elf->real_name, target_name);
+#endif    
+    } else 
+    {
+        cross_call(_elf, target_elf, target_name, CallContext);
+    }
 
 
     dynamic_level--;
