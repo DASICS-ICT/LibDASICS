@@ -10,6 +10,9 @@
 #include <dmalloc.h>
 #include <udasics.h>
 
+//mem
+#include <ufuncmem.h>
+
 //STD
 #include <stdlib.h>
 
@@ -87,7 +90,28 @@ static void _fill_local_got(umain_elf_t * elf)
             {
                 elf->got_begin[i] = (uint64_t)elf->plt_begin;     
             }
+        } else 
+        {
+            if (!(elf->_flags & MAIN_AREA)) 
+            {
+                // Recover the untrusted area library's GOT to plt begin
+                if (elf->got_begin[i] < elf->_plt_start || elf->got_begin[i] > elf->_text_end) 
+                {
+#ifdef DASICS_DEBUG
+                    dasics_printf("[LOG]: elf:%s fill GOT[%d] with 0x%lx, origin: 0x%lx\n", elf->real_name, i, (uint64_t)elf->plt_begin, elf->got_begin[i]);
+#endif
+                    elf->got_begin[i] = (uint64_t)elf->plt_begin;
+                }
+            }
+            
         }
+    }
+
+    if (!(elf->_flags & MAIN_AREA)) {
+        set_global_func_man(elf, 0);
+#ifdef DASICS_DEBUG
+        dasics_printf("[LOG]: elf:%s set func mem\n", elf->real_name);
+#endif
     }
 
 
