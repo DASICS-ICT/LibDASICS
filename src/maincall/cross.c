@@ -86,8 +86,11 @@ void pop_cross(struct umaincall * maincallContext)
             for (int i = 0; i < mem->bound_max; i++)
             {
                 /* code */
-                if (bounds[i].addr)
+                if (bounds[i].addr) {
                     assert(dasics_libcfg_free(bounds[i].handler) != -1);
+                    bounds[i].addr = 0;
+                }
+                    
             }        
         }
     }
