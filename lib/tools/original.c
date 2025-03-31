@@ -27,14 +27,6 @@
             CONCAT(OP)(HI,LO,5);  \
             CONCAT(OP)(HI,LO,6);  \
             CONCAT(OP)(HI,LO,7);  \
-            CONCAT(OP)(HI,LO,8);  \
-            CONCAT(OP)(HI,LO,9);  \
-            CONCAT(OP)(HI,LO,10); \
-            CONCAT(OP)(HI,LO,11); \
-            CONCAT(OP)(HI,LO,12); \
-            CONCAT(OP)(HI,LO,13); \
-            CONCAT(OP)(HI,LO,14); \
-            CONCAT(OP)(HI,LO,15); \
             default: \
                 printf("\x1b[31m%s\x1b[0m","[DASICS]Error: out of libound register range\n"); \
         }
@@ -109,18 +101,6 @@ int32_t original_jumpcfg_alloc(uint64_t lo, uint64_t hi)
                     csr_write(0x8c0, lo);  // DasicsJumpBound0Lo
                     csr_write(0x8c1, hi);  // DasicsJumpBound0Hi
                     break;
-                case 1:
-                    csr_write(0x8c2, lo);  // DasicsJumpBound1Lo
-                    csr_write(0x8c3, hi);  // DasicsJumpBound1Hi
-                    break;
-                case 2:
-                    csr_write(0x8c4, lo);  // DasicsJumpBound2Lo
-                    csr_write(0x8c5, hi);  // DasicsJumpBound2Hi
-                    break;
-                case 3:
-                    csr_write(0x8c6, lo);  // DasicsJumpBound3Lo
-                    csr_write(0x8c7, hi);  // DasicsJumpBound3Hi
-                    break;
                 default:
                     break;
             }
@@ -128,7 +108,7 @@ int32_t original_jumpcfg_alloc(uint64_t lo, uint64_t hi)
             jumpcfg &= ~(DASICS_JUMPCFG_MASK << (idx * step));
             jumpcfg |= DASICS_JUMPCFG_V << (idx * step);
             csr_write(0x8c8, jumpcfg); // DasicsJumpCfg
-
+            asm("fence.i");
             return idx;
         }
     }
@@ -145,6 +125,7 @@ int32_t original_jumpcfg_free(int32_t idx) {
     uint64_t jumpcfg = csr_read(0x8c8);    // DasicsJumpCfg
     jumpcfg &= ~(DASICS_JUMPCFG_V << (idx * step));
     csr_write(0x8c8, jumpcfg); // DasicsJumpCfg
+    asm("fence.i");
     return 0;
 }
 
@@ -154,5 +135,6 @@ int32_t original_jumpcfg_free_all()
     {
         original_jumpcfg_free(idx);
     }
+    asm("fence.i");
     return 0;
 }

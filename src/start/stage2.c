@@ -79,7 +79,7 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     /* Go to stage 3 */
     _set_auxv_entry(sp, AT_ENTRY, (uint64_t)_setup_copy_lib_entry);
 
-    csr_write(0x005, (uint64_t)_setup_fault);
+    // csr_write(0x005, (uint64_t)_setup_fault);
     RESET_ENTRY(sp, copy_linker_dll);
 
 #endif
@@ -88,6 +88,7 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     // Clear all lib bounds
     csr_write(0x880, 0);
     csr_write(0x8c8, 0);
+    asm("fence.i");
 
     original_libcfg_free_all();
     original_jumpcfg_free_all();
@@ -96,7 +97,7 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     // original_jumpcfg_alloc(TASK_SIZE / 2, TASK_SIZE);
 
     // setup user ufault handler 
-    csr_write(0x005, (uint64_t)dasics_ufault_entry);
+    // csr_write(0x005, (uint64_t)dasics_ufault_entry);
 
     // atexit(&print_exit_func_num);
     _umain_elf_table->calculate = 1;

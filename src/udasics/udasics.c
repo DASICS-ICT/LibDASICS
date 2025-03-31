@@ -41,14 +41,6 @@ utrap_handler udasics_fetch_fault_handler = handle_DasicsUFetchFault;
             CONCAT(OP)(HI,LO,5);  \
             CONCAT(OP)(HI,LO,6);  \
             CONCAT(OP)(HI,LO,7);  \
-            CONCAT(OP)(HI,LO,8);  \
-            CONCAT(OP)(HI,LO,9);  \
-            CONCAT(OP)(HI,LO,10); \
-            CONCAT(OP)(HI,LO,11); \
-            CONCAT(OP)(HI,LO,12); \
-            CONCAT(OP)(HI,LO,13); \
-            CONCAT(OP)(HI,LO,14); \
-            CONCAT(OP)(HI,LO,15); \
             default: \
                 printf("\x1b[31m%s\x1b[0m","[DASICS]Error: out of libound register range\n"); \
         }
@@ -99,7 +91,7 @@ void register_udasics(uint64_t funcptr)
     // Set maincall & ufault handler
     umaincall_helper = (funcptr != 0) ? funcptr : (uint64_t) dasics_umaincall_helper;
     csr_write(0x8b0, (uint64_t)dasics_umaincall);
-    csr_write(0x005, (uint64_t)dasics_ufault_entry);
+    // csr_write(0x005, (uint64_t)dasics_ufault_entry);
 }
 
 void unregister_udasics(void) 

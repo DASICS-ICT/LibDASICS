@@ -83,16 +83,21 @@ ENTRY(dynamic_hook)
     csrw CSR_DLBOUND0HI, t5
     csrw CSR_DLCFG, t6
 
-    li t4, 0x2000000000
-    li t6, 0x1
+    li t4, 0x1000000000
+    li t5, 0x3fffffffff
+    li t6, 0xf
     csrw CSR_DJBOUND0LO, t4
     csrw CSR_DJBOUND0HI, t5    
     csrw CSR_DJCFG, t6
+    fence.i
 
-    .word 0x0003908b    // dasicscall.jr ra, t2
+//    .word 0x0003908b    // dasicscall.jr ra, t2
 //     csrw CSR_DRETURNPC, ra
 //     fence.i
 //     jr t2
+//     jalr ra, t2
+
+    .word 0x0003908b        // dasicscall.jr ra, t2
 
     la t4, dynamic_level
     ld t5, 0(t4)
@@ -109,6 +114,7 @@ ENTRY(dynamic_hook)
     csrw CSR_DJBOUND0LO, zero
     csrw CSR_DJBOUND0HI, zero
     csrw CSR_DJCFG, zero
+    fence.i
 
 1:
     // la t3, dynamic_hook_ra
@@ -141,6 +147,7 @@ ENTRY(restore_main)
     csrw CSR_DJBOUND0LO, t4
     csrw CSR_DJBOUND0HI, t5    
     csrw CSR_DJCFG, t6
+    fence.i
     ret
 END(restore_main)
 

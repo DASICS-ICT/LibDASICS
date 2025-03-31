@@ -30,7 +30,7 @@ void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
 
         dasics_stage = 1;
 
-        init_syscall_check();
+        // init_syscall_check();
 #ifdef DASICS_DEBUG
         dasics_printf("> [INIT] Init syscall_check_table successfully\n");        
 #endif
@@ -47,7 +47,7 @@ void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
 
         _set_auxv_entry(sp, AT_DASICS, 3);
         // set a trap entry for link time
-        csr_write(0x005, (uint64_t)_setup_fault);
+        // csr_write(0x005, (uint64_t)_setup_fault);
         // Transfer executive authority to dynamic linker
         RESET_ENTRY(sp, _dll_linker);
     }

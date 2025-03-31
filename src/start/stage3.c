@@ -47,12 +47,13 @@ void _dasics_entry_stage3(uint64_t sp, rtld_fini fini)
     // Clear all lib bounds
     csr_write(0x880, 0);
     csr_write(0x8c8, 0);
+    asm("fence.i");
 
     original_libcfg_free_all();
     original_jumpcfg_free_all();
     ignore_simple_function();
     // setup user ufault handler 
-    csr_write(0x005, (uint64_t)dasics_ufault_entry);
+    // csr_write(0x005, (uint64_t)dasics_ufault_entry);
 
 #endif
 }
