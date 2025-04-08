@@ -55,7 +55,10 @@ static void _fill_module_name(const char * l_name, umain_elf_t * elf)
  */
 static void _fill_local_got(umain_elf_t * elf)
 {
+    if (dasics_stage == DASICS_COPY_LIB) goto got_zore_one;
+
     elf->plt_begin = (uint64_t *)elf->got_begin[3];
+    elf->_plt_begin = (uint64_t)elf->plt_begin;
     elf->_plt_start = (uint64_t)elf->plt_begin + 0x20;
     elf->_plt_end = elf->_plt_start + 0x10 * elf->got_num;  
 
@@ -85,11 +88,12 @@ static void _fill_local_got(umain_elf_t * elf)
                 elf->got_begin[i] = ulib_func;
             } else 
             {
-                elf->got_begin[i] = (uint64_t)elf->plt_begin;     
+                elf->got_begin[i] = elf->_plt_begin;     
             }
         }
     }
 
+got_zore_one:
 
     uint64_t start = ROUNDDOWN(elf->l_relro_addr, PAGE_SIZE);
     uint64_t end = ROUND(elf->l_relro_addr + elf->l_relro_size, PAGE_SIZE);
@@ -290,11 +294,11 @@ int create_umain_elf_chain(struct link_map * main_elf)
     // Build all chain
     while (_map_init != NULL)
     {
-        /* Dasics Copy stage don't do main elf again */
+        /* Dasics Copy stage don't do main elf again (!_map_init->l_addr means main elf)*/
         if (dasics_stage == DASICS_COPY_LIB && !_map_init->l_addr)
         {
             // Correct the main
-            _fill_local_got(_umain_elf_table);
+            _fill_local_got(_umain_elf_table); // why do this? I see
             goto jump;
         }
 
@@ -328,7 +332,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
         {
             _elf->_flags |= LIB_AREA;
             // Find copy lib
-            if (dasics_stage == 2)
+            if (dasics_stage == DASICS_COPY_LIB)
             {
                 _find_copy_lib(_elf);
             }

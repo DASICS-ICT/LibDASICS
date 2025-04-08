@@ -50,6 +50,11 @@ void _dasics_entry_stage3(uint64_t sp, rtld_fini fini)
 
     // setup user ufault handler 
     // csr_write(0x005, (uint64_t)dasics_ufault_entry);
-    
+
+    set_trampoline();
+    open_redirect();
+
+    print_trampoline();
+    // print_chain_info();
 #endif
 }

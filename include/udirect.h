@@ -41,6 +41,9 @@ uint64_t force_redirect(umain_elf_t * entry, int idx, uint64_t target);
 int open_redirect();
 int close_redirect();
 
+void set_trampoline();
+void print_trampoline();
+void print_chain_info();
 
 
 

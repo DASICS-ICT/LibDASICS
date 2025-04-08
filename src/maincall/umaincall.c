@@ -11,9 +11,9 @@
 #include <errno.h>
 
 // STD
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+// #include <stdlib.h>
+// #include <string.h>
+// #include <assert.h>
 
 int dynamic_level = 0;
 uint64_t memset_num = 0;
@@ -52,24 +52,30 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         tmp.ra = CallContext->ra;
         tmp.func = _target->namespace_func;
         
-        tmp.jmpcfg[idx_jmp++] = dasics_jumpcfg_alloc(_target->_plt_start, _target->_text_end);
+        // tmp.jmpcfg[idx_jmp++] = dasics_jumpcfg_alloc(_target->_plt_start, _target->_text_end);
 
-        tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_V, \
-                                        _target->_r_start,\
-                                        _target->_r_end);
-        tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
-                                        _target->_w_start, \
-                                        _target->_w_end);
+        // tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_V, \
+        //                                 _target->_r_start,\
+        //                                 _target->_r_end);
+        // tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+        //                                 _target->_w_start, \
+        //                                 _target->_w_end);
         
-        tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 16 * PAGE_SIZE, 16 * PAGE_SIZE);
+        // tmp.handle[idx_lib++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 16 * PAGE_SIZE, 16 * PAGE_SIZE);
+
+        tmp.jmpcfg[idx_jmp++] = dasics_jumpcfg_alloc(0x1000000000, 0x3fffffffff);
+        tmp.handle[idx_lib++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+                                        0, \
+                                        0x4000000000);
 
         tmp.handle_num = idx_lib;
         
         // Push 
         push_cross(&tmp);
         
-        // dasics_printf("[LOG]: DASICS lib (%s), return address: 0x%lx target elf: %s name: %s\n", _entry->real_name, CallContext->ra, _target->real_name, name);
-
+        #ifdef DASICS_DEBUG
+        dasics_printf("[LOG]: DASICS lib (%s), return address: 0x%lx target elf: %s name: %s\n", _entry->real_name, CallContext->ra, _target->real_name, name);
+        #endif
         CallContext->ra = (reg_t)dasics_umaincall;
   
     }
@@ -100,7 +106,11 @@ int dasics_dynamic_call(struct umaincall * CallContext)
 
     dynamic_level++;
 
-    assert(_elf->plt_begin != NULL);
+    // assert(_elf->plt_begin != NULL);
+    if (_elf->got_begin == NULL) {
+        dasics_printf("error! _elf->got_begin == NULL\n");
+        while(1);
+    }
 
     int plt_idx = CallContext->t1 / 8;
     // Not Maincall
@@ -116,7 +126,7 @@ int dasics_dynamic_call(struct umaincall * CallContext)
     target_elf = _elf->target_elf[plt_idx + 2];    
     const char * target_name = _elf->target_func_name[plt_idx + 2];
 
-    if (_elf->redirect_switch[plt_idx + 2] && redirect_switch)
+    if (_elf->redirect_switch[plt_idx + 2] == REDIRECT && redirect_switch)
     {
         target = target - target_elf->l_addr + target_elf->_copy_lib_elf->l_addr;
         target_elf = target_elf->_copy_lib_elf;                

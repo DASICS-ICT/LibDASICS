@@ -4,6 +4,8 @@
 #include <dasics_start.h>
 #include <dasics_string.h>
 #include <dasics_stdio.h>
+#include <dmalloc.h>
+#include <udasics.h>
 
 
 // List
@@ -13,9 +15,66 @@ LIST_HEAD(redirect_table);
 int redirect_switch = 0;
 int force_redirect_switch = 0;
 
+// white_list
+char * white_list[]= {
+    "memcpy",
+    "memmove",
+    "memcmp",
+    "memset",
+    "strlen",
+    "strcpy",
+    "strcmp",
+    "strncpy",
+    "strncmp",
+    "__sigsetjmp",
+    "siglongjmp",
+    "strchr",
+    "strtol",
+    "__libc_start_main",
+    "free",
+    "malloc",
+    "realloc",
+    "srand",
+    "calloc",
+    "fprintf",
+    "ungetc",
+    "getenv",
+    "fwrite",
+    "fopen64",
+    "fputs",
+    "fputc",
+    // "vsprintf",
+    "read",
+    "fread",
+    "putc",
+    "getc",
+    // "strerror",
+    "close",
+    "puts",
+    "getcwd",
+    "printf",
+    "vfprintf",
+    "fclose",
+    "open64",
+    "feof",
+    "fflush",
+    "ferror",
+    "fstat64",
+    "__assert_fail",
+    "obstack_free",
+    "_obstack_memory_used",
+    "_obstack_newchunk",
+    "_obstack_begin",
+    "signal",
+    "_setjmp",
+    "setjmp",
+    "longjmp",
+    NULL
+};
+
 static int _find_idx_by_name(umain_elf_t * target, const char *name)
 {
-    for (int  i = 0; i < target->got_num - 2; i++)
+    for (int  i = 0; i < target->got_num; i++)
     {
         if (!dasics_strcmp(_get_lib_name(target, i), name))
         {
@@ -86,6 +145,71 @@ static redirect_t * find_item(const char *name)
         }
     }
     return NULL;
+}
+
+void set_trampoline()
+{
+    if (_umain_elf_table == NULL) return;
+
+    umain_elf_t *elf = _umain_elf_table;
+
+    // force all func redirect
+    for (int i = 0; i < elf->got_num; i++) {
+        elf->redirect_switch[i + 2] = REDIRECT;
+        elf->got_begin[i + 2] = elf->_plt_begin;
+    }
+    
+    // make white list func direct
+    for (int i = 0; white_list[i]; i++) {
+        char *func_name = white_list[i];
+
+        int idx = _find_idx_by_name(elf, func_name);
+
+        if (idx == -1) continue;
+
+        elf->redirect_switch[idx + 2] = DIRECT;
+        elf->got_begin[idx + 2] = elf->_local_got_table[idx + 2];
+    }
+}
+
+void print_trampoline() 
+{
+    if (_umain_elf_table == NULL) return;
+
+    umain_elf_t *elf = _umain_elf_table;
+
+    dasics_printf("[LOG]: untrusted func:\n");
+    for (int i = 0; i < elf->got_num; i++) {
+        if (elf->redirect_switch[i + 2] == REDIRECT) {
+            dasics_printf("[LOG] \t\t%s(%s)\n", 
+                elf->target_elf[i + 2]->real_name, 
+                elf->target_func_name[i + 2]);
+        }
+    }
+    dasics_printf("[LOG]: trusted func:\n");
+    for (int i = 0; i < elf->got_num; i++) {
+        if (elf->redirect_switch[i + 2] == DIRECT) {
+            dasics_printf("[LOG] \t\t%s(%s)\n", 
+                elf->target_elf[i + 2]->real_name, 
+                elf->target_func_name[i + 2]);
+        }
+    }
+}
+
+void print_chain_info() 
+{
+    umain_elf_t * tmp_elf = _umain_elf_table;
+    if (tmp_elf == NULL) return;
+    do {
+        dasics_printf("[LOG]: %s, plt_begin:0x%lx\n", tmp_elf->real_name, tmp_elf->plt_begin);
+        for (int i = 2; i < tmp_elf->got_num + 2; i++) {
+            dasics_printf("[LOG]: \t\t(%s), got_addr:0x%lx, lib_addr:0x%lx\n", 
+                tmp_elf->target_func_name[i], 
+                tmp_elf->got_begin[i],
+                tmp_elf->_local_got_table[i]);
+        }
+        tmp_elf = tmp_elf->umain_elf_next;
+    } while (tmp_elf != _umain_elf_table);
 }
 
 

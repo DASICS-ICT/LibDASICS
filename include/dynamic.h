@@ -24,6 +24,8 @@ struct func_mem;
 /* Define the find result of the plt */
 #define NOEXIST -1
 
+#define REDIRECT 0
+#define DIRECT 1
 
 typedef struct umain_elf
 {
@@ -63,7 +65,7 @@ typedef struct umain_elf
    uint64_t dynamic     ;		/* Dynamic section of the shared object.  */
 
    struct func_mem **local_func; /* Find func_mem fast */
-   int * redirect_switch;       /* Redirect switch */
+   int * redirect_switch;       /* Redirect switch */ /*zcy: 变更redirect语义，0：redirect, 1: no redirect*/
    struct umain_elf ** target_elf; /* Target elf */
    char **target_func_name;
 
@@ -86,6 +88,8 @@ typedef struct umain_elf
    uint64_t _r_start, _r_end;
    uint64_t _w_start, _w_end; 
    uint64_t _map_start, _map_end;
+
+   uint64_t _plt_begin;
 } umain_elf_t;
 
 
