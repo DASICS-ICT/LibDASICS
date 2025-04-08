@@ -4,6 +4,7 @@
 #include <udasics.h>
 #include <umaincall.h>
 #include <cross.h>
+#include <udirect.h>
 
 // STD
 #include <stdlib.h>
@@ -36,7 +37,7 @@ void _dasics_entry_stage3(uint64_t sp, rtld_fini fini)
     //     atexit(fini);
 
 #ifdef DASICS_DEBUG
-    dasics_printf("> [INIT] Add func 0x%lx to exit chain\n", fini);    
+    // dasics_printf("> [INIT] Add func 0x%lx to exit chain\n", fini);    
 #endif
 
 #ifdef DASICS_LINUX
@@ -48,7 +49,7 @@ void _dasics_entry_stage3(uint64_t sp, rtld_fini fini)
     original_jumpcfg_free_all();
 
     // setup user ufault handler 
-    csr_write(0x005, (uint64_t)dasics_ufault_entry);
-
+    // csr_write(0x005, (uint64_t)dasics_ufault_entry);
+    
 #endif
 }

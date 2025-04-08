@@ -109,18 +109,18 @@ int32_t original_jumpcfg_alloc(uint64_t lo, uint64_t hi)
                     csr_write(0x8c0, lo);  // DasicsJumpBound0Lo
                     csr_write(0x8c1, hi);  // DasicsJumpBound0Hi
                     break;
-                case 1:
-                    csr_write(0x8c2, lo);  // DasicsJumpBound1Lo
-                    csr_write(0x8c3, hi);  // DasicsJumpBound1Hi
-                    break;
-                case 2:
-                    csr_write(0x8c4, lo);  // DasicsJumpBound2Lo
-                    csr_write(0x8c5, hi);  // DasicsJumpBound2Hi
-                    break;
-                case 3:
-                    csr_write(0x8c6, lo);  // DasicsJumpBound3Lo
-                    csr_write(0x8c7, hi);  // DasicsJumpBound3Hi
-                    break;
+                // case 1:
+                //     csr_write(0x8c2, lo);  // DasicsJumpBound1Lo
+                //     csr_write(0x8c3, hi);  // DasicsJumpBound1Hi
+                //     break;
+                // case 2:
+                //     csr_write(0x8c4, lo);  // DasicsJumpBound2Lo
+                //     csr_write(0x8c5, hi);  // DasicsJumpBound2Hi
+                //     break;
+                // case 3:
+                //     csr_write(0x8c6, lo);  // DasicsJumpBound3Lo
+                //     csr_write(0x8c7, hi);  // DasicsJumpBound3Hi
+                //     break;
                 default:
                     break;
             }
