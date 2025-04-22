@@ -94,6 +94,11 @@ test: $(LibDASICS) $(TEST_SO_OBJ)
 	@$(OBJDUMP) -d ./build/test > $(DIR_BUILD)/test.txt
 	@echo + OBJDUMP ./build/test
 
+test_static: $(LibDASICS)
+	@$(CC) $(UCFLAGS) $(TEST_FILES) -static -o ./build/test_static -T./ld.lds $(LibDASICS)
+	@echo + CC ./build/test_static
+	@$(OBJDUMP) -d ./build/test_static > $(DIR_BUILD)/test_static.txt
+	@echo + OBJDUMP ./build/test_static
 
 clean:
 	rm -rf $(DIR_BUILD)

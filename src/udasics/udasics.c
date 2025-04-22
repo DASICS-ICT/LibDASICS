@@ -7,6 +7,8 @@
 #include <utrap.h>
 #include <dasics_stdio.h>
 #include <umaincall.h>
+#include <sys/syscall.h>
+#include <sys/errno.h>
 
 uint64_t umaincall_helper;
 
@@ -72,29 +74,29 @@ int dlibcfg_handle_map[DASICS_LIBCFG_WIDTH] = {-1};
 
 void register_udasics(uint64_t funcptr) 
 {
-    uint64_t libcfg = csr_read(0x880);  // DasicsLibCfg
-    int32_t max_cfgs = DASICS_LIBCFG_WIDTH;
-    int32_t step = 4;
+    // uint64_t libcfg = csr_read(0x880);  // DasicsLibCfg
+    // int32_t max_cfgs = DASICS_LIBCFG_WIDTH;
+    // int32_t step = 4;
     // Set random seed
-    srand(2023);
+    // srand(2023);
 
     // Write OS-allocated bounds to hash table
-    for (int32_t idx = 0; idx < max_cfgs; ++idx) {
-        uint64_t curr_cfg = (libcfg >> (idx * step)) & DASICS_LIBCFG_MASK;
+    // for (int32_t idx = 0; idx < max_cfgs; ++idx) {
+    //     uint64_t curr_cfg = (libcfg >> (idx * step)) & DASICS_LIBCFG_MASK;
 
-        // Found allocated config
-        if ((curr_cfg & DASICS_LIBCFG_V) != 0) {
-            uint64_t hi, lo;
-            LIBBOUND_LOOKUP(hi, lo, idx, READ);
-            hashed_bound_t *entry = (hashed_bound_t *)malloc(sizeof(hashed_bound_t));
-            entry->bound.hi = hi;
-            entry->bound.lo = lo;
-            entry->priv = curr_cfg;
-            entry->handle = available_handle++;
-            HASH_ADD_INT(bounds_table, handle, entry);
-            dlibcfg_handle_map[idx] = entry->handle;
-        }
-    }
+    //     // Found allocated config
+    //     if ((curr_cfg & DASICS_LIBCFG_V) != 0) {
+    //         uint64_t hi, lo;
+    //         LIBBOUND_LOOKUP(hi, lo, idx, READ);
+    //         hashed_bound_t *entry = (hashed_bound_t *)malloc(sizeof(hashed_bound_t));
+    //         entry->bound.hi = hi;
+    //         entry->bound.lo = lo;
+    //         entry->priv = curr_cfg;
+    //         entry->handle = available_handle++;
+    //         HASH_ADD_INT(bounds_table, handle, entry);
+    //         dlibcfg_handle_map[idx] = entry->handle;
+    //     }
+    // }
 
     // Set maincall & ufault handler
     umaincall_helper = (funcptr != 0) ? funcptr : (uint64_t) dasics_umaincall_helper;
@@ -108,11 +110,11 @@ void unregister_udasics(void)
     // csr_write(0x005, 0);
 
     // Free bounds hash table
-    hashed_bound_t *current, *temp;
-    HASH_ITER(hh, bounds_table, current, temp) {
-        HASH_DEL(bounds_table, current);
-        free(current);
-    }
+    // hashed_bound_t *current, *temp;
+    // HASH_ITER(hh, bounds_table, current, temp) {
+    //     HASH_DEL(bounds_table, current);
+    //     free(current);
+    // }
 }
 
 void resgister_uecall_fault_handler(utrap_handler ecall_fault_handler)
@@ -339,95 +341,21 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
 }
 
 int32_t dasics_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi) {
-    uint64_t libcfg = csr_read(0x880);  // DasicsLibCfg
-    int32_t max_cfgs = DASICS_LIBCFG_WIDTH;
-    int32_t step = 4;
-
-    lo = align8down(lo);
-    hi = align8up(hi);
-
-    // Insert new bound information to hash table
-    hashed_bound_t *entry = (hashed_bound_t *)malloc(sizeof(hashed_bound_t));
-    entry->bound.hi = hi;
-    entry->bound.lo = lo;
-    entry->priv = (cfg & DASICS_LIBCFG_MASK) | DASICS_LIBCFG_V;
-    entry->handle = available_handle++;
-    HASH_ADD_INT(bounds_table, handle, entry);
-
-    // Find a proper libcfg for the newly allocated bound
-    int32_t victim = 0;
-    for (; victim < max_cfgs; ++victim) {
-        uint64_t curr_cfg = (libcfg >> (victim * step)) & DASICS_LIBCFG_MASK;
-
-        // Found available config
-        if ((curr_cfg & DASICS_LIBCFG_V) == 0) {
-            break;
-        }
+    int handle = available_handle++;
+    long ret = syscall(258, 0, handle, cfg, lo, hi);
+    if (ret == -ENOMEM) {
+        dasics_printf("[ERROR] dasics_libcfg_alloc: out of memory\n");
+        exit(1);
     }
-
-    // Kick out the oldest victim if we cannot find one available place
-    if (victim == max_cfgs) {
-        // victim = dasics_oldest_victim();
-        victim = rand() % DASICS_LIBCFG_WIDTH;
-    }
-
-    // Write libbound
-    LIBBOUND_LOOKUP(hi, lo, victim, WRITE);
-
-    // Write config
-    libcfg &= ~(DASICS_LIBCFG_MASK << (victim * step));
-    libcfg |= ((uint64_t)entry->priv) << (victim * step);
-    csr_write(0x880, libcfg);   // DasicsLibCfg
-
-    // // Write init aging value
-    // uint64_t aging_width = 8;
-    // if (victim < DASICS_LIBCFG_WIDTH / 2) {
-    //     uint64_t dlaging = csr_read(0x881);
-    //     dlaging |= 0xfful << (victim * aging_width);
-    //     csr_write(0x881, dlaging);
-    // } else {
-    //     uint64_t dlaging = csr_read(0x882);
-    //     dlaging |= 0xfful << ((victim - DASICS_LIBCFG_WIDTH / 2) * aging_width);
-    //     csr_write(0x882, dlaging);
-    // }
-
-    // Fill dlibcsr map with new handle
-    dlibcfg_handle_map[victim] = entry->handle;
-
-    return entry->handle;
+    return handle;
 }
 
 int32_t dasics_libcfg_free(int32_t handle) {
-    if (handle < 0) {
+    if (handle < 0 || handle > available_handle) {
         return -1;
     }
-
-    // Lookup hashed table firstly
-    hashed_bound_t *entry;
-    HASH_FIND_INT(bounds_table, &handle, entry);
-
-    if (NULL == entry) {
-        return -1;
-    }
-
-    // Erase hash map entry
-    HASH_DEL(bounds_table, entry);
-    free(entry);
-
-    // Check if the target bound exists in dasics CSRs
-    int32_t idx = 0;
-    int32_t step = 4;
-    for (; idx < DASICS_LIBCFG_WIDTH; ++idx) {
-        if (dlibcfg_handle_map[idx] == handle) {
-            uint64_t libcfg = csr_read(0x880);  // DasicsLibCfg
-            libcfg &= ~(DASICS_LIBCFG_V << (idx * step));
-            csr_write(0x880, libcfg);   // DasicsLibCfg
-            dlibcfg_handle_map[idx] = -1;
-            break;
-        }
-    }
-
-    return 0;
+    long ret = syscall(258, 1, handle, 0, 0, 0);
+    return ret;
 }
 
 int32_t dasics_libcfg_free_all()
