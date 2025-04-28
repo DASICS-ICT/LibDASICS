@@ -26,10 +26,10 @@ ATTR_ULIB_TEXT int my_memcpy()
 {
     // copy 
     // memcpy(dst, test_str, strlen(test_str));
-    for (int i = 0; i < 6; ++i) {
+    for (int i = 0; i < 5; ++i) {
         dst[i] = test_str[i];
     }
-    for (int i = 0; i < 9; ++i) {
+    for (int i = 0; i < 8; ++i) {
         dst[i] = extra_str[i];
     }
 

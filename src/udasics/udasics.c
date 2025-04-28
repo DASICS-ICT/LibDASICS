@@ -342,6 +342,10 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
 
 int32_t dasics_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi) {
     int handle = available_handle++;
+
+    lo = align8down(lo);
+    hi = align8up(hi);
+
     long ret = syscall(258, 0, handle, cfg, lo, hi);
     if (ret == -ENOMEM) {
         dasics_printf("[ERROR] dasics_libcfg_alloc: out of memory\n");
