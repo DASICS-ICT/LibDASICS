@@ -58,8 +58,9 @@ static void _fill_module_name(const char * l_name, umain_elf_t * elf)
  */
 static void _fill_local_got(umain_elf_t * elf)
 {
-    elf->plt_begin = (uint64_t *)elf->got_begin[3];
-    elf->_plt_start = (uint64_t)elf->plt_begin + 0x20;
+    elf->plt_begin = (uint64_t *)elf->got_begin[2];
+    elf->_plt_begin = elf->got_begin[2];
+    elf->_plt_start = elf->_plt_begin + 0x20;
     elf->_plt_end = elf->_plt_start + 0x10 * elf->got_num;  
 
     for (int i = 2; i < elf->got_num + 2; i++)
@@ -89,34 +90,34 @@ static void _fill_local_got(umain_elf_t * elf)
                 dasics_printf("[LOG]: %s fill (%s) with 0x%lx, origin: 0x%0lx\n", 
                     elf->real_name,
                     _get_lib_name(elf, i - 2),  
-                    (uint64_t)elf->plt_begin, 
+                    elf->_plt_begin, 
                     elf->got_begin[i]);
 #endif
-                elf->got_begin[i] = (uint64_t)elf->plt_begin;
+                elf->got_begin[i] = elf->_plt_begin;
             }
         } else 
         {
             // Untrusted lib call other lib's function, target to dasics_umaincall
-            if (elf->got_begin[i] < elf->_plt_start || elf->got_begin[i] > elf->_text_end) 
+            if (elf->got_begin[i] < elf->_plt_begin || elf->got_begin[i] > elf->_text_end) 
             {
 #ifdef DASICS_DEBUG
                 dasics_printf("[LOG]: %s fill (%s) with 0x%lx, origin: 0x%0lx\n", 
                     elf->real_name,
                     _get_lib_name(elf, i - 2),  
-                    (uint64_t)elf->plt_begin, 
+                    elf->_plt_begin, 
                     elf->got_begin[i]);
 #endif
-                elf->got_begin[i] = (uint64_t)elf->plt_begin;
+                elf->got_begin[i] = elf->_plt_begin;
             }   
         }
     }
 
-    if (!(elf->_flags & MAIN_AREA)) {
-        set_global_func_man(elf, 0);
-#ifdef DASICS_DEBUG
-        dasics_printf("[LOG]: elf:%s set func mem\n", elf->real_name);
-#endif
-    }
+//     if (!(elf->_flags & MAIN_AREA)) {
+//         set_global_func_man(elf, 0);
+// #ifdef DASICS_DEBUG
+//         dasics_printf("[LOG]: elf:%s set func mem\n", elf->real_name);
+// #endif
+//     }
 
 
     uint64_t start = ROUNDDOWN(elf->l_relro_addr, PAGE_SIZE);

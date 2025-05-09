@@ -51,49 +51,47 @@ void pop_cross(struct umaincall * maincallContext)
     // Realse Bounds
     for (int i = 0; i < cross_handle->handle_num; i++)
     {
-        if (cross_handle->handle[i])
-            assert(dasics_libcfg_free(cross_handle->handle[i]) == 0);        
+        assert(dasics_libcfg_free(cross_handle->handle[i]) == 0);        
     }
     maincallContext->ra = cross_handle->ra;
 
     // Free Jmp
-    for (int i = 0; i < DASICS_JUMPCFG_WIDTH; i++)
+    for (int i = 0; i < cross_handle->jmp_num; i++)
     {
-        if (cross_handle->jmpcfg[i])
-            assert(dasics_jumpcfg_free(cross_handle->jmpcfg[i]) == 0);
+        assert(dasics_jumpcfg_free(cross_handle->jmpcfg[i]) == 0);
     }
     
-    umain_elf_t * target = cross_handle->target;
-    umain_elf_t * entry = cross_handle->begin;
+    // umain_elf_t * target = cross_handle->target;
+    // umain_elf_t * entry = cross_handle->begin;
 
-    struct func_mem * mem = NULL;
+    // struct func_mem * mem = NULL;
 
-    // if entry is untrusted, update global_func_mem
-    if (!(target->_flags & MAIN_AREA))
-    {
-        mem = target->namespace_func;
-    }
+    // // if entry is untrusted, update global_func_mem
+    // if (!(target->_flags & MAIN_AREA))
+    // {
+    //     mem = target->namespace_func;
+    // }
 
-    // if target is untrusted, cleart bounds
-    if (!(target->_flags & MAIN_AREA))
-    {
-        if (mem)
-        {
-            // Alloc bound
-            struct bound_table * bounds = mem->mem;
+    // // if target is untrusted, cleart bounds
+    // if (!(target->_flags & MAIN_AREA))
+    // {
+    //     if (mem)
+    //     {
+    //         // Alloc bound
+    //         struct bound_table * bounds = mem->mem;
 
 
-            for (int i = 0; i < mem->bound_max; i++)
-            {
-                /* code */
-                if (bounds[i].addr) {
-                    assert(dasics_libcfg_free(bounds[i].handler) != -1);
-                    bounds[i].addr = 0;
-                }
+    //         for (int i = 0; i < mem->bound_max; i++)
+    //         {
+    //             /* code */
+    //             if (bounds[i].addr) {
+    //                 assert(dasics_libcfg_free(bounds[i].handler) != -1);
+    //                 bounds[i].addr = 0;
+    //             }
                     
-            }        
-        }
-    }
+    //         }        
+    //     }
+    // }
 
     // Free stack area
     cross_stack += sizeof(struct cross);

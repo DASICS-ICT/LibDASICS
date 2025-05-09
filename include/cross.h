@@ -24,6 +24,7 @@ struct cross {
     // Return Address
     reg_t ra;
     int handle_num;
+    int jmp_num;
     int32_t jmpcfg[DASICS_JUMPCFG_WIDTH];
     // Jumpcall's handler
     int handle[DASICS_LIBCFG_WIDTH];

@@ -86,6 +86,8 @@ typedef struct umain_elf
    uint64_t _r_start, _r_end;
    uint64_t _w_start, _w_end; 
    uint64_t _map_start, _map_end;
+
+   uint64_t _plt_begin;
 } umain_elf_t;
 
 

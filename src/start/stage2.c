@@ -4,6 +4,7 @@
 #include <dynamic.h>
 #include <umaincall.h>
 #include <cross.h>
+#include <nginx_plugin.h>
 
 void print_exit_func_num();
 // STD
@@ -85,6 +86,10 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 
 #endif
 
+    init_pcre(MB * 2);
+
+    init_openssl(MB * 512);
+    
 #ifdef DASICS_LINUX
     // Clear all lib bounds
     csr_write(0x880, 0);
