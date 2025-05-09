@@ -10,6 +10,9 @@
 #include <dmalloc.h>
 #include <udasics.h>
 
+//mem
+#include <ufuncmem.h>
+
 //STD
 #include <stdlib.h>
 
@@ -72,22 +75,47 @@ static void _fill_local_got(umain_elf_t * elf)
 
         uint64_t dll_a0 = (uint64_t)elf->map_link;
         uint64_t dll_a1 = (((uint64_t)(i - 2) * 0x10UL) >> 1) * 3;
-        uint64_t ulib_func = elf->fixup_handler(dll_a0, dll_a1);   
+        uint64_t ulib_func = elf->fixup_handler(dll_a0, dll_a1);   // fixup_handler will fill the GOT for us
 
         elf->_local_got_table[i] = ulib_func;
         // Recover the plt begin
-            // Only elf needed
-        if (elf == dasics_main_elf)
+        if (elf->_flags & MAIN_AREA)
         {
-            // The got_begin will jump direct without umaincall hook
-            if (ulib_func < (uint64_t)_start)
+            // Trueted lib call untrusted lib, recover GOT to plt begin, which finally target to dasics_umaincall
+            if (ulib_func > (uint64_t)_start)
             {
-                elf->got_begin[i] = ulib_func;
-            } else 
-            {
-                elf->got_begin[i] = (uint64_t)elf->plt_begin;     
+                
+#ifdef DASICS_DEBUG
+                dasics_printf("[LOG]: %s fill (%s) with 0x%lx, origin: 0x%0lx\n", 
+                    elf->real_name,
+                    _get_lib_name(elf, i - 2),  
+                    (uint64_t)elf->plt_begin, 
+                    elf->got_begin[i]);
+#endif
+                elf->got_begin[i] = (uint64_t)elf->plt_begin;
             }
+        } else 
+        {
+            // Untrusted lib call other lib's function, target to dasics_umaincall
+            if (elf->got_begin[i] < elf->_plt_start || elf->got_begin[i] > elf->_text_end) 
+            {
+#ifdef DASICS_DEBUG
+                dasics_printf("[LOG]: %s fill (%s) with 0x%lx, origin: 0x%0lx\n", 
+                    elf->real_name,
+                    _get_lib_name(elf, i - 2),  
+                    (uint64_t)elf->plt_begin, 
+                    elf->got_begin[i]);
+#endif
+                elf->got_begin[i] = (uint64_t)elf->plt_begin;
+            }   
         }
+    }
+
+    if (!(elf->_flags & MAIN_AREA)) {
+        set_global_func_man(elf, 0);
+#ifdef DASICS_DEBUG
+        dasics_printf("[LOG]: elf:%s set func mem\n", elf->real_name);
+#endif
     }
 
 
