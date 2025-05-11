@@ -88,7 +88,7 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 
     init_pcre(MB * 2);
 
-    init_openssl(MB * 512);
+    init_openssl(MB * 1024);
     
 #ifdef DASICS_LINUX
     // Clear all lib bounds
