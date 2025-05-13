@@ -63,7 +63,7 @@ void init_pcre(uint64_t size) {
     pcre_full_size = size;
     pcre_self_heap = self_heap;
 
-    pcre_heap_info.base = pcre_self_heap;
+    pcre_heap_info.base = (uint64_t)pcre_self_heap;
     pcre_heap_info.size = size;
 
     dasics_printf("Set pcre self heap begin: 0x%lx, end: 0x%lx\n", 

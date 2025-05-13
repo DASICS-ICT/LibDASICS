@@ -17,6 +17,9 @@ struct openssl_elf_area
     uint64_t text_begin, text_end;
     uint64_t rw_num;
     struct bound_t rw_bound[DASICS_LIBCFG_WIDTH];
+    int is_active;
+    int longTimeHandle[DASICS_LIBCFG_WIDTH];
+    int longTimeHandle_num;
 };
 
 extern struct openssl_elf_area openssl_area;

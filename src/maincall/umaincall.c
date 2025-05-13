@@ -85,7 +85,7 @@ void pcre_hook(struct cross *c, const char *target_name, struct umaincall * Call
     }
 }
 
-void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, struct umaincall * CallContext, uint64_t target_addr)
+static void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, struct umaincall * CallContext, uint64_t target_addr)
 {
     //TODO Add Cross-library calls here
     if ((_entry != _target) && \
@@ -101,45 +101,55 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
     {
         // dasics_printf("[LOG]: This is a cross call\n");
 
-        struct cross c;
-        dasics_memset(&c, 0, sizeof(struct cross));
-        c.begin = _entry;
-        c.target = _target;
-        c.ra = CallContext->ra;
-        c.func = _target->namespace_func;
+        struct cross *c = push_cross_get();
+        // dasics_memset(&c, 0, sizeof(struct cross));
+        c->begin = _entry;
+        c->target = _target;
+        c->ra = CallContext->ra;
+        c->func = _target->namespace_func;
 
         // openssl hook
         if (target_addr >= openssl_area.text_begin && target_addr <= openssl_area.text_end) {
 
-            c.jmpcfg[c.jmp_num++] = dasics_jumpcfg_alloc(openssl_area.text_begin, openssl_area.text_end);
-            for(int i = 0; i < openssl_area.rw_num; i++)
+            c->jmpcfg[c->jmp_num++] = dasics_jumpcfg_alloc(openssl_area.text_begin, openssl_area.text_end);
+            // for(int i = 0; i < openssl_area.rw_num; i++)
+            // {
+            //     c->handle[c->handle_num++] = dasics_libcfg_alloc(openssl_area.rw_bound[i].flags, \
+            //                                 openssl_area.rw_bound[i].lo, \
+            //                                 openssl_area.rw_bound[i].hi);
+            // }
+            c->handle[c->handle_num++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 16 * PAGE_SIZE, 16 * PAGE_SIZE);
+            if (!openssl_area.is_active)
             {
-                c.handle[c.handle_num++] = dasics_libcfg_alloc(openssl_area.rw_bound[i].flags, \
-                                            openssl_area.rw_bound[i].lo, \
-                                            openssl_area.rw_bound[i].hi);
+                dasics_libcfg_active(openssl_area.longTimeHandle, openssl_area.longTimeHandle_num);
+                openssl_area.is_active = 1;  
+                c->clear_active = 1;
+                dasics_memcpy(c->longTimeHandle, openssl_area.longTimeHandle, \
+                                openssl_area.longTimeHandle_num * sizeof(int32_t));                              
             }
-            c.handle[c.handle_num++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 16 * PAGE_SIZE, 16 * PAGE_SIZE);
-            
+
+            c->longTimeHandle_num = openssl_area.longTimeHandle_num;
             goto hook_end;
         }
         
-        c.jmpcfg[c.jmp_num++] = dasics_jumpcfg_alloc(_target->_plt_begin, _target->_text_end); // plt_begin -> text_end
+        c->jmpcfg[c->jmp_num++] = dasics_jumpcfg_alloc(_target->_plt_begin, _target->_text_end); // plt_begin -> text_end
 
-        c.handle[c.handle_num++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_V, \
+        c->handle[c->handle_num++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_V, \
                                         _target->_r_start,\
                                         _target->_r_end);
-        c.handle[c.handle_num++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+        c->handle[c->handle_num++] = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
                                         _target->_w_start, \
                                         _target->_w_end);
         
-        c.handle[c.handle_num++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 16 * PAGE_SIZE, 16 * PAGE_SIZE);
+        c->handle[c->handle_num++] = LIBCFG_ALLOC(DASICS_LIBCFG_R | DASICS_LIBCFG_W, CallContext->sp - 16 * PAGE_SIZE, 16 * PAGE_SIZE);
 
         // Hook pcre function
-        pcre_hook(&c, name, CallContext);
+        pcre_hook(c, name, CallContext);
        
 hook_end:
         // Push 
-        push_cross(&c);
+        // push_cross(&c);
+        ;
 
     #ifdef DASICS_DEBUG
         dasics_printf("[LOG]: DASICS cross call (%s), return address: 0x%lx target elf: %s name: %s\n", _entry->real_name, CallContext->ra, _target->real_name, name);
@@ -154,32 +164,33 @@ hook_end:
     static int openssl_flag = 0;
 
 
-int dasics_dynamic_call(struct umaincall * CallContext)
+int dasics_dynamic_call(struct umaincall * CallContext, umain_elf_t * _elf, int idx)
 {
     // umain_elf_t * _elf = _get_area(CallContext->t1);
-    umain_elf_t * _elf = (umain_elf_t *)CallContext->t0;
+    // umain_elf_t * _elf = (umain_elf_t *)CallContext->t0;
 
     
     // Judge dynamic call
-    if (CallContext->t3 != (reg_t)dasics_umaincall)
-        {
-            // dasics umaincall return 
-            if (CallContext->ra == (reg_t)dasics_umaincall) 
-            {
-                dasics_dynamic_return(CallContext);
-                return 1;
-            }
-            return 0;
-        }
+    // if (CallContext->t3 != (reg_t)dasics_umaincall)
+    //     {
+    //         // dasics umaincall return 
+    //         if (CallContext->ra == (reg_t)dasics_umaincall) 
+    //         {
+    //             dasics_dynamic_return(CallContext);
+    //             return 1;
+    //         }
+    //         return 0;
+    //     }
         
 
-    dynamic_level++;
+    // dynamic_level++;
 
     assert(_elf->plt_begin != NULL);
 
-    int plt_idx = CallContext->t1 / 8;
+    // int plt_idx = CallContext->t1 / 8;
+    int plt_idx = idx;
     // Not Maincall
-    CallContext->t3 = 0;
+    // CallContext->t3 = 0;
 
     // Begin DASICS_ dynamic func 
     /* Result */ 
@@ -212,7 +223,7 @@ int dasics_dynamic_call(struct umaincall * CallContext)
 
     cross_call(_elf, target_elf, target_name, CallContext, target);
 
-    dynamic_level--;
+    // dynamic_level--;
     return 1;
 }
 

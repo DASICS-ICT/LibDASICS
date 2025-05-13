@@ -109,6 +109,17 @@ void collect_openssl()
     // openssl_area.rw_bound[idx_rw].hi = linker->_w_end;
     // openssl_area.rw_bound[idx_rw++].flags = DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V;
     openssl_area.rw_num = idx_rw;
+
+    openssl_area.longTimeHandle_num = openssl_area.rw_num;
+    for (int i = 0; i < openssl_area.rw_num; i++)
+    {
+        openssl_area.longTimeHandle[i] = dasics_libcfg_alloc(openssl_area.rw_bound[i].flags, \
+                                        openssl_area.rw_bound[i].lo, \
+                                        openssl_area.rw_bound[i].hi);
+    }
+
+    dasics_libcfg_inactive(openssl_area.longTimeHandle, openssl_area.longTimeHandle_num);
+
 }
 
 void init_openssl(uint64_t size)

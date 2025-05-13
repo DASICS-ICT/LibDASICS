@@ -5,9 +5,9 @@
 .macro SAVE_MAINCALL
     addi sp, sp,  -OFFSET_UMAINCALL
 
-    sd t0, OFFSET_UMAINCALL_T0(sp)
-    sd t1, OFFSET_UMAINCALL_T1(sp)
-    sd t3, OFFSET_UMAINCALL_T3(sp)
+//    sd t0, OFFSET_UMAINCALL_T0(sp)
+//    sd t1, OFFSET_UMAINCALL_T1(sp)
+//    sd t3, OFFSET_UMAINCALL_T3(sp)
     sd ra, OFFSET_UMAINCALL_RA(sp)
     sd a0, OFFSET_UMAINCALL_A0(sp)
     sd a1, OFFSET_UMAINCALL_A1(sp)
@@ -17,15 +17,15 @@
     sd a5, OFFSET_UMAINCALL_A5(sp)
     sd a6, OFFSET_UMAINCALL_A6(sp)
     sd a7, OFFSET_UMAINCALL_A7(sp)
-    addi t0, sp, OFFSET_UMAINCALL
-    sd t0, OFFSET_UMAINCALL_SP(sp)
+    addi t5, sp, OFFSET_UMAINCALL
+    sd t5, OFFSET_UMAINCALL_SP(sp)
 .endm
 
 
 .macro RESTORE_MAINCALL
-    ld t0, OFFSET_UMAINCALL_T0(sp)
+//    ld t0, OFFSET_UMAINCALL_T0(sp)
     ld t1, OFFSET_UMAINCALL_T1(sp)
-    ld t3, OFFSET_UMAINCALL_T3(sp)
+//    ld t3, OFFSET_UMAINCALL_T3(sp)
     ld ra, OFFSET_UMAINCALL_RA(sp)
     ld a0, OFFSET_UMAINCALL_A0(sp)
     ld a1, OFFSET_UMAINCALL_A1(sp)
@@ -45,15 +45,31 @@
 # dasics_umaincall: pass arguments to umaincall helper.
 #-----------------------------------------------------------------------
 ENTRY(dasics_umaincall)
+    auipc t4, 0 // t4 = address of dasics_umaincall
+    beq  t3, t4, 1f // if (CallContext->t3 == (reg_t)dasics_umaincall)
+    beq  ra, t4, 2f // if (CallContext->ra == (reg_t)dasics_umaincall) 
+    // umaincall not need to save context, we used temporary registers
+    j 3f    
+1:
     SAVE_MAINCALL 
+    li   t3, 0
     mv   a0, sp
     // Let's do dasics_dynamic_call first
+    mv   a1, t0
+    srli a2, t1, 3 
     call dasics_dynamic_call
-    bnez a0, 1f
+    j 4f
+2:
+    SAVE_MAINCALL 
     mv   a0, sp
+    // ra is the address of dasics_umaincall
+    call dasics_dynamic_return
+    j 4f
+3:
     ld   t4, umaincall_helper
     jalr t4
-1:
+    ret
+4:
     RESTORE_MAINCALL
     jr t1
 END(dasics_umaincall)

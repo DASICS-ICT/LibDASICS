@@ -8,6 +8,8 @@
 #include <dasics_start.h>
 #include <dasics_string.h>
 #include <ufuncmem.h>
+#include <nginx_plugin.h>
+
 
 uint64_t cross_stack = 0;
 uint64_t cross_stack_base = 0;
@@ -43,6 +45,19 @@ void push_cross(struct cross * tmp)
 }
 
 
+struct cross * push_cross_get()
+{
+    int stack_spend = sizeof(struct cross);
+
+    if (stack_spend > (cross_stack - cross_stack_base))
+        perror("DASICS: push cross failed\n");
+
+    cross_stack -= stack_spend;
+    
+    dasics_memset((struct cross *)cross_stack, 0, sizeof(struct cross));
+    return (struct cross *)cross_stack;
+}
+
 /* Pop a cross stack */
 void pop_cross(struct umaincall * maincallContext)
 {
@@ -60,7 +75,13 @@ void pop_cross(struct umaincall * maincallContext)
     {
         assert(dasics_jumpcfg_free(cross_handle->jmpcfg[i]) == 0);
     }
-    
+
+    if (cross_handle->clear_active)
+    {
+        openssl_area.is_active = 0;
+        assert(dasics_libcfg_inactive(cross_handle->longTimeHandle, cross_handle->longTimeHandle_num) == 0);
+    }
+        
     // umain_elf_t * target = cross_handle->target;
     // umain_elf_t * entry = cross_handle->begin;
 

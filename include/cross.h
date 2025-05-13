@@ -24,10 +24,13 @@ struct cross {
     // Return Address
     reg_t ra;
     int handle_num;
+    int longTimeHandle_num;
     int jmp_num;
     int32_t jmpcfg[DASICS_JUMPCFG_WIDTH];
     // Jumpcall's handler
     int handle[DASICS_LIBCFG_WIDTH];
+    int clear_active;
+    int longTimeHandle[DASICS_LIBCFG_WIDTH];
 };
 
 // Init cross stack
@@ -35,6 +38,7 @@ void init_cross_stack();
 
 /* Push and Pop */ 
 void push_cross(struct cross * tmp);
+struct cross * push_cross_get();
 void pop_cross(struct umaincall * maincallContext);
 
 

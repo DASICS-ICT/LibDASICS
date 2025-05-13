@@ -47,28 +47,36 @@ void resgister_ufetch_fault_handler(utrap_handler fetch_fault_handler);
 
 
 // DASICS maincall
-void dasics_umaincall_helper(struct umaincall * regs, ...);
+uint64_t dasics_umaincall_helper(UmaincallTypes type, ...);
 
 // source but don't include 
 struct ucontext_trap;
 
 // DASICS ufault handler
-void     dasics_ufault_handler(struct ucontext_trap * regs);
+void dasics_ufault_handler(struct ucontext_trap * regs);
+
+extern uint64_t libcfg;
+extern uint64_t jumpcfg;
+extern int dlibcfg_handle_map[DASICS_LIBCFG_WIDTH];
 
 // DASICS memory bounds configure
 int32_t  dasics_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi);
-int32_t  dasics_libcfg_free(int32_t idx);
+int32_t  dasics_libcfg_free(int32_t handle);
 uint32_t dasics_libcfg_get(int32_t idx);
 int32_t  dasics_libcfg_free_all();
 void dasics_print_cfg_register(int32_t idx);
 
 // TODO
-int32_t dasics_libcfg_active(int32_t idx);
+int32_t dasics_libcfg_active(int32_t* handle, int num);
+int32_t dasics_libcfg_inactive(int32_t* handle, int num);
+
 
 // DASICS jump bounds configure
 int32_t dasics_jumpcfg_alloc(uint64_t lo, uint64_t hi);
 int32_t dasics_jumpcfg_free(int32_t idx);
 int32_t dasics_jumpcfg_active(int32_t idx);
+int32_t dasics_jumpcfg_inactive(int32_t idx);
+
 
 // extern uint64_t umaincall_helper;
 extern void dasics_ufault_entry(void);
