@@ -264,9 +264,11 @@ static void _fill_target_elf()
         /* code */
         for (int i = 0; i < tmp_elf->got_num; i++)
         {
-            /* code */
-            tmp_elf->target_elf[i + 2] = _get_area(tmp_elf->_local_got_table[i + 2]);
+            umain_elf_t * tmp_target_elf = _get_area(tmp_elf->_local_got_table[i + 2]);
+            tmp_elf->target_elf[i + 2] = tmp_target_elf;
             tmp_elf->target_func_name[i + 2] = _get_lib_name(tmp_elf, i);
+            if (tmp_target_elf != NULL)
+                tmp_elf->target_is_main[i + 2] = (tmp_target_elf->_flags & MAIN_AREA) ? 1 : 0;
             // if (tmp_elf == _umain_elf_table && (tmp_elf->target_elf[i + 2]->_flags & MAIN_AREA))
             // {
             //     tmp_elf->got_begin[i + 2] = tmp_elf->_local_got_table[i+2];
@@ -369,21 +371,12 @@ int create_umain_elf_chain(struct link_map * main_elf)
         _elf->target_elf = (umain_elf_t **)dasics_malloc(alloc_num* sizeof(umain_elf_t *));
         _elf->_local_call_time = (uint64_t *)dasics_malloc(alloc_num * sizeof(uint64_t) );
         _elf->target_func_name = (char **)dasics_malloc(alloc_num * sizeof(char *));
+        _elf->target_is_main = (uint64_t *)dasics_malloc(alloc_num * sizeof(uint64_t) );
         // Now, we will calculate all JMPREL's value，and copy them to the local got table
         _elf->calculate = 0;
 
         // fill the *_start, *_end of 
         _fill_module_map(_elf);
-
-
-        if (_elf->_local_got_table == NULL || \
-                _elf->local_func == NULL || \
-                    _elf->redirect_switch == NULL || \
-                        _elf->target_elf == NULL)
-        {
-            dasics_printf("[DASICS ERROR]: dasics_malloc error\n");
-            while(1);
-        } 
 
         dasics_memset(_elf->_local_got_table, 0, alloc_num * sizeof(uint64_t));
         dasics_memset(_elf->local_func, 0, alloc_num * sizeof(struct func_mem *));
@@ -391,7 +384,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
         dasics_memset(_elf->target_elf, 0, alloc_num * sizeof(umain_elf_t *));
         dasics_memset(_elf->_local_call_time, 0, alloc_num * sizeof(uint64_t));
         dasics_memset(_elf->target_func_name, 0, alloc_num * sizeof(char *));
-
+        dasics_memset(_elf->target_is_main, 0, alloc_num * sizeof(uint64_t));
 
         if (_umain_elf_table == NULL)
             dasics_main_elf = _elf;

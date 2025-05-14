@@ -79,44 +79,16 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
     static int openssl_flag = 0;
 
 
-int dasics_dynamic_call(struct umaincall * CallContext)
+int dasics_dynamic_call(struct umaincall * CallContext, \
+                            umain_elf_t * _elf, \
+                            int idx, \
+                            uint64_t target, \
+                            umain_elf_t * target_elf, \
+                            const char * target_name)
 {
-    // umain_elf_t * _elf = _get_area(CallContext->t1);
-    umain_elf_t * _elf = (umain_elf_t *)CallContext->t0;
-
-    
-    // Judge dynamic call
-    if (CallContext->t3 != (reg_t)dasics_umaincall)
-        {
-            // dasics umaincall return 
-            if (CallContext->ra == (reg_t)dasics_umaincall) 
-            {
-                dasics_dynamic_return(CallContext);
-                return 1;
-            }
-            return 0;
-        }
-        
-
-    dynamic_level++;
-
     assert(_elf->plt_begin != NULL);
-
-    int plt_idx = CallContext->t1 / 8;
-    // Not Maincall
-    CallContext->t3 = 0;
-
-    // Begin DASICS_ dynamic func 
-    /* Result */ 
-    uint64_t target = 0;
-    umain_elf_t *target_elf = NULL;
-
-    // Now, we will got the target and so on 
-    target = _elf->_local_got_table[plt_idx + 2]; 
-    target_elf = _elf->target_elf[plt_idx + 2];    
-    const char * target_name = _elf->target_func_name[plt_idx + 2];
-
-    if (_elf->redirect_switch[plt_idx + 2] && redirect_switch)
+    // redirect "Maybe it will be removed"
+    if (_elf->redirect_switch[idx + 2] && redirect_switch)
     {
         target = target - target_elf->l_addr + target_elf->_copy_lib_elf->l_addr;
         target_elf = target_elf->_copy_lib_elf;                
@@ -124,12 +96,8 @@ int dasics_dynamic_call(struct umaincall * CallContext)
 
     CallContext->t1 = target;
     
-
-
     cross_call(_elf, target_elf, target_name, CallContext);
 
-
-    dynamic_level--;
     return 1;
 }
 

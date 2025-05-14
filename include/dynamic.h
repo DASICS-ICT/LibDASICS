@@ -27,8 +27,13 @@ struct func_mem;
 
 typedef struct umain_elf
 {
+   /* Do not change the order of the following structures */
    uint64_t *_local_got_table; /* Num of lib call */   
-   uint64_t *_local_call_time; /* Call num of a outer func */ 
+   uint64_t *_local_call_time; /* Call num of a outer func */
+   struct umain_elf ** target_elf; /* Target elf */
+   char **target_func_name;
+   uint64_t *target_is_main;
+
    uint64_t calculate;
 
    ElfW(Addr) l_addr;		/* Difference between the address in the ELF
@@ -64,8 +69,6 @@ typedef struct umain_elf
 
    struct func_mem **local_func; /* Find func_mem fast */
    int * redirect_switch;       /* Redirect switch */
-   struct umain_elf ** target_elf; /* Target elf */
-   char **target_func_name;
 
    struct func_mem * namespace_func;
 
