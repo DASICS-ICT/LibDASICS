@@ -55,7 +55,7 @@ void init_pcre(uint64_t size) {
         -1, \
         0);
 
-    if (self_heap == NULL || (uint64_t)self_heap < 0) {
+    if (self_heap == NULL || (int64_t)self_heap < 0) {
         dasics_printf("Error: init_pcre_self_heap failed, hang\n");
         while(1);
     }

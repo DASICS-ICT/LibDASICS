@@ -164,7 +164,12 @@ hook_end:
     static int openssl_flag = 0;
 
 
-int dasics_dynamic_call(struct umaincall * CallContext, umain_elf_t * _elf, int idx)
+int dasics_dynamic_call(struct umaincall * CallContext, \
+                            umain_elf_t * _elf, \
+                            int idx, \
+                            uint64_t target, \
+                            umain_elf_t * target_elf, \
+                            const char * target_name)
 {
     // umain_elf_t * _elf = _get_area(CallContext->t1);
     // umain_elf_t * _elf = (umain_elf_t *)CallContext->t0;
@@ -188,21 +193,20 @@ int dasics_dynamic_call(struct umaincall * CallContext, umain_elf_t * _elf, int 
     assert(_elf->plt_begin != NULL);
 
     // int plt_idx = CallContext->t1 / 8;
-    int plt_idx = idx;
     // Not Maincall
     // CallContext->t3 = 0;
 
     // Begin DASICS_ dynamic func 
     /* Result */ 
-    uint64_t target = 0;
-    umain_elf_t *target_elf = NULL;
+    // uint64_t target = 0;
+    // umain_elf_t *target_elf = NULL;
 
-    // Now, we will got the target and so on 
-    target = _elf->_local_got_table[plt_idx + 2]; 
-    target_elf = _elf->target_elf[plt_idx + 2];    
-    const char * target_name = _elf->target_func_name[plt_idx + 2];
+    // // Now, we will got the target and so on 
+    // target = _elf->_local_got_table[idx]; 
+    // target_elf = _elf->target_elf[idx];    
+    // const char * target_name = _elf->target_func_name[idx];
 
-    // if (_elf->redirect_switch[plt_idx + 2] && redirect_switch)
+    // if (_elf->redirect_switch[idx] && redirect_switch)
     // {
     //     target = target - target_elf->l_addr + target_elf->_copy_lib_elf->l_addr;
     //     target_elf = target_elf->_copy_lib_elf;                

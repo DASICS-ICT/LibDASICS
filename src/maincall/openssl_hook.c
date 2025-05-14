@@ -131,7 +131,7 @@ void init_openssl(uint64_t size)
                             -1, \
                             0);
 
-    if (self_heap == NULL || (uint64_t)self_heap < 0)
+    if (self_heap == NULL || (int64_t)self_heap < 0)
     {
         dasics_printf("Error: init_openssl_self_heap failed, hang\n");
         while(1);
