@@ -5,9 +5,6 @@
 .macro SAVE_MAINCALL
     addi sp, sp,  -OFFSET_UMAINCALL
 
-//    sd t0, OFFSET_UMAINCALL_T0(sp)
-//    sd t1, OFFSET_UMAINCALL_T1(sp)
-//    sd t3, OFFSET_UMAINCALL_T3(sp)
     sd ra, OFFSET_UMAINCALL_RA(sp)
     sd a0, OFFSET_UMAINCALL_A0(sp)
     sd a1, OFFSET_UMAINCALL_A1(sp)
@@ -23,9 +20,7 @@
 
 
 .macro RESTORE_MAINCALL
-//    ld t0, OFFSET_UMAINCALL_T0(sp)
     ld t1, OFFSET_UMAINCALL_T1(sp)
-//    ld t3, OFFSET_UMAINCALL_T3(sp)
     ld ra, OFFSET_UMAINCALL_RA(sp)
     ld a0, OFFSET_UMAINCALL_A0(sp)
     ld a1, OFFSET_UMAINCALL_A1(sp)
@@ -35,10 +30,22 @@
     ld a5, OFFSET_UMAINCALL_A5(sp)
     ld a6, OFFSET_UMAINCALL_A6(sp)
     ld a7, OFFSET_UMAINCALL_A7(sp)
-    ld sp, OFFSET_UMAINCALL_SP(sp)
+    addi sp, sp, OFFSET_UMAINCALL
+//    ld sp, OFFSET_UMAINCALL_SP(sp)
 .endm
 
 
+.macro SAVE_MAINCALLRET
+    addi sp, sp,  -OFFSET_UMAINCALL
+    sd a0, OFFSET_UMAINCALL_A0(sp)
+.endm
+
+
+.macro RESTORE_MAINCALLRET
+    ld ra, OFFSET_UMAINCALL_RA(sp)
+    ld a0, OFFSET_UMAINCALL_A0(sp)
+    addi sp, sp, OFFSET_UMAINCALL
+.endm
 
 
 #-----------------------------------------------------------------------
@@ -100,9 +107,9 @@ ENTRY(dasics_umaincall)
     mv   a4, t3
     mv   a5, t4
     call dasics_dynamic_call
-    j 4f
+    j 6f
 2:
-    SAVE_MAINCALL 
+    SAVE_MAINCALLRET
     mv   a0, sp
     // ra is the address of dasics_umaincall
     call dasics_dynamic_return
@@ -112,8 +119,12 @@ ENTRY(dasics_umaincall)
     jalr t4
     ret
 4:
+    RESTORE_MAINCALLRET
+    ret
+6:
     RESTORE_MAINCALL
     jr t1
+    ebreak
 END(dasics_umaincall)
 
 

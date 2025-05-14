@@ -236,7 +236,7 @@ void  dasics_dynamic_return(struct umaincall * CallContext)
 {
     pop_cross(CallContext);
     
-    CallContext->t1 = CallContext->ra;
+    // CallContext->t1 = CallContext->ra;
 
 }
 
