@@ -147,5 +147,4 @@ ENTRY(invoke_syscall)
 check_failed:
     la t0, __dasics_uret
     jr t0
-    ret
 END(invoke_syscall)
