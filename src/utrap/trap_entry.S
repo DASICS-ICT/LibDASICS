@@ -138,8 +138,14 @@ END(_setup_fault)
 # Deal invoke_syscall carefully
 ENTRY(invoke_syscall)
     mv a0, sp
-    call handle_DasicsUEcallFault
+    ld t0, udasics_ecall_fault_handler
+    jalr t0
+    bnez a0, check_failed
     RESTORE_CONTEXT
-    ecall 
+    ecall
     uret
+check_failed:
+    la t0, __dasics_uret
+    jr t0
+    ret
 END(invoke_syscall)
