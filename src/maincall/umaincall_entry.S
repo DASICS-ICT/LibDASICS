@@ -60,16 +60,43 @@ END(dasics_umaincall)
 
 
 #-----------------------------------------------------------------------
-# : pass arguments to umaincall helper.
+# lib_call: pass arguments to the target function.
 #-----------------------------------------------------------------------
 .section .text
 .global lib_call
 .type lib_call, @function
 
 lib_call:
-    addi   sp, sp, -8
-    sd     ra, 0(sp)
-    .word 0x0005108b    // dasicscall.jr ra, a0
-    ld     ra, 0(sp)
-    addi   sp, sp, 8
+    // Allocate stack frame
+    addi   sp, sp, -72
+    sd     ra, 64(sp)
+    sd     s0, 56(sp)
+    addi   s0, sp, 72
+
+    // Save registers
+    sd     a1, -16(sp)
+    sd     a2, -24(sp)
+    sd     a3, -32(sp)
+    sd     a4, -40(sp)
+    sd     a5, -48(sp)
+    sd     a6, -56(sp)
+    sd     a7, -64(sp)
+
+    // Change the order of arguments
+    mv     t0, a0
+    ld     a0, -16(sp)
+    ld     a1, -24(sp)
+    ld     a2, -32(sp)
+    ld     a3, -40(sp)
+    ld     a4, -48(sp)
+    ld     a5, -56(sp)
+    ld     a6, -64(sp)
+
+    // Call the target function
+    .word 0x0002908b    // dasicscall.jr ra, t0
+
+    // Restore registers
+    ld     ra, 64(sp)
+    ld     s0, 56(sp)
+    addi   sp, sp, 72
     ret
