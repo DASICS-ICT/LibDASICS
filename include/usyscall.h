@@ -30,17 +30,17 @@ static inline long __attribute__((always_inline)) ulib_syscall(SYSCALL_ARGS) {
 }
 
 #define ULIB_SYSCALL6(sysno, arg1, arg2, arg3, arg4, arg5, arg6) \
-	ulib_syscall(sysno, (long)arg1, (long)arg2, (long)arg3, (long)arg4, (long)arg5, (long)arg6)
+    ulib_syscall(sysno, (long)arg1, (long)arg2, (long)arg3, (long)arg4, (long)arg5, (long)arg6)
 #define ULIB_SYSCALL5(sysno, arg1, arg2, arg3, arg4, arg5) \
-	ULIB_SYSCALL6(sysno, arg1, arg2, arg3, arg4, arg5, 0)
+    ULIB_SYSCALL6(sysno, arg1, arg2, arg3, arg4, arg5, 0)
 #define ULIB_SYSCALL4(sysno, arg1, arg2, arg3, arg4) \
-	ULIB_SYSCALL6(sysno, arg1, arg2, arg3, arg4, 0, 0)
+    ULIB_SYSCALL6(sysno, arg1, arg2, arg3, arg4, 0, 0)
 #define ULIB_SYSCALL3(sysno, arg1, arg2, arg3) \
-	ULIB_SYSCALL6(sysno, arg1, arg2, arg3, 0, 0, 0)
+    ULIB_SYSCALL6(sysno, arg1, arg2, arg3, 0, 0, 0)
 #define ULIB_SYSCALL2(sysno, arg1, arg2) \
     ULIB_SYSCALL6(sysno, arg1, arg2, 0, 0, 0, 0)
 #define ULIB_SYSCALL1(sysno, arg1) \
-	ULIB_SYSCALL6(sysno, arg1, 0, 0, 0, 0, 0)
+    ULIB_SYSCALL6(sysno, arg1, 0, 0, 0, 0, 0)
 #define ULIB_SYSCALL0(sysno) \
     ULIB_SYSCALL6(sysno, 0, 0, 0, 0, 0, 0)
 
