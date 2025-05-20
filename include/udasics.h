@@ -73,7 +73,7 @@ int32_t dasics_jumpcfg_active(int32_t idx);
 // extern uint64_t umaincall_helper;
 extern void dasics_ufault_entry(void);
 extern uint64_t dasics_umaincall(UmaincallTypes type, ...);
-extern void lib_call(void* func_name, ...);
+extern uint64_t lib_call(void *func_name, ...);
 extern void azone_call(void* func_name);
 
 #define LIBCFG_ALLOC(flag, base, len) (dasics_libcfg_alloc(flag,((uint64_t)(base)),((uint64_t)(base)) + ((uint64_t)(len))));
