@@ -49,6 +49,9 @@ static void reloc_pcre() {
 }
 
 void init_pcre(uint64_t size) {
+    umain_elf_t *pcre = _get_area_by_name("libpcre.so.1");
+    if (pcre == NULL) return;
+
     void * self_heap = mmap(NULL, size, \
         PROT_READ | PROT_WRITE, \
         MAP_PRIVATE | MAP_ANONYMOUS, \
