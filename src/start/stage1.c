@@ -23,6 +23,10 @@ void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
 
     user_sp = sp;
 
+    init_syscall_check();
+#ifdef DASICS_DEBUG
+    dasics_printf("> [INIT] Init syscall_check_table successfully\n");        
+#endif
     if (_dll_linker && _get_auxv_entry(sp, AT_DASICS))
     {
         // change the elf_enrtry to  _umain_entry
@@ -30,10 +34,7 @@ void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
 
         dasics_stage = 1;
 
-        init_syscall_check();
-#ifdef DASICS_DEBUG
-        dasics_printf("> [INIT] Init syscall_check_table successfully\n");        
-#endif
+
 
         _set_auxv_entry(sp, AT_DASICS, 1);
         /* 
