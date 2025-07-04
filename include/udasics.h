@@ -32,8 +32,15 @@ typedef enum {
     Umaincall_UNKNOWN
 } UmaincallTypes;
 
+// DASICS nested macros
 #define TYPE_MEM_BOUND 0
 #define TYPE_JMP_BOUND 1
+
+#define BNDQUERY_DENY  0x0
+#define BNDQUERY_RO    0x1
+#define BNDQUERY_RW    0x2
+#define BNDQUERY_EMPTY 0x3
+#define BNDQUERY_MASK  0x3
 
 // source but don't include 
 struct umaincall;

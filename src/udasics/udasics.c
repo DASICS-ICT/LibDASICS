@@ -654,12 +654,12 @@ int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_libcfg_alloc(uint64_t cfg, uint64_t lo
     uint64_t mem_bound_status = dasics_ulib_query_bound(TYPE_MEM_BOUND);
     int32_t target_idx,orig_idx;
     for (target_idx= 0; target_idx < max_cfgs; ++target_idx) {
-        uint64_t curr_status = (mem_bound_status >> (target_idx * 2)) & 0x3;
+        uint64_t curr_status = (mem_bound_status >> (target_idx * 2)) & BNDQUERY_MASK;
 
-        if (curr_status == 0x3) {
+        if (curr_status == BNDQUERY_EMPTY) {
             // try to find origin libcfg
             for (orig_idx = 0; orig_idx < max_cfgs; ++orig_idx){
-                uint64_t orig_status = (mem_bound_status >> (orig_idx * 2)) & 0x3;
+                uint64_t orig_status = (mem_bound_status >> (orig_idx * 2)) & BNDQUERY_MASK;
                 if (orig_status == 0x1){ // libcfg in the same level
                     uint64_t orig_cfg = (libcfg >> (orig_idx * 4)) & DASICS_LIBCFG_MASK;
                     uint64_t orig_lo,orig_hi;
@@ -685,13 +685,13 @@ int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_libcfg_alloc(uint64_t cfg, uint64_t lo
 int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_libcfg_copy(int src_idx) {
     int32_t max_cfgs = DASICS_LIBCFG_WIDTH;
     uint64_t mem_bound_status = dasics_ulib_query_bound(TYPE_MEM_BOUND);
-    uint64_t src_status = (mem_bound_status >> (src_idx * 2)) & 0x3;
-    if (src_status == 0 || src_status == 3) return -1;  // cannot copy
+    uint64_t src_status = (mem_bound_status >> (src_idx * 2)) & BNDQUERY_MASK;
+    if (src_status == BNDQUERY_DENY || src_status == BNDQUERY_EMPTY) return -1;  // cannot copy
     int32_t target_idx;
     for (target_idx= 0; target_idx < max_cfgs; ++target_idx) {
-        uint64_t curr_status = (mem_bound_status >> (target_idx * 2)) & 0x3;
+        uint64_t curr_status = (mem_bound_status >> (target_idx * 2)) & BNDQUERY_MASK;
 
-        if (curr_status == 0x3){
+        if (curr_status == BNDQUERY_EMPTY){
             dasics_ulib_copy_bound(TYPE_MEM_BOUND,src_idx,target_idx); // copy origin libcfg to target
             return target_idx;
         }
@@ -701,7 +701,7 @@ int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_libcfg_copy(int src_idx) {
 
 int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_libcfg_free(int32_t idx) {
     uint64_t mem_bound_status = dasics_ulib_query_bound(TYPE_MEM_BOUND);
-    if (!(mem_bound_status >> (idx * 2) & 0x3)) return -1; // no permission
+    if (!(mem_bound_status >> (idx * 2) & BNDQUERY_MASK)) return -1; // no permission
 
     if (idx < 0 || idx >= DASICS_LIBCFG_WIDTH) return -1;
     uint64_t libcfg = csr_read(0x880);  // DasicsLibCfg
@@ -714,8 +714,8 @@ int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_mem_get(int32_t idx, uint64_t *lo, uin
     if (idx < 0 || idx >= DASICS_LIBCFG_WIDTH) return -1;
 
     uint64_t mem_bound_status = dasics_ulib_query_bound(TYPE_MEM_BOUND);
-    uint64_t tiny_status = (mem_bound_status >> (idx * 2)) & 0x3;
-    if (tiny_status != 0x1 && tiny_status != 0x2) return -1; // not readable
+    uint64_t tiny_status = (mem_bound_status >> (idx * 2)) & BNDQUERY_MASK;
+    if (tiny_status != BNDQUERY_RO && tiny_status != BNDQUERY_RW) return -1; // not readable
 
     LIBBOUND_LOOKUP(*hi, *lo, idx, READ); // read libcfg
     return 0;
@@ -727,13 +727,13 @@ int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_jumpcfg_alloc(uint64_t lo, uint64_t hi
     uint64_t jmp_bound_status = dasics_ulib_query_bound(TYPE_JMP_BOUND);
     int32_t target_idx,orig_idx;
     for (target_idx = 0; target_idx < max_cfgs; ++target_idx) {
-        uint64_t curr_status = (jmp_bound_status >> (target_idx * 2)) & 0x3;
-        if (curr_status == 0x3) // found available cfg
+        uint64_t curr_status = (jmp_bound_status >> (target_idx * 2)) & BNDQUERY_MASK;
+        if (curr_status == BNDQUERY_EMPTY) // found available cfg
         {
             // try to find origin jmpcfg
             for (orig_idx = 0; orig_idx < max_cfgs; ++orig_idx){
-                uint64_t orig_status = (jmp_bound_status >> (orig_idx * 2)) & 0x3;
-                if (orig_status == 0x1){ // jmpcfg in the same level
+                uint64_t orig_status = (jmp_bound_status >> (orig_idx * 2)) & BNDQUERY_MASK;
+                if (orig_status == BNDQUERY_RO){ // jmpcfg in the same level
                     uint64_t orig_lo,orig_hi;
                     JMPBOUND_LOOKUP(orig_hi, orig_lo, orig_idx, READ); // read origin jmpcfg
                     if (orig_lo <= lo && hi <= orig_hi) break; // current field smaller than origin, OK
@@ -756,7 +756,7 @@ int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_jumpcfg_alloc(uint64_t lo, uint64_t hi
 
 int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_jumpcfg_free(int32_t idx) {
     uint64_t jmp_bound_status = dasics_ulib_query_bound(TYPE_JMP_BOUND);
-    if (!(jmp_bound_status >> (idx * 2) & 0x3)) return -1; // no permission
+    if (!(jmp_bound_status >> (idx * 2) & BNDQUERY_MASK)) return -1; // no permission
 
     if (idx < 0 || idx >= DASICS_JUMPCFG_WIDTH) return -1;
     uint64_t jumpcfg = csr_read(0x8c8);    // DasicsJumpCfg
@@ -769,8 +769,8 @@ int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_jump_get(int32_t idx, uint64_t *lo, ui
     if (idx < 0 || idx >= DASICS_JUMPCFG_WIDTH) return -1;
 
     uint64_t jmp_bound_status = dasics_ulib_query_bound(TYPE_JMP_BOUND);
-    uint64_t tiny_status = (jmp_bound_status >> (idx * 2)) & 0x3;
-    if (tiny_status != 0x1 && tiny_status != 0x2) return -1; // not readable
+    uint64_t tiny_status = (jmp_bound_status >> (idx * 2)) & BNDQUERY_MASK;
+    if (tiny_status != BNDQUERY_RO && tiny_status != BNDQUERY_RW) return -1; // not readable
 
     JMPBOUND_LOOKUP(*hi, *lo, idx, READ); // read jmpcfg
     return 0;
