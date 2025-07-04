@@ -96,11 +96,6 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 
     libcfg = 0;
     jumpcfg = 0;
-    // Set the dasics libcfg
-    for (int i = 0; i < DASICS_LIBCFG_WIDTH; i++)
-    {
-        dlibcfg_handle_map[i] = -1;
-    }
     // setup user ufault handler 
     csr_write(0x005, (uint64_t)dasics_ufault_entry);
 

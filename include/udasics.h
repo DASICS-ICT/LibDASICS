@@ -68,7 +68,6 @@ void dasics_ufault_handler(struct ucontext_trap * regs);
 
 extern uint64_t libcfg;
 extern uint64_t jumpcfg;
-extern int dlibcfg_handle_map[DASICS_LIBCFG_WIDTH];
 
 // DASICS memory bounds configure
 int32_t  dasics_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi);
