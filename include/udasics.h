@@ -84,6 +84,8 @@ int32_t dasics_libcfg_inactive(int32_t* handle, int num);
 // DASICS jump bounds configure
 int32_t dasics_jumpcfg_alloc(uint64_t lo, uint64_t hi);
 int32_t dasics_jumpcfg_free(int32_t idx);
+int32_t dasics_jumpcfg_get(int32_t idx);
+void    dasics_jumpcfg_free_all();
 int32_t dasics_jumpcfg_active(int32_t idx);
 int32_t dasics_jumpcfg_inactive(int32_t idx);
 

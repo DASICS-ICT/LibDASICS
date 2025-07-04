@@ -382,6 +382,20 @@ int32_t dasics_jumpcfg_free(int32_t idx) {
     return 0;
 }
 
+int32_t dasics_jumpcfg_get(int32_t idx) {
+    if (idx < 0 || idx >= DASICS_JUMPCFG_WIDTH) {
+        return -1;
+    }
+
+    int32_t step = 16;
+    uint64_t jumpcfg = csr_read(0x8c8);    // DasicsJumpCfg
+    return (jumpcfg >> (idx * step)) & DASICS_JUMPCFG_MASK;
+}
+
+void dasics_jumpcfg_free_all()
+{
+    csr_write(0x8c8, 0); // Clear DasicsJumpCfg
+}
 
 void dasics_print_cfg_register(int32_t handle)
 {
