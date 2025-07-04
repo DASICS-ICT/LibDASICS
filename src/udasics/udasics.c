@@ -683,6 +683,8 @@ int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_libcfg_alloc(uint64_t cfg, uint64_t lo
 }
 
 int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_libcfg_copy(int src_idx) {
+    if (src_idx < 0 || src_idx >= DASICS_LIBCFG_WIDTH) return -1;
+
     int32_t max_cfgs = DASICS_LIBCFG_WIDTH;
     uint64_t mem_bound_status = dasics_ulib_query_bound(TYPE_MEM_BOUND);
     uint64_t src_status = (mem_bound_status >> (src_idx * 2)) & BNDQUERY_MASK;
@@ -700,10 +702,11 @@ int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_libcfg_copy(int src_idx) {
 }
 
 int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_libcfg_free(int32_t idx) {
+    if (idx < 0 || idx >= DASICS_LIBCFG_WIDTH) return -1;
+
     uint64_t mem_bound_status = dasics_ulib_query_bound(TYPE_MEM_BOUND);
     if (!(mem_bound_status >> (idx * 2) & BNDQUERY_MASK)) return -1; // no permission
 
-    if (idx < 0 || idx >= DASICS_LIBCFG_WIDTH) return -1;
     uint64_t libcfg = csr_read(0x880);  // DasicsLibCfg
     libcfg &= ~(DASICS_LIBCFG_V << (idx * 4));
     csr_write(0x880, libcfg);   // DasicsLibCfg
@@ -755,10 +758,11 @@ int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_jumpcfg_alloc(uint64_t lo, uint64_t hi
 }
 
 int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_jumpcfg_free(int32_t idx) {
-    uint64_t jmp_bound_status = dasics_ulib_query_bound(TYPE_JMP_BOUND);
-    if (!(jmp_bound_status >> (idx * 2) & BNDQUERY_MASK)) return -1; // no permission
-
     if (idx < 0 || idx >= DASICS_JUMPCFG_WIDTH) return -1;
+
+    uint64_t jmp_bound_status = dasics_ulib_query_bound(TYPE_JMP_BOUND);
+    if (!((jmp_bound_status >> (idx * 2)) & BNDQUERY_MASK)) return -1; // no permission
+
     uint64_t jumpcfg = csr_read(0x8c8);    // DasicsJumpCfg
     jumpcfg &= ~(DASICS_JUMPCFG_V << (idx * 16));
     csr_write(0x8c8, jumpcfg); // DasicsJumpCfg
