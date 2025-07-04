@@ -69,8 +69,11 @@
 #define CSR_DLBOUND15HI     0x8af
 
 #define CSR_DMAINCALL       0x8b0
-#define CSR_DRETURNPC       0x8b1
 #define CSR_DFZRETURN       0x8b2
+#define CSR_DRETPC0         0x8b4
+#define CSR_DRETPC1         0x8b5
+#define CSR_DRETPC2         0x8b6
+#define CSR_DRETPC3         0x8b7
 
 #define CSR_DJBOUND0LO      0x8c0
 #define CSR_DJBOUND0HI      0x8c1
@@ -82,11 +85,21 @@
 #define CSR_DJBOUND3HI      0x8c7
 #define CSR_DJCFG           0x8c8
 
+#define CSR_DMLEVEL         0x8cc
+#define CSR_DJLEVEL         0x8cd
+#define CSR_DSCRATCHCFG     0x8d0
+#define CSR_DSCRATCHLO      0x8d2
+#define CSR_DSCRATCHHI      0x8d3
+#define CSR_DSCRATCHLVL     0x8d4
+
 #define csr_read(reg) ({ unsigned long __tmp; \
   asm volatile ("csrr %0, " #reg : "=r"(__tmp)); \
   __tmp; })
 
 #define csr_write(reg, val) ({ \
   asm volatile ("csrw " #reg ", %0" :: "rK"(val)); })
+
+#define rdcycle() csr_read(cycle)
+#define rdtime() csr_read(time)
 
 #endif

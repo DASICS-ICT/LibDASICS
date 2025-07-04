@@ -32,6 +32,9 @@ typedef enum {
     Umaincall_UNKNOWN
 } UmaincallTypes;
 
+#define TYPE_MEM_BOUND 0
+#define TYPE_JMP_BOUND 1
+
 // source but don't include 
 struct umaincall;
 
@@ -85,6 +88,29 @@ extern uint64_t lib_call(void *func_name, ...);
 extern void azone_call(void* func_name);
 
 #define LIBCFG_ALLOC(flag, base, len) (dasics_libcfg_alloc(flag,((uint64_t)(base)),((uint64_t)(base)) + ((uint64_t)(len))));
+
+extern int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_libcfg_alloc(uint64_t cfg, uint64_t lo ,uint64_t hi);
+extern int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_libcfg_free(int32_t idx);
+extern int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_libcfg_copy(int src_idx);
+extern int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_mem_get(int32_t idx, uint64_t *lo, uint64_t *hi);
+extern int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_jumpcfg_alloc(uint64_t lo, uint64_t hi);
+extern int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_jumpcfg_free(int32_t idx);
+extern int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_jump_get(int32_t idx, uint64_t *lo, uint64_t *hi);
+
+extern void dasics_ulib_libcall(void *arg0, void *arg1, void *arg2, void *arg3, void *func_name);
+#define dasics_ulib_libcall_no_args(func_name) (dasics_ulib_libcall(0, 0, 0, 0, func_name))
+
+extern void dasics_ulib_copy_mem_bound(int bound_src, int bound_dst);
+extern void dasics_ulib_copy_jmp_bound(int bound_src, int bound_dst);
+extern uint64_t dasics_ulib_query_mem_bound(void);
+extern uint64_t dasics_ulib_query_jmp_bound(void);
+
+#define dasics_ulib_copy_bound(type,bound_src,bound_dst) ((type)?\
+                                                    dasics_ulib_copy_jmp_bound(bound_src, bound_dst):\
+                                                    dasics_ulib_copy_mem_bound(bound_src, bound_dst))
+#define dasics_ulib_query_bound(type) ((type)?\
+                                  dasics_ulib_query_jmp_bound():\
+                                  dasics_ulib_query_mem_bound())
 
 #ifdef __cplusplus
 }

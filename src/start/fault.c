@@ -6,7 +6,7 @@
 void dasics_start_fault(struct ucontext_trap * regs)
 {
 
-    uint64_t dasics_return_pc = csr_read(0x8b1);            // DasicsReturnPC
+    uint64_t dasics_return_pc = csr_read(0x8b4);            // DasicsReturnPC
     uint64_t dasics_free_zone_return_pc = csr_read(0x8b2);  // DasicsFreeZoneReturnPC
     
 

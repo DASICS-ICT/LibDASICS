@@ -12,13 +12,13 @@ SECTIONS
 {
   /* Read-only sections, merged into text segment: */
   PROVIDE (__executable_start = SEGMENT_START("text-segment", 0x1000000)); . = SEGMENT_START("text-segment", 0x1000000) + SIZEOF_HEADERS;
-  .plt            : 
+  .plt            :
   {
     _plt_start = . ;
-     *(.plt) 
-     *(.iplt) 
-    _plt_end = . ;  
-  }  
+     *(.plt)
+     *(.iplt)
+    _plt_end = . ;
+  }
   /* . = TEXT_START; */
   _text_start = . ;
   .text           :
@@ -31,19 +31,26 @@ SECTIONS
     *(.text .stub .text.* .gnu.linkonce.t.*)
     /* .gnu.warning sections are handled specially by elf.em.  */
     *(.gnu.warning)
-  }  
+  }
   _text_end = . ;
   . = ALIGN(64 / 8);
   . = .;
-  
+
   . = ALIGN(64 / 8);
   /* DASICS lib and freezone text section */
+  PROVIDE (__ULIBTEXT_BEGIN__ = .);
   .ulibtext :
   {
-    __ULIBTEXT_BEGIN__ = .;
-    *(.ulibtext)
-    __ULIBTEXT_END__ = .;
-  } 
+    __ULIBTEXT_CALLER_BEGIN__ = .;
+    *(.ulibtext.caller)
+    __ULIBTEXT_CALLER_END__ = .;
+    QUAD(0xdeadbeef);
+    __ULIBTEXT_CALLEE_BEGIN__ = .;
+    *(.ulibtext.callee)
+    __ULIBTEXT_CALLEE_END__ = .;
+    QUAD(0xdeadbeef);
+  }
+  PROVIDE (__ULIBTEXT_END__ = .);
 
   . = ALIGN(64 / 8);
   .ufreezonetext :
@@ -51,12 +58,12 @@ SECTIONS
     __ULIBFREEZONETEXT_BEGIN__ = .;
     *(.ufreezonetext)
     __ULIBFREEZONETEXT_END__ = .;
-  } 
+  }
 
-  .interp         : 
+  .interp         :
   {
     _interp_start = . ;
-    *(.interp) 
+    *(.interp)
   }
   .note.gnu.build-id  : { *(.note.gnu.build-id) }
   .hash           : { *(.hash) }
@@ -196,13 +203,13 @@ SECTIONS
   .data1          : { *(.data1) }
   . = ALIGN(64 / 8);
   . = .;
-  .got            : 
-  { 
+  .got            :
+  {
     _got_start = . ;
-    *(.got.plt) 
-    *(.igot.plt) 
-    *(.got) 
-    *(.igot) 
+    *(.got.plt)
+    *(.igot.plt)
+    *(.got)
+    *(.igot)
     _got_end = . ;
   }
   /* We want the small data sections together, so single-instruction offsets
@@ -214,6 +221,34 @@ SECTIONS
     *(.srodata.cst16) *(.srodata.cst8) *(.srodata.cst4) *(.srodata.cst2) *(.srodata .srodata.*)
     *(.sdata .sdata.* .gnu.linkonce.s.*)
   }
+  .ulibrodata :
+  {
+    __ULIBRODATA_CALLER_BEGIN__ = .;
+    *(.ulibrodata.caller)
+    __ULIBRODATA_CALLER_END__ = .;
+    QUAD(0xdeadbeef);
+    __ULIBRODATA_CALLEE_BEGIN__ = .;
+    *(.ulibrodata.callee)
+    __ULIBRODATA_CALLEE_END__ = .;
+    QUAD(0xdeadbeef);
+  }
+  PROVIDE (__ULIBDATA_BEGIN__ = .);
+  .ulibdata :
+  {
+    __ULIBDATA_CALLER_BEGIN__ = .;
+    *(.ulibdata.caller)
+    __ULIBDATA_CALLER_END__ = .;
+    QUAD(0xdeadbeef);
+    __ULIBDATA_CALLEE_BEGIN__ = .;
+    *(.ulibdata.callee)
+    __ULIBDATA_CALLEE_END__ = .;
+    QUAD(0xdeadbeef);
+    __ULIBDATA_STATISTICS_BEGIN__ = .;
+    *(.ulibdata.statistics)
+    __ULIBDATA_STATISTICS_END__ = .;
+    QUAD(0xdeadbeef);
+  }
+  PROVIDE (__ULIBDATA_END__ = .);
   _edata = .; PROVIDE (edata = .);
   . = .;
   __bss_start = .;
@@ -222,6 +257,17 @@ SECTIONS
     *(.dynsbss)
     *(.sbss .sbss.* .gnu.linkonce.sb.*)
     *(.scommon)
+  }
+  .ulibbss :
+  {
+    __ULIBBSS_CALLER_BEGIN__ = .;
+    *(.ulibbss.caller)
+    __ULIBBSS_CALLER_END__ = .;
+    QUAD(0xdeadbeef);
+    __ULIBBSS_CALLEE_BEGIN__ = .;
+    *(.ulibbss.callee)
+    __ULIBBSS_CALLEE_END__ = .;
+    QUAD(0xdeadbeef);
   }
   .bss            :
   {
