@@ -214,6 +214,11 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
 
     switch (type)
     {
+        case Umaincall_NULL: {
+            // Do nothing, just return
+            retval = 0;
+            break;
+        }
         case Umaincall_PRINT: {
             const char *format = va_arg(args, const char *);
             retval = vprintf(format, args);

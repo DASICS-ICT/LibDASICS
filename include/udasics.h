@@ -28,6 +28,7 @@ extern "C" {
 
 // TODO: Add UmaincallTypes
 typedef enum {
+    Umaincall_NULL,
     Umaincall_PRINT,
     Umaincall_UNKNOWN
 } UmaincallTypes;
