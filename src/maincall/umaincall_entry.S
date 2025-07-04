@@ -5,6 +5,9 @@
 .macro SAVE_MAINCALL
     addi sp, sp,  -OFFSET_UMAINCALL
 
+    sd t0, OFFSET_UMAINCALL_T0(sp)
+    sd t1, OFFSET_UMAINCALL_T1(sp)
+    sd t3, OFFSET_UMAINCALL_T3(sp)
     sd ra, OFFSET_UMAINCALL_RA(sp)
     sd a0, OFFSET_UMAINCALL_A0(sp)
     sd a1, OFFSET_UMAINCALL_A1(sp)
@@ -20,7 +23,9 @@
 
 
 .macro RESTORE_MAINCALL
+    ld t0, OFFSET_UMAINCALL_T0(sp)
     ld t1, OFFSET_UMAINCALL_T1(sp)
+    ld t3, OFFSET_UMAINCALL_T3(sp)
     ld ra, OFFSET_UMAINCALL_RA(sp)
     ld a0, OFFSET_UMAINCALL_A0(sp)
     ld a1, OFFSET_UMAINCALL_A1(sp)
@@ -30,10 +35,8 @@
     ld a5, OFFSET_UMAINCALL_A5(sp)
     ld a6, OFFSET_UMAINCALL_A6(sp)
     ld a7, OFFSET_UMAINCALL_A7(sp)
-    addi sp, sp, OFFSET_UMAINCALL
-//    ld sp, OFFSET_UMAINCALL_SP(sp)
+    ld sp, OFFSET_UMAINCALL_SP(sp)
 .endm
-
 
 .macro SAVE_MAINCALLRET
     addi sp, sp,  -OFFSET_UMAINCALL
@@ -116,7 +119,7 @@ ENTRY(dasics_umaincall)
     j 4f
 3:
     ld   t4, umaincall_helper
-    jalr t4
+    jr t4
     ret
 4:
     RESTORE_MAINCALLRET
@@ -124,7 +127,6 @@ ENTRY(dasics_umaincall)
 6:
     RESTORE_MAINCALL
     jr t1
-    ebreak
 END(dasics_umaincall)
 
 
