@@ -19,7 +19,7 @@ int handle_DasicsUFetchFault(struct ucontext_trap * regs)
 
     if (dasics_return_pc != regs->utval)
     {
-        csr_write(0x8b1, regs->utval);
+        csr_write(0x8b4, regs->utval);
         asm("fence.i");
         return 0;
     }

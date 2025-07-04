@@ -16,7 +16,7 @@ void dasics_start_fault(struct ucontext_trap * regs)
         /* code */
         if (dasics_return_pc != regs->utval)
         {
-            csr_write(0x8b1, regs->utval);
+            csr_write(0x8b4, regs->utval);
         }
             
 

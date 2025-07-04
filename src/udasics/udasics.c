@@ -164,7 +164,7 @@ static int dasics_bound_checker(uint64_t lo, uint64_t hi, int perm)
 
 uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
 {
-    // uint64_t dasics_return_pc = csr_read(0x8b1);            // DasicsReturnPC
+    // uint64_t dasics_return_pc = csr_read(0x8b4);            // DasicsReturnPC
     // uint64_t dasics_free_zone_return_pc = csr_read(0x8b2);  // DasicsFreeZoneReturnPC
     // Judge This is a dynamic call
     uint64_t retval = 0;
@@ -190,7 +190,7 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
             break;
     }
 
-    // csr_write(0x8b1, dasics_return_pc);             // DasicsReturnPC
+    // csr_write(0x8b4, dasics_return_pc);             // DasicsReturnPC
     // csr_write(0x8b2, dasics_free_zone_return_pc);   // DasicsFreeZoneReturnPC
 
     va_end(args);
