@@ -40,10 +40,10 @@ void register_udasics(uint64_t funcptr);
 void unregister_udasics(void);
 
 // DASICS user fault handler register
-void resgister_uecall_fault_handler(utrap_handler ecall_fault_handler);
-void resgister_uload_fault_handler(utrap_handler load_fault_handler);
-void resgister_ustore_fault_handler(utrap_handler store_fault_handler);
-void resgister_ufetch_fault_handler(utrap_handler fetch_fault_handler);
+void register_uecall_fault_handler(utrap_handler ecall_fault_handler);
+void register_uload_fault_handler(utrap_handler load_fault_handler);
+void register_ustore_fault_handler(utrap_handler store_fault_handler);
+void register_ufetch_fault_handler(utrap_handler fetch_fault_handler);
 
 
 // DASICS maincall

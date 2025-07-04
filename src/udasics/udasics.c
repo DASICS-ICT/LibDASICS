@@ -118,25 +118,25 @@ void unregister_udasics(void)
     }
 }
 
-void resgister_uecall_fault_handler(utrap_handler ecall_fault_handler)
+void register_uecall_fault_handler(utrap_handler ecall_fault_handler)
 {
     if (ecall_fault_handler != NULL)
         udasics_ecall_fault_handler = ecall_fault_handler;
 
 }
-void resgister_uload_fault_handler(utrap_handler load_fault_handler)
+void register_uload_fault_handler(utrap_handler load_fault_handler)
 {
     if (load_fault_handler != NULL)
         udasics_load_fault_handler = load_fault_handler;
 }
 
-void resgister_ustore_fault_handler(utrap_handler store_fault_handler)
+void register_ustore_fault_handler(utrap_handler store_fault_handler)
 {
     if (store_fault_handler != NULL)
         udasics_store_fault_handler = store_fault_handler;
 }
 
-void resgister_ufetch_fault_handler(utrap_handler fetch_fault_handler)
+void register_ufetch_fault_handler(utrap_handler fetch_fault_handler)
 {
     if (fetch_fault_handler != NULL)
         udasics_fetch_fault_handler = fetch_fault_handler;
