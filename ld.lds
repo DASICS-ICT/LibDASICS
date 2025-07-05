@@ -271,6 +271,9 @@ SECTIONS
   }
   .bss            :
   {
+    . += 4096;
+    __dasics_stack = .;
+    . += 8;
    *(.dynbss)
    *(.bss .bss.* .gnu.linkonce.b.*)
    *(COMMON)

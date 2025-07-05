@@ -13,8 +13,8 @@ ENTRY(_check_dasics)
     mv a1, a0
     mv a0, sp
     call _dasics_entry_stage1
+    call init___umain_call_table
     li a0, 0
-
     call _start
 END(_check_dasics)
 

@@ -6,6 +6,7 @@
 #include <utrap.h>
 #include <dasics_stdio.h>
 #include <umaincall.h>
+#include <nginx_plugin.h>
 
 uint64_t umaincall_helper;
 
@@ -184,6 +185,7 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
             retval = vprintf(format, args);
         }
         break;
+
 
         default:
             printf("\x1b[33m Warning: Invalid umaincall number %d!\n\x1b[0m", type); //could not use printf in kernel

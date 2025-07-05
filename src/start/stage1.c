@@ -3,9 +3,12 @@
 #include <dasics_stdio.h>
 #include <usyscall.h>
 #include <stdlib.h>
+#include <nginx_plugin.h>
 #include <udasics.h>
 
+extern uint64_t umaincall_helper;
 uint64_t user_sp = 0;
+ATTR_ULIB_DATA uint64_t level1_umaincall_helper;
 /* 
  * if we get the _dll_linker from the auxv which means that 
  * the program need a dynamic linker for stage one, we will 
@@ -34,8 +37,6 @@ void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
 
         dasics_stage = 1;
 
-
-
         _set_auxv_entry(sp, AT_DASICS, 1);
         /* 
          * give all lib area be VALID, READ, WRITE, FREE
@@ -51,7 +52,21 @@ void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
         // Transfer executive authority to dynamic linker
         RESET_ENTRY(sp, _dll_linker);
     }
-    
+    // setup user ufault handler 
+    csr_write(0x005, (uint64_t)dasics_ufault_entry);
+    csr_write(0x880, 0);
+    csr_write(0x8c8, 0);
+    // init_openssl(MB * 512);
+    // umaincall_helper = (uint64_t)dasics_umaincall;
+    level1_umaincall_helper = (uint64_t)dasics_umaincall;
+    csr_write(0x8b0, (uint64_t)dasics_umaincall);
+
+    extern uint64_t __dasics_stack[];
+    __dasics_stack[0] = (uint64_t)__dasics_stack;
+    original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R | DASICS_LIBCFG_W, \
+                0, \
+                TASK_SIZE);
+    original_jumpcfg_alloc(0, TASK_SIZE);   
     if (_dll_linker)
     {
         if (fini) atexit(fini);

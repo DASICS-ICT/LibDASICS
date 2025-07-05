@@ -124,6 +124,8 @@ void collect_openssl()
 
 void init_openssl(uint64_t size)
 {
+    csr_write(0x880, 0);
+    csr_write(0x8c8, 0);
     // First init memory
     void * self_heap = mmap(NULL, size, \
                             PROT_READ | PROT_WRITE, \
@@ -141,14 +143,50 @@ void init_openssl(uint64_t size)
 
     dasics_printf("Set openssl self heap begin: 0x%lx, end: 0x%lx\n", 
         (uint64_t)openssl_self_heap, (uint64_t)openssl_self_heap + openssl_full_size);
+    
+    extern uint64_t __ULIBTEXT_BEGIN__[];
+    extern uint64_t __ULIBTEXT_END__[];
 
+    
+    extern uint64_t __RODATA_BEGIN__[];
+    extern uint64_t __RODATA_END__[];
+
+    extern uint64_t __ULIBRWDATA_BEGIN__[];
+    extern uint64_t __ULIBRWDATA_END__[];
+
+    extern uint64_t __bss_start[];
+    extern uint64_t __BSS_END__[];
+    register uint64_t tp asm ("tp");
+    register uint64_t sp asm ("sp");
+
+    
+    dasics_jumpcfg_alloc((uint64_t)__ULIBTEXT_BEGIN__, (uint64_t)__ULIBTEXT_END__);
+    // dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_V, \
+    //                     (uint64_t)__RODATA_BEGIN__, \
+    //                     (uint64_t)__RODATA_END__);
+    // dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+    //                     (uint64_t)__ULIBRWDATA_BEGIN__, \
+    //                     (uint64_t)__ULIBRWDATA_END__);
+    // dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+    //                     (uint64_t)openssl_self_heap, \
+    //                     (uint64_t)openssl_self_heap + openssl_full_size);
+    // dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+    //                     (uint64_t)__bss_start, \
+    //                     (uint64_t)__BSS_END__);
+    // dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \ 
+    //                     tp, \
+    //                     tp + PAGE_SIZE * 2);
+    // dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \ 
+    //                     sp - PAGE_SIZE * 16, \
+    //                     sp + PAGE_SIZE * 2);
+    dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+                        (uint64_t)0, \
+                        (uint64_t)0X4000000000);
     // Reloc
-    reloc_openssl();
+    // reloc_openssl();
 
     // Collect
-    collect_openssl();
-
-
+    // collect_openssl();
 }
 
 

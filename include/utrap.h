@@ -1,3 +1,4 @@
+
 #ifndef _INCLUDE_UTRAP_H
 #define _INCLUDE_UTRAP_H
 
@@ -39,6 +40,18 @@ struct ucontext_trap
 	reg_t a5;
 	reg_t a6;
 	reg_t a7;
+	reg_t s0;
+	reg_t s1;
+	reg_t s2;
+	reg_t s3;
+	reg_t s4;
+	reg_t s5;
+	reg_t s6;
+	reg_t s7;
+	reg_t s8;
+	reg_t s9;
+	reg_t s10;
+	reg_t s11;
 };
 
 
