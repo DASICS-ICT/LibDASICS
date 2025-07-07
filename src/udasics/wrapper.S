@@ -1,11 +1,11 @@
 .section .ulibtext.caller
 .global dasics_ulib_libcall
 
-// arg0, arg1, arg2, arg3, dest_addr
+// arg0, arg1, arg2, arg3, arg4, arg5, arg6, dest_addr
 dasics_ulib_libcall:
     addi   sp, sp, -8
     sd     ra, 0(sp)
-    .word 0x0007108b    // dasicscall.jr ra, a4
+    .word 0x0008908b    // dasicscall.jr ra, a7
     ld     ra, 0(sp)
     addi   sp, sp, 8
     ret

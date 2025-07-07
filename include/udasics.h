@@ -106,8 +106,8 @@ extern int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_jumpcfg_alloc(uint64_t lo, uint
 extern int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_jumpcfg_free(int32_t idx);
 extern int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_jump_get(int32_t idx, uint64_t *lo, uint64_t *hi);
 
-extern void dasics_ulib_libcall(void *arg0, void *arg1, void *arg2, void *arg3, void *func_name);
-#define dasics_ulib_libcall_no_args(func_name) (dasics_ulib_libcall(0, 0, 0, 0, func_name))
+extern uint64_t dasics_ulib_libcall(uint64_t arg0, uint64_t arg1, uint64_t arg2, uint64_t arg3, uint64_t arg4, uint64_t arg5, uint64_t arg6, void *func_name);
+#define dasics_ulib_libcall_no_args(func_name) (dasics_ulib_libcall(0, 0, 0, 0, 0, 0, 0, func_name))
 
 extern void dasics_ulib_copy_mem_bound(int bound_src, int bound_dst);
 extern void dasics_ulib_copy_jmp_bound(int bound_src, int bound_dst);
