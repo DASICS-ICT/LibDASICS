@@ -24,21 +24,9 @@
 #define OFFSET_TRAP_A5      (8*17)
 #define OFFSET_TRAP_A6      (8*18)
 #define OFFSET_TRAP_A7      (8*19)
-#define OFFSET_TRAP_S0      (8*20)
-#define OFFSET_TRAP_S1      (8*21)
-#define OFFSET_TRAP_S2      (8*22)
-#define OFFSET_TRAP_S3      (8*23)
-#define OFFSET_TRAP_S4      (8*24)
-#define OFFSET_TRAP_S5      (8*25)
-#define OFFSET_TRAP_S6      (8*26)
-#define OFFSET_TRAP_S7      (8*27)
-#define OFFSET_TRAP_S8      (8*28)
-#define OFFSET_TRAP_S9      (8*29)
-#define OFFSET_TRAP_S10     (8*30)
-#define OFFSET_TRAP_S11     (8*31)
 
 
-#define OFFSET_SIZE         (8*32)
+#define OFFSET_SIZE         (8*20)
 
 /* maincall used */
 #define OFFSET_UMAINCALL_T0     (8*0)

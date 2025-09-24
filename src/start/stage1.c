@@ -8,7 +8,7 @@
 
 extern uint64_t umaincall_helper;
 uint64_t user_sp = 0;
-ATTR_ULIB_DATA uint64_t level1_umaincall_helper;
+uint64_t level1_umaincall_helper;
 /* 
  * if we get the _dll_linker from the auxv which means that 
  * the program need a dynamic linker for stage one, we will 
@@ -63,10 +63,12 @@ void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
 
     extern uint64_t __dasics_stack[];
     __dasics_stack[0] = (uint64_t)__dasics_stack;
+    extern uint64_t __level1__dasics_stack[];
+    __level1__dasics_stack[0] = (uint64_t)__level1__dasics_stack;
     original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R | DASICS_LIBCFG_W, \
                 0, \
                 TASK_SIZE);
-    original_jumpcfg_alloc(0, TASK_SIZE);   
+    original_jumpcfg_alloc(0, TASK_SIZE / 4);   
     if (_dll_linker)
     {
         if (fini) atexit(fini);

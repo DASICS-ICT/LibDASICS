@@ -3,6 +3,8 @@
 #include <asm/offset.h>
 
 .macro SAVE_CONTEXT
+    csrw CSR_USCRATCH, sp
+    la sp, __dasics_trap_stack
     addi sp, sp, -(OFFSET_SIZE) 
     /* save all general purpose registers here! */
     // return address
@@ -15,8 +17,7 @@
     sd t1, OFFSET_TRAP_T1(sp)
     sd t2, OFFSET_TRAP_T2(sp)
 
-    mv t0, sp 
-    addi t0, t0, OFFSET_SIZE
+    csrr t0, CSR_USCRATCH
     sd t0, OFFSET_TRAP_SP(sp)
 
     // args
@@ -35,19 +36,6 @@
     sd t5, OFFSET_TRAP_T5(sp)
     sd t6, OFFSET_TRAP_T6(sp)    
     
-    // 
-    sd s0, OFFSET_TRAP_S0(sp)
-    sd s1, OFFSET_TRAP_S1(sp)
-    sd s2, OFFSET_TRAP_S2(sp)
-    sd s3, OFFSET_TRAP_S3(sp)
-    sd s4, OFFSET_TRAP_S4(sp)
-    sd s5, OFFSET_TRAP_S5(sp)
-    sd s6, OFFSET_TRAP_S6(sp)
-    sd s7, OFFSET_TRAP_S7(sp)
-    sd s8, OFFSET_TRAP_S8(sp)
-    sd s9, OFFSET_TRAP_S9(sp)
-    sd s10, OFFSET_TRAP_S10(sp)
-    sd s11, OFFSET_TRAP_S11(sp)
 
     csrr t0, CSR_UEPC
     sd t0, OFFSET_TRAP_UEPC(sp)
@@ -98,23 +86,7 @@
     ld t5, OFFSET_TRAP_T5(sp)
     ld t6, OFFSET_TRAP_T6(sp)
 
-
-    ld s0, OFFSET_TRAP_S0(sp)
-    ld s1, OFFSET_TRAP_S1(sp)
-    ld s2, OFFSET_TRAP_S2(sp)
-    ld s3, OFFSET_TRAP_S3(sp)
-    ld s4, OFFSET_TRAP_S4(sp)
-    ld s5, OFFSET_TRAP_S5(sp)
-    ld s6, OFFSET_TRAP_S6(sp)
-    ld s7, OFFSET_TRAP_S7(sp)
-    ld s8, OFFSET_TRAP_S8(sp)
-    ld s9, OFFSET_TRAP_S9(sp)
-    ld s10, OFFSET_TRAP_S10(sp)
-    ld s11, OFFSET_TRAP_S11(sp)
-
-
-
-    addi sp, sp, OFFSET_SIZE
+    ld sp, OFFSET_TRAP_SP(sp)
     fence.i
 .endm
 

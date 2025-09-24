@@ -127,22 +127,22 @@ void init_openssl(uint64_t size)
     csr_write(0x880, 0);
     csr_write(0x8c8, 0);
     // First init memory
-    void * self_heap = mmap(NULL, size, \
-                            PROT_READ | PROT_WRITE, \
-                            MAP_PRIVATE | MAP_ANONYMOUS, \
-                            -1, \
-                            0);
+    // void * self_heap = mmap(NULL, size, \
+    //                         PROT_READ | PROT_WRITE, \
+    //                         MAP_PRIVATE | MAP_ANONYMOUS, \
+    //                         -1, \
+    //                         0);
 
-    if (self_heap == NULL || (int64_t)self_heap < 0)
-    {
-        dasics_printf("Error: init_openssl_self_heap failed, hang\n");
-        while(1);
-    }
-    openssl_full_size = size;
-    openssl_self_heap = self_heap;
+    // if (self_heap == NULL || (int64_t)self_heap < 0)
+    // {
+    //     dasics_printf("Error: init_openssl_self_heap failed, hang\n");
+    //     while(1);
+    // }
+    // openssl_full_size = size;
+    // openssl_self_heap = self_heap;
 
-    dasics_printf("Set openssl self heap begin: 0x%lx, end: 0x%lx\n", 
-        (uint64_t)openssl_self_heap, (uint64_t)openssl_self_heap + openssl_full_size);
+    // dasics_printf("Set openssl self heap begin: 0x%lx, end: 0x%lx\n", 
+    //     (uint64_t)openssl_self_heap, (uint64_t)openssl_self_heap + openssl_full_size);
     
     extern uint64_t __ULIBTEXT_BEGIN__[];
     extern uint64_t __ULIBTEXT_END__[];
@@ -181,7 +181,18 @@ void init_openssl(uint64_t size)
     //                     sp + PAGE_SIZE * 2);
     dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
                         (uint64_t)0, \
-                        (uint64_t)0X4000000000);
+                        (uint64_t)0X1000000000);
+    dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+                        (uint64_t)0x1000000000, \
+                        (uint64_t)0x2000000000);
+    dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+                        (uint64_t)0x2000000000, \
+                        (uint64_t)0x3000000000);
+    dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W | DASICS_LIBCFG_V, \
+                        (uint64_t)0x3000000000, \
+                        (uint64_t)0x4000000000);
+    
+
     // Reloc
     // reloc_openssl();
 

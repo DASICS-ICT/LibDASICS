@@ -1,5 +1,7 @@
-.section .ulibtext.caller
+.section .ulibtextcaller, "ax", @progbits 
 .global dasics_ulib_libcall
+.balign 4;
+.type dasics_ulib_libcall, @function
 
 // arg0, arg1, arg2, arg3, arg4, arg5, arg6, dest_addr
 dasics_ulib_libcall:
@@ -11,27 +13,39 @@ dasics_ulib_libcall:
     ret
 
 // bound_src, bound_dst
-.section .ulibtext.caller
+.section .ulibtextcaller, "ax", @progbits
 .global dasics_ulib_copy_mem_bound
+.balign 4;
+.type dasics_ulib_copy_mem_bound, @function
+
 dasics_ulib_copy_mem_bound:
     .word 0x00b5200b // dibndmv a0, a1, 0
     ret
 
-.section .ulibtext.caller
+.section .ulibtextcaller, "ax", @progbits
 .global dasics_ulib_copy_jmp_bound
+.balign 4;
+.type dasics_ulib_copy_jmp_bound, @function
+
 dasics_ulib_copy_jmp_bound:
     .word 0x00b5208b // dibndmv a0, a1, 1
     ret
 
 // void
-.section .ulibtext.caller
+.section .ulibtextcaller, "ax", @progbits
 .global dasics_ulib_query_mem_bound
+.balign 4;
+.type dasics_ulib_query_mem_bound, @function
+
 dasics_ulib_query_mem_bound:
     .word 0x0000350b //dibndquery a0, 0
     ret
 
-.section .ulibtext.caller
+.section .ulibtextcaller, "ax", @progbits
 .global dasics_ulib_query_jmp_bound
+.balign 4;
+.type dasics_ulib_query_jmp_bound, @function
+
 dasics_ulib_query_jmp_bound:
     .word 0x0010350b //dibndquery a0, 1
     ret

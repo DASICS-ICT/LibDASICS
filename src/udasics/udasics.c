@@ -7,6 +7,7 @@
 #include <dasics_stdio.h>
 #include <umaincall.h>
 #include <nginx_plugin.h>
+#include <assert.h>
 
 uint64_t umaincall_helper;
 
@@ -536,4 +537,67 @@ int32_t ATTR_ULIB_CALLER_TEXT dasics_ulib_jump_get(int32_t idx, uint64_t *lo, ui
 
     JMPBOUND_LOOKUP(*hi, *lo, idx, READ); // read jmpcfg
     return 0;
+}
+
+
+int idx_callee_text = 1;
+int idx_callee_data1 = 1;
+int idx_callee_data2 = 1;
+int idx_callee_data3 = 1;
+int idx_callee_data4 = 1;
+
+#define IDX_CALLER_DATA1 0
+#define IDX_CALLER_DATA2 1
+#define IDX_CALLER_DATA3 2
+#define IDX_CALLER_DATA4 3
+
+int in_level2 = 0;
+uint64_t ATTR_ULIB_CALLER_TEXT invoke2levelcall()
+{
+    if (in_level2) {
+        return 1;
+    } else
+    {
+        in_level2 = 1;
+    }
+    // printf("[DASICS] Entering 2-level call\n");
+    // Allocate execute permission for the callee
+    extern char __ULIBTEXT_LEVEL2_BEGIN__, __ULIBTEXT_LEVEL2_END__;
+    idx_callee_text = dasics_ulib_jumpcfg_alloc((uint64_t)&__ULIBTEXT_LEVEL2_BEGIN__,
+                                  (uint64_t)&__ULIBTEXT_LEVEL2_END__);
+    assert(idx_callee_text >= 0);
+
+    // Allocate data permission for the callee
+    idx_callee_data1 = dasics_ulib_libcfg_alloc(
+        DASICS_LIBCFG_R | DASICS_LIBCFG_W,
+        (uint64_t)0x0,
+        (uint64_t)0X1000000000
+    );
+    assert(idx_callee_data1 >= 0);
+
+    idx_callee_data2 = dasics_ulib_libcfg_copy(IDX_CALLER_DATA2);
+    assert(idx_callee_data2 >= 0);
+
+    idx_callee_data3 = dasics_ulib_libcfg_copy(IDX_CALLER_DATA3);
+    assert(idx_callee_data3 >= 0);
+
+    idx_callee_data4 = dasics_ulib_libcfg_copy(IDX_CALLER_DATA4);
+    assert(idx_callee_data4 >= 0);    
+
+    
+    return 0;
+}
+
+
+
+uint64_t ATTR_ULIB_CALLER_TEXT invoke2levelret()
+{
+    // printf("[DASICS] Exiting 2-level call\n");
+    // Free the allocated permissions
+    dasics_ulib_jumpcfg_free(idx_callee_text);
+    dasics_ulib_libcfg_free(idx_callee_data1);
+    dasics_ulib_libcfg_free(idx_callee_data2);
+    dasics_ulib_libcfg_free(idx_callee_data3);
+    dasics_ulib_libcfg_free(idx_callee_data4);
+    in_level2 = 0;
 }

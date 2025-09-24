@@ -41,14 +41,18 @@ SECTIONS
   PROVIDE (__ULIBTEXT_BEGIN__ = .);
   .ulibtext :
   {
-    __ULIBTEXT_CALLER_BEGIN__ = .;
-    *(.ulibtext.caller)
-    __ULIBTEXT_CALLER_END__ = .;
-    QUAD(0xdeadbeef);
-    __ULIBTEXT_CALLEE_BEGIN__ = .;
-    *(.ulibtext.callee)
-    __ULIBTEXT_CALLEE_END__ = .;
-    QUAD(0xdeadbeef);
+    __ULIBTEXT_BEGIN__ = .;
+    *(.ulibtext)
+    . = ALIGN(64 / 8);
+    *(.ulibtext.*)
+    . = ALIGN(64 / 8);
+
+    __ULIBTEXT_LEVEL2_BEGIN__ = .;
+    *(.uliblevel2text)
+    . = ALIGN(64 / 8);
+    *(.uliblevel2text.*)
+    __ULIBTEXT_LEVEL2_END__ = .;
+    __ULIBTEXT_END__ = .;
   }
   PROVIDE (__ULIBTEXT_END__ = .);
 
@@ -271,9 +275,16 @@ SECTIONS
   }
   .bss            :
   {
+    . = ALIGN(4096);
     . += 4096;
     __dasics_stack = .;
     . += 8;
+    . = ALIGN(64 / 8);
+    __umain_call_table = .;
+    . += 4096;
+    . += 4096;
+    __level1__dasics_stack = .;
+    . += 8;    
    *(.dynbss)
    *(.bss .bss.* .gnu.linkonce.b.*)
    *(COMMON)

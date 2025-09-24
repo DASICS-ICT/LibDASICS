@@ -9,28 +9,32 @@ int handle_DasicsUFetchFault(struct ucontext_trap * regs)
     // dasics_printf("[DASICS_EXCEPTION]: Fetch fault\n");
 
 
-    uint64_t dasics_return_pc = csr_read(0x8b4);            // DasicsReturnPC
-    uint64_t dasics_free_zone_return_pc = csr_read(0x8b2);  // DasicsFreeZoneReturnPC
+    // uint64_t dasics_return_pc = csr_read(0x8b4);            // DasicsReturnPC
+    // uint64_t dasics_free_zone_return_pc = csr_read(0x8b2);  // DasicsFreeZoneReturnPC
 
-
-    // dasics_printf("DASICS_EXCEPTION: utval: 0x%lx, record: 0x%lx\n", regs->utval, dasics_return_pc);
+    regs->uepc = regs->utval;
+    // dasics_printf("DASICS_EXCEPTION: utval: 0x%lx, record: 0x%lx, uepc: 0x%lx\n", regs->utval, dasics_return_pc, regs->uepc);
     
 
 
-    if (dasics_return_pc != regs->utval)
-    {
-        csr_write(0x8b4, regs->utval);
-        asm("fence.i");
-        return 0;
-    }
+    // if (dasics_return_pc != regs->utval)
+    // {
+        // csr_write(0x8b4, regs->utval);
+        // csr_write(0x8b5, regs->utval);
+        // csr_write(0x8b6, regs->utval);
+        // csr_write(0x8b7, regs->utval);
+
+        // asm("fence.i");
+        // return 0;
+    // }
         
 
-    if (dasics_free_zone_return_pc != regs->utval)
-    {
-        csr_write(0x8b2, regs->utval);
-        asm("fence.i");
-        return 0;
-    }
+    // if (dasics_free_zone_return_pc != regs->utval)
+    // {
+    //     csr_write(0x8b2, regs->utval);
+    //     asm("fence.i");
+    //     return 0;
+    // }
         
 
     return 0;
