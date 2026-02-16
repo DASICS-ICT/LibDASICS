@@ -326,6 +326,18 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
     case DFR_ECALL_DASICS_FAULT:
         error = udasics_ecall_fault_handler(regs);
         break;
+
+    case DFR_S0_VIOL_DASICS_FAULT:
+        dasics_printf("[DASICS S0] VIOL fault: reason=%d pc=0x%lx utval=0x%lx\n",
+            DFR_S0_VIOL_DASICS_FAULT, regs->uepc, regs->utval);
+        error = -1;
+        break;
+
+    case DFR_S0_PROTO_DASICS_FAULT:
+        dasics_printf("[DASICS S0] PROTO fault: reason=%d pc=0x%lx utval=0x%lx\n",
+            DFR_S0_PROTO_DASICS_FAULT, regs->uepc, regs->utval);
+        error = -1;
+        break;
         
     default:
         dasics_printf("[ERROR] unhandle ufault: 0x%lx\n", regs->ucause);
@@ -511,5 +523,4 @@ void dasics_print_cfg_register(int32_t handle)
 {
 	printf("DASICS uLib CFG Registers: handle:%x  config: %x \n",handle,dasics_libcfg_get(handle));
 }
-
 

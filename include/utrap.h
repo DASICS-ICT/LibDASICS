@@ -77,6 +77,8 @@ struct ucontext_trap
 #define DFR_JUMP_DASICS_FAULT 		4
 #define DFR_LOAD_MPK_FAULT 			5
 #define DFR_STORE_MPK_FAULT 		6
+#define DFR_S0_VIOL_DASICS_FAULT    7
+#define DFR_S0_PROTO_DASICS_FAULT   8
 
 typedef int (*utrap_handler)(struct ucontext_trap * regs);
 
