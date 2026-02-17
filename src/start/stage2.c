@@ -9,6 +9,10 @@ void print_exit_func_num();
 // STD
 #include <stdlib.h>
 
+#ifndef DASICS_PRINT_EXIT_FUNC_NUM
+#define DASICS_PRINT_EXIT_FUNC_NUM 0
+#endif
+
 fixup_entry_t dll_fixup_handler;
 
 rtld_fini dll_fini;
@@ -96,8 +100,12 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     // setup user ufault handler 
     csr_write(0x005, (uint64_t)dasics_ufault_entry);
 
+#if DASICS_PRINT_EXIT_FUNC_NUM
     atexit(&print_exit_func_num);
     _umain_elf_table->calculate = 1;
+#else
+    _umain_elf_table->calculate = 0;
+#endif
 
 #endif
 
@@ -106,6 +114,7 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 
 void print_exit_func_num()
 {
+#if DASICS_PRINT_EXIT_FUNC_NUM
     // Close calculate
     _umain_elf_table->calculate = 0;
 
@@ -120,5 +129,5 @@ void print_exit_func_num()
                 18,  elf->_local_got_table[i], \
                 32, elf->_local_call_time[i]);
     }
-
+#endif
 }

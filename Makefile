@@ -14,6 +14,10 @@ ifdef USER_DEFINE
     CFLAGS += -D$(USER_DEFINE)
 endif
 
+ifdef USER_DEFINES
+    CFLAGS += $(USER_DEFINES)
+endif
+
 # build di0
 DIR_PWD			?= 
 DIR_BUILD		= build
