@@ -338,6 +338,12 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
             DFR_S0_PROTO_DASICS_FAULT, regs->uepc, regs->utval);
         error = -1;
         break;
+
+    case DFR_S0_AUTH_DASICS_FAULT:
+        dasics_printf("[DASICS SREG] AUTH fault: reason=%d pc=0x%lx utval=0x%lx\n",
+            DFR_S0_AUTH_DASICS_FAULT, regs->uepc, regs->utval);
+        error = -1;
+        break;
         
     default:
         dasics_printf("[ERROR] unhandle ufault: 0x%lx\n", regs->ucause);
