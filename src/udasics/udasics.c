@@ -7,6 +7,7 @@
 #include <utrap.h>
 #include <dasics_stdio.h>
 #include <umaincall.h>
+#include <fit.h>
 
 uint64_t umaincall_helper;
 
@@ -194,6 +195,15 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
     // Judge This is a dynamic call
     uint64_t retval = 0;
 
+    // Check whether the maincall is allowed to be called by the function closure
+    uint64_t maincall_pc = (uint64_t)(__builtin_return_address(0)) - 4;  // 4 is the length of jal
+    if (fit_check_maincall(type) != 0) {
+        printf("[DASICS MAINCALL] Invalid maincall %d at %lx, cancel this maincall\n", \
+            type, maincall_pc);
+        return -1;
+    }
+
+    // Perform the maincall
     va_list args;
     va_start(args, type);
 

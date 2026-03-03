@@ -16,6 +16,7 @@ extern "C" {
 #define DASICS_LIBCFG_WIDTH 16
 #define DASICS_LIBCFG_MASK  0xfUL
 #define DASICS_LIBCFG_V     0x8UL
+#define DASICS_LIBCFG_X     0x4UL
 #define DASICS_LIBCFG_R     0x2UL
 #define DASICS_LIBCFG_W     0x1UL
 

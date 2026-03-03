@@ -1,11 +1,19 @@
 #include <utrap.h>
 #include <usyscall.h>
-
+#include <fit.h>
 
 int handle_DasicsUEcallFault(struct ucontext_trap * regs)
 {
   // Do uepc ++ first
   regs->uepc += 4;  
+
+  // Check whether the function closure is allowed to call the syscall
+  if (fit_check_syscall(regs->a7) != 0)
+  {
+    // Invalid syscall
+    printf("[DASICS EXCEPTION] Invalid syscall %d at %lx, cancel this syscall\n", regs->a7, regs->uepc - 4);
+    return -1;  // Return -1 to terminate the program
+  }
 
   syscall_check[regs->a7].check(
     regs->a0,
