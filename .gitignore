@@ -8,3 +8,5 @@ rootfs.img
 run_qemu.sh
 rootfs
 copy.sh
+compile_commands.json
+.cache
