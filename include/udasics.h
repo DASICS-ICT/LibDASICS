@@ -30,6 +30,7 @@ extern "C" {
 // TODO: Add UmaincallTypes
 typedef enum {
     Umaincall_PRINT,
+    Umaincall_MALLOC,
     Umaincall_UNKNOWN
 } UmaincallTypes;
 

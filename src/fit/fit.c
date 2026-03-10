@@ -3,8 +3,15 @@
 #include <asm/unistd.h>
 #include <asm/offset.h>
 
+/* Optional: set by apps that link mimalloc-dasics for per-closure heap */
+extern void mi_set_ids_dasics(uint32_t library_id, uint32_t closure_id) __attribute__((weak));
+
 fit_entry_t *fit_table = NULL;
 static void *current_closure_key = NULL;
+
+void *fit_get_current_closure_key(void) {
+    return current_closure_key;
+}
 
 int fit_init(uint64_t dasics_funcptr) {
     // Initialize DASICS mechanism
@@ -90,27 +97,28 @@ uint64_t fit_switchto(void *func, ...) {
     // Set current closure key
     current_closure_key = entry->key;
 
-    // Set permissions for current function
+    // Set permissions for current function (handle stored in bounds_data[i].handle)
     uint64_t frame_addr, badfunc_stack_top, badfunc_stack_size;
-    fit_handles_t *handle_array = (fit_handles_t *)malloc(entry->bounds_num * sizeof(fit_handles_t));
     for (size_t i = 0; i < entry->bounds_num; i++) {
-        handle_array[i].perm = entry->bounds_data[i].perm;
         if (entry->bounds_data[i].perm & DASICS_LIBCFG_X) {
-            handle_array[i].handle = dasics_jumpcfg_alloc(entry->bounds_data[i].lo,
-                                                          entry->bounds_data[i].hi + 1);
+            entry->bounds_data[i].handle = dasics_jumpcfg_alloc(entry->bounds_data[i].lo,
+                                                                entry->bounds_data[i].hi + 1);
         } else if (entry->bounds_data[i].lo == UINT64_MAX) {
             asm volatile("mv %0, sp" : "=r"(frame_addr));
             badfunc_stack_top = frame_addr - STACK_FRAME_SIZE_LIBCALL;
             badfunc_stack_size = entry->bounds_data[i].hi;
-            handle_array[i].handle = dasics_libcfg_alloc(entry->bounds_data[i].perm,
-                                                         badfunc_stack_top - badfunc_stack_size,
-                                                         badfunc_stack_top + 1);
+            entry->bounds_data[i].handle = dasics_libcfg_alloc(entry->bounds_data[i].perm,
+                                                              badfunc_stack_top - badfunc_stack_size,
+                                                              badfunc_stack_top + 1);
         } else {
-            handle_array[i].handle = dasics_libcfg_alloc(entry->bounds_data[i].perm,
-                                                         entry->bounds_data[i].lo,
-                                                         entry->bounds_data[i].hi + 1);
+            entry->bounds_data[i].handle = dasics_libcfg_alloc(entry->bounds_data[i].perm,
+                                                              entry->bounds_data[i].lo,
+                                                              entry->bounds_data[i].hi + 1);
         }
     }
+
+    if (mi_set_ids_dasics)
+        mi_set_ids_dasics(entry->library_id, entry->closure_id);
 
     // Set argbound permissions if the callback exists
     va_list args;
@@ -130,15 +138,14 @@ uint64_t fit_switchto(void *func, ...) {
         entry->argbound_free();
     }
 
-    // Remove allocated permissions
+    // Remove allocated permissions (handles stored in bounds_data[i].handle)
     for (size_t i = 0; i < entry->bounds_num; i++) {
-        if (handle_array[i].perm & DASICS_LIBCFG_X) {
-            dasics_jumpcfg_free(handle_array[i].handle);
+        if (entry->bounds_data[i].perm & DASICS_LIBCFG_X) {
+            dasics_jumpcfg_free(entry->bounds_data[i].handle);
         } else {
-            dasics_libcfg_free(handle_array[i].handle);
+            dasics_libcfg_free(entry->bounds_data[i].handle);
         }
     }
-    free(handle_array);
 
     // Reset current closure key
     current_closure_key = NULL;

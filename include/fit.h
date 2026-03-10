@@ -16,11 +16,13 @@ typedef struct fit_bounds {
     fit_perm_t perm;   // Permission bits, using DASICS_LIBCFG_XX series definitions
     uint64_t lo;       // Lower bound address
     uint64_t hi;       // Upper bound address
+    int32_t handle;   // DASICS libcfg/jumpcfg handle (filled in fit_switchto or by Umaincall_MALLOC)
 } fit_bounds_t;
 
+/* Optional handle array type (e.g. for argbound dynamic bounds) */
 typedef struct fit_handles {
-    fit_perm_t perm;   // Permission bits, using DASICS_LIBCFG_XX series definitions
-    int handle;        // Handle
+    fit_perm_t perm;
+    int handle;
 } fit_handles_t;
 
 // FIT table entry structure (must contain UTHash's hh field)
@@ -28,6 +30,9 @@ typedef struct fit_entry {
     void *key;                    // Hash key (function address)
     fit_bounds_t *bounds_data;    // Memory bounds array
     size_t bounds_num;            // Number of bounds
+    uint32_t library_id;         // Library id for mimalloc (e.g. 0 = user program)
+    uint32_t closure_id;         // Closure id for mimalloc (per-function)
+    int heap_alloc_done;         // 1 if self-managed heap bound was added (for Umaincall_MALLOC scheme B)
 
     uint8_t *syscalls;            // System call bitmap
     size_t syscalls_size;         // System call bitmap size (in bytes)
@@ -51,5 +56,6 @@ extern void fit_print(void);
 extern uint64_t fit_switchto(void *func, ...);
 extern int fit_check_syscall(int sysno);
 extern int fit_check_maincall(int maincall);
+extern void *fit_get_current_closure_key(void);
 
 #endif // FIT_H

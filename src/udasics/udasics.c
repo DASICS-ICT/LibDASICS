@@ -9,6 +9,10 @@
 #include <umaincall.h>
 #include <fit.h>
 
+/* Optional: used by Umaincall_MALLOC when app links mimalloc-dasics */
+extern void *mi_malloc(size_t size) __attribute__((weak));
+extern int mi_get_mem_area_dasics(uint32_t library_id, uint32_t closure_id, void **p, size_t *area_size) __attribute__((weak));
+
 uint64_t umaincall_helper;
 
 utrap_handler udasics_ecall_fault_handler = handle_DasicsUEcallFault;
@@ -212,6 +216,46 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
         case Umaincall_PRINT: {
             const char *format = va_arg(args, const char *);
             retval = vprintf(format, args);
+        }
+        break;
+
+        case Umaincall_MALLOC: {
+            size_t size = va_arg(args, size_t);
+            if (!mi_malloc) {
+                retval = (uint64_t)NULL;
+                break;
+            }
+            void *p = mi_malloc(size);
+            retval = (uint64_t)p;
+            if (!p)
+                break;
+            /* Scheme B: on first alloc for this closure, add heap bound and set heap_alloc_done */
+            void *key = fit_get_current_closure_key();
+            if (!key)
+                break;
+            fit_entry_t *entry = NULL;
+            HASH_FIND_PTR(fit_table, &key, entry);
+            if (!entry || entry->heap_alloc_done)
+                break;
+            if (!mi_get_mem_area_dasics)
+                break;
+            void *seg = NULL;
+            size_t area_size = 0;
+            if (mi_get_mem_area_dasics(entry->library_id, entry->closure_id, &seg, &area_size) != 0 || !seg || area_size == 0)
+                break;
+            uint64_t lo = (uint64_t)seg;
+            uint64_t hi = lo + area_size;  /* dasics_libcfg_alloc expects exclusive hi */
+            int32_t h = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W, lo, hi);
+            if (h < 0)
+                break;
+            if (entry->bounds_num >= 16)  /* max pre-allocated slots */
+                break;
+            entry->bounds_data[entry->bounds_num].perm = DASICS_LIBCFG_R | DASICS_LIBCFG_W;
+            entry->bounds_data[entry->bounds_num].lo = lo;
+            entry->bounds_data[entry->bounds_num].hi = hi - 1;  /* store inclusive hi in bounds_data */
+            entry->bounds_data[entry->bounds_num].handle = h;
+            entry->bounds_num++;
+            entry->heap_alloc_done = 1;
         }
         break;
 
