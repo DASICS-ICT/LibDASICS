@@ -248,13 +248,13 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
             int32_t h = dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W, lo, hi);
             if (h < 0)
                 break;
-            if (entry->bounds_num >= 16)  /* max pre-allocated slots */
+            if (entry->mem_bounds_num >= FIT_MEM_BOUNDS_MAX)
                 break;
-            entry->bounds_data[entry->bounds_num].perm = DASICS_LIBCFG_R | DASICS_LIBCFG_W;
-            entry->bounds_data[entry->bounds_num].lo = lo;
-            entry->bounds_data[entry->bounds_num].hi = hi - 1;  /* store inclusive hi in bounds_data */
-            entry->bounds_data[entry->bounds_num].handle = h;
-            entry->bounds_num++;
+            entry->mem_bounds[entry->mem_bounds_num].perm = DASICS_LIBCFG_R | DASICS_LIBCFG_W;
+            entry->mem_bounds[entry->mem_bounds_num].lo = lo;
+            entry->mem_bounds[entry->mem_bounds_num].hi = hi - 1;  /* store inclusive hi in mem_bounds */
+            entry->mem_bounds[entry->mem_bounds_num].handle = h;
+            entry->mem_bounds_num++;
             entry->heap_alloc_done = 1;
         }
         break;

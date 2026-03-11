@@ -32,8 +32,7 @@ void fit_destroy(void) {
     HASH_ITER(hh, fit_table, current, tmp) {
         HASH_DEL(fit_table, current);  // Remove from hash table
 
-        // Free resources occupied by entry
-        free(current->bounds_data);
+        // Free resources occupied by entry (code_bounds/mem_bounds are inline arrays, no free)
         free(current->syscalls);
         free(current->maincalls);
         free(current);
@@ -55,12 +54,19 @@ void fit_print(void) {
     // Traverse FIT table and print information
     HASH_ITER(hh, fit_table, current, tmp) {
         printf("Key: %p\n", current->key);
-        printf("Bounds: %zu\n", current->bounds_num);
-        for (size_t i = 0; i < current->bounds_num; i++) {
+        printf("Code bounds: %zu\n", current->code_bounds_num);
+        for (size_t i = 0; i < current->code_bounds_num; i++) {
             printf("  Bound %zu: perm=0x%x, lo=0x%lx, hi=0x%lx\n",
-                   i, current->bounds_data[i].perm,
-                   current->bounds_data[i].lo,
-                   current->bounds_data[i].hi);
+                   i, current->code_bounds[i].perm,
+                   current->code_bounds[i].lo,
+                   current->code_bounds[i].hi);
+        }
+        printf("Mem bounds: %zu\n", current->mem_bounds_num);
+        for (size_t i = 0; i < current->mem_bounds_num; i++) {
+            printf("  Bound %zu: perm=0x%x, lo=0x%lx, hi=0x%lx\n",
+                   i, current->mem_bounds[i].perm,
+                   current->mem_bounds[i].lo,
+                   current->mem_bounds[i].hi);
         }
 
         // Print valid syscall numbers
@@ -97,23 +103,23 @@ uint64_t fit_switchto(void *func, ...) {
     // Set current closure key
     current_closure_key = entry->key;
 
-    // Set permissions for current function (handle stored in bounds_data[i].handle)
+    // Set permissions for current function (handle stored in code_bounds[i].handle / mem_bounds[i].handle)
     uint64_t frame_addr, badfunc_stack_top, badfunc_stack_size;
-    for (size_t i = 0; i < entry->bounds_num; i++) {
-        if (entry->bounds_data[i].perm & DASICS_LIBCFG_X) {
-            entry->bounds_data[i].handle = dasics_jumpcfg_alloc(entry->bounds_data[i].lo,
-                                                                entry->bounds_data[i].hi + 1);
-        } else if (entry->bounds_data[i].lo == UINT64_MAX) {
+    for (size_t i = 0; i < entry->code_bounds_num; i++) {
+        fit_bounds_t *b = &entry->code_bounds[i];
+        b->handle = dasics_jumpcfg_alloc(b->lo, b->hi + 1);
+    }
+    for (size_t i = 0; i < entry->mem_bounds_num; i++) {
+        fit_bounds_t *b = &entry->mem_bounds[i];
+        if (b->lo == UINT64_MAX) {
             asm volatile("mv %0, sp" : "=r"(frame_addr));
             badfunc_stack_top = frame_addr - STACK_FRAME_SIZE_LIBCALL;
-            badfunc_stack_size = entry->bounds_data[i].hi;
-            entry->bounds_data[i].handle = dasics_libcfg_alloc(entry->bounds_data[i].perm,
-                                                              badfunc_stack_top - badfunc_stack_size,
-                                                              badfunc_stack_top + 1);
+            badfunc_stack_size = b->hi;
+            b->handle = dasics_libcfg_alloc(b->perm,
+                                           badfunc_stack_top - badfunc_stack_size,
+                                           badfunc_stack_top + 1);
         } else {
-            entry->bounds_data[i].handle = dasics_libcfg_alloc(entry->bounds_data[i].perm,
-                                                              entry->bounds_data[i].lo,
-                                                              entry->bounds_data[i].hi + 1);
+            b->handle = dasics_libcfg_alloc(b->perm, b->lo, b->hi + 1);
         }
     }
 
@@ -138,13 +144,12 @@ uint64_t fit_switchto(void *func, ...) {
         entry->argbound_free();
     }
 
-    // Remove allocated permissions (handles stored in bounds_data[i].handle)
-    for (size_t i = 0; i < entry->bounds_num; i++) {
-        if (entry->bounds_data[i].perm & DASICS_LIBCFG_X) {
-            dasics_jumpcfg_free(entry->bounds_data[i].handle);
-        } else {
-            dasics_libcfg_free(entry->bounds_data[i].handle);
-        }
+    // Remove allocated permissions (handles stored in code_bounds[i].handle / mem_bounds[i].handle)
+    for (size_t i = 0; i < entry->code_bounds_num; i++) {
+        dasics_jumpcfg_free(entry->code_bounds[i].handle);
+    }
+    for (size_t i = 0; i < entry->mem_bounds_num; i++) {
+        dasics_libcfg_free(entry->mem_bounds[i].handle);
     }
 
     // Reset current closure key

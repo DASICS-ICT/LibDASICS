@@ -11,6 +11,14 @@
 // Permission type (using definitions from udasics.h)
 typedef uint32_t fit_perm_t;
 
+// Maximum number of code bounds and memory bounds per entry (overridable via -D)
+#ifndef FIT_CODE_BOUNDS_MAX
+#define FIT_CODE_BOUNDS_MAX 4
+#endif
+#ifndef FIT_MEM_BOUNDS_MAX
+#define FIT_MEM_BOUNDS_MAX 16
+#endif
+
 // Single memory bound definition
 typedef struct fit_bounds {
     fit_perm_t perm;   // Permission bits, using DASICS_LIBCFG_XX series definitions
@@ -27,9 +35,13 @@ typedef struct fit_handles {
 
 // FIT table entry structure (must contain UTHash's hh field)
 typedef struct fit_entry {
-    void *key;                    // Hash key (function address)
-    fit_bounds_t *bounds_data;    // Memory bounds array
-    size_t bounds_num;            // Number of bounds
+    void *key;                                    // Hash key (function address)
+
+    fit_bounds_t code_bounds[FIT_CODE_BOUNDS_MAX]; // Code (executable) bounds
+    size_t code_bounds_num;                        // Number of code bounds
+    fit_bounds_t mem_bounds[FIT_MEM_BOUNDS_MAX];   // Data/memory bounds
+    size_t mem_bounds_num;                         // Number of mem bounds
+
     uint32_t library_id;         // Library id for mimalloc (e.g. 0 = user program)
     uint32_t closure_id;         // Closure id for mimalloc (per-function)
     int heap_alloc_done;         // 1 if self-managed heap bound was added (for Umaincall_MALLOC scheme B)
