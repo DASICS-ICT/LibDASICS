@@ -12,6 +12,7 @@
 /* Optional: used by Umaincall_MALLOC when app links mimalloc-dasics */
 extern void *mi_malloc(size_t size) __attribute__((weak));
 extern int mi_get_mem_area_dasics(uint32_t library_id, uint32_t closure_id, void **p, size_t *area_size) __attribute__((weak));
+extern void mi_free(void *p) __attribute__((weak));
 
 uint64_t umaincall_helper;
 
@@ -279,6 +280,14 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
         case Umaincall_TRANS: {
             void *func = va_arg(args, void *);
             retval = do_transition(func, args);
+        }
+        break;
+
+        case Umaincall_FREE: {
+            // FIXME: Add pointer authority check!
+            void *p = va_arg(args, void *);
+            if (mi_free && p)
+                mi_free(p);
         }
         break;
 

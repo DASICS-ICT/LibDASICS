@@ -32,6 +32,7 @@ typedef enum {
     Umaincall_MALLOC,
     Umaincall_PGRANT,
     Umaincall_TRANS,
+    Umaincall_FREE,
     Umaincall_UNKNOWN
 } UmaincallTypes;
 
