@@ -27,10 +27,11 @@ extern "C" {
 #define align8up(addr) 		 ((addr+0x7) & ~(0x7)) 
 #define align8down(addr) 	 (addr & ~(0x7))
 
-// TODO: Add UmaincallTypes
 typedef enum {
     Umaincall_PRINT,
     Umaincall_MALLOC,
+    Umaincall_PGRANT,
+    Umaincall_TRANS,
     Umaincall_UNKNOWN
 } UmaincallTypes;
 
@@ -70,6 +71,7 @@ int32_t dasics_libcfg_active(int32_t idx);
 // DASICS jump bounds configure
 int32_t dasics_jumpcfg_alloc(uint64_t lo, uint64_t hi);
 int32_t dasics_jumpcfg_free(int32_t idx);
+int32_t dasics_jumpcfg_free_all(void);
 int32_t dasics_jumpcfg_active(int32_t idx);
 
 // extern uint64_t umaincall_helper;

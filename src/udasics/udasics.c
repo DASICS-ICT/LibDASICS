@@ -259,6 +259,29 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
         }
         break;
 
+        case Umaincall_PGRANT: {
+            void *func_target = va_arg(args, void *);
+            const fit_bounds_t *perms = va_arg(args, const fit_bounds_t *);
+            size_t num = va_arg(args, size_t);
+            size_t valist_size = va_arg(args, size_t);
+            unsigned times = (unsigned)va_arg(args, unsigned int);
+            fit_entry_t *entry = NULL;
+            HASH_FIND_PTR(fit_table, &func_target, entry);
+            if (!entry) {
+                retval = (uint64_t)-1;
+                break;
+            }
+            if (do_permission_grant(entry, perms, num, valist_size, times) != 0)
+                retval = (uint64_t)-1;
+        }
+        break;
+
+        case Umaincall_TRANS: {
+            void *func = va_arg(args, void *);
+            retval = do_transition(func, args);
+        }
+        break;
+
         default:
             printf("\x1b[33m Warning: Invalid umaincall number %d!\n\x1b[0m", type); //could not use printf in kernel
             break;
@@ -557,6 +580,11 @@ int32_t dasics_jumpcfg_free(int32_t idx) {
     uint64_t jumpcfg = csr_read(0x8c8);    // DasicsJumpCfg
     jumpcfg &= ~(DASICS_JUMPCFG_V << (idx * step));
     csr_write(0x8c8, jumpcfg); // DasicsJumpCfg
+    return 0;
+}
+
+int32_t dasics_jumpcfg_free_all(void) {
+    csr_write(0x8c8, 0);  // DasicsJumpCfg
     return 0;
 }
 
