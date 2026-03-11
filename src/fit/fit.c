@@ -312,6 +312,10 @@ uint64_t do_transition(void *func, va_list args) {
         entry_callee->valist_base = (uint64_t)args;
     }
 
+    // Clear caller's bounds before entering callee domain
+    dasics_jumpcfg_free_all();
+    dasics_libcfg_free_all();
+
     // Apply the permissions of the callee
     do_apply_permission(entry_callee);
 
