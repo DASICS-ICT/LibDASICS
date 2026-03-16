@@ -35,11 +35,22 @@ static int perm_is_subset_of_caller(const fit_bounds_t *p, const fit_entry_t *ca
         /* Check against caller's memory bounds */
         for (size_t j = 0; j < caller->mem_bounds_num; j++) {
             const fit_bounds_t *b = &caller->mem_bounds[j];
-            // FIXME: How to represent stack permissions?
-            if (b->lo == UINT64_MAX)
-                continue;
             if (p->lo >= b->lo && p->hi <= b->hi &&
                 (p->perm & ~b->perm) == 0)
+                return 1;
+        }
+        /* Check against caller's stack region [stack_top - stack_size, stack_top] (RW) */
+        if (caller->stack_top != 0 && caller->stack_size != 0) {
+            uint64_t stack_lo = caller->stack_top - caller->stack_size;
+            if (p->lo >= stack_lo && p->hi <= caller->stack_top &&
+                (p->perm & ~(DASICS_LIBCFG_R | DASICS_LIBCFG_W)) == 0)
+                return 1;
+        }
+        /* Check against caller's valist region [valist_base, valist_base + valist_size - 1] (RW) */
+        if (caller->valist_size > 0) {
+            uint64_t va_hi = caller->valist_base + caller->valist_size - 1;
+            if (p->lo >= caller->valist_base && p->hi <= va_hi &&
+                (p->perm & ~(DASICS_LIBCFG_R | DASICS_LIBCFG_W)) == 0)
                 return 1;
         }
     }
