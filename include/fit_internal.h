@@ -2,34 +2,40 @@
  * fit_internal.h - Internal header for the FIT (Function Isolation Table) module.
  *
  * This header declares internal APIs shared across fit.c, cstack.c,
- * pgrant.c, and transition.c.  It is NOT part of the public interface;
- * application code should only include fit.h.
+ * pgrant.c, transition.c, and compartment.c.  It is NOT part of the
+ * public interface; application code should only include fit.h (or
+ * compartment.h which includes fit.h).
  */
 #ifndef FIT_INTERNAL_H
 #define FIT_INTERNAL_H
 
 #include <stdint.h>
+#include "fit.h"
 
 /* ========================================================================
- * Closure-stack management (implemented in cstack.c)
+ * Compartment-stack management (implemented in cstack.c)
  *
- * The closure stack tracks the current execution domain.  The bottom frame
- * always represents the trusted (main) domain with key == NULL.  Each
- * domain transition pushes a new frame; returning pops it.
+ * The compartment stack tracks the current execution domain by storing
+ * compartment_t pointers directly, eliminating the need for a
+ * hash-table lookup when querying the active domain.
+ *
+ * The bottom frame always represents the trusted (main) domain with
+ * comp == NULL.  Each domain transition pushes a new frame; returning
+ * pops it.
  * ======================================================================== */
 
-/* Initialise the closure stack (push the initial trusted frame). */
-void fit_init_closure_stack(void);
+/* Initialise the compartment stack (push the initial trusted frame). */
+void fit_init_compartment_stack(void);
 
-/* Destroy and free every frame on the closure stack. */
-void fit_destroy_closure_stack(void);
+/* Destroy and free every frame on the compartment stack. */
+void fit_destroy_compartment_stack(void);
 
-/* Push a new frame with the given closure key onto the stack. Returns 0 on
- * success, -1 on allocation failure. */
-int fit_closure_push(void *key);
+/* Push a new frame with the given compartment pointer onto the stack.
+ * Returns 0 on success, -1 on allocation failure. */
+int fit_compartment_push(compartment_t *comp);
 
 /* Pop the top frame from the stack and free it. */
-void fit_closure_pop(void);
+void fit_compartment_pop(void);
 
 /* ========================================================================
  * Optional mimalloc integration (weak symbol)

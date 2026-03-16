@@ -3,7 +3,7 @@
  *
  * A domain transition is the core operation of the FIT mechanism:
  *
- *   1. Push callee's closure onto the stack.
+ *   1. Push callee's compartment onto the compartment stack.
  *   2. Clear the caller's DASICS bounds.
  *   3. Apply the callee's bounds (static + temporary + stack + valist).
  *   4. Invoke the callee via lib_call.
@@ -11,10 +11,12 @@
  *
  * This file also manages the "temporary times" counter which tracks how
  * many transitions a permission grant remains valid for.
+ *
+ * Key change: the compartment stack now stores compartment_t pointers
+ * directly, so the caller-restore path no longer needs a hash lookup.
  */
 #include "fit.h"
 #include "fit_internal.h"
-#include <stdlib.h>
 #include <assert.h>
 #include <asm/offset.h>
 
@@ -40,41 +42,41 @@ static void apply_bounds(size_t code_num, size_t mem_num,
 }
 
 /*
- * do_apply_permission - apply all of an entry's bounds to the DASICS
+ * do_apply_permission - apply all of a compartment's bounds to the DASICS
  * hardware: static code/mem bounds, stack bound, temporary bounds, and
  * the va_list region.
  *
  * The total number of bounds must not exceed the hardware limits
  * (asserted here).
  */
-void do_apply_permission(fit_entry_t *entry) {
-    assert(entry->code_bounds_num + entry->temp_code_bounds_num <= FIT_CODE_BOUNDS_MAX);
+void do_apply_permission(compartment_t *comp) {
+    assert(comp->code_bounds_num + comp->temp_code_bounds_num <= FIT_CODE_BOUNDS_MAX);
     /* +1 for stack permission, +1 for optional valist */
-    assert(entry->mem_bounds_num + entry->temp_mem_bounds_num + 1
-           + (entry->valist_size == 0 ? 0 : 1) <= FIT_MEM_BOUNDS_MAX);
+    assert(comp->mem_bounds_num + comp->temp_mem_bounds_num + 1
+           + (comp->valist_size == 0 ? 0 : 1) <= FIT_MEM_BOUNDS_MAX);
 
     /* Static code & memory bounds */
-    apply_bounds(entry->code_bounds_num, entry->mem_bounds_num,
-                 entry->code_bounds, entry->mem_bounds);
+    apply_bounds(comp->code_bounds_num, comp->mem_bounds_num,
+                 comp->code_bounds, comp->mem_bounds);
 
     /* Stack bound (RW) */
-    if (entry->stack_top != 0 && entry->stack_size != 0) {
+    if (comp->stack_top != 0 && comp->stack_size != 0) {
         dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W,
-                            entry->stack_top - entry->stack_size,
-                            entry->stack_top + 1);
+                            comp->stack_top - comp->stack_size,
+                            comp->stack_top + 1);
     }
 
     /* Temporary bounds from permission grant */
-    if (entry->temp_code_bounds_num > 0 || entry->temp_mem_bounds_num > 0) {
-        apply_bounds(entry->temp_code_bounds_num, entry->temp_mem_bounds_num,
-                     entry->temp_code_bounds, entry->temp_mem_bounds);
+    if (comp->temp_code_bounds_num > 0 || comp->temp_mem_bounds_num > 0) {
+        apply_bounds(comp->temp_code_bounds_num, comp->temp_mem_bounds_num,
+                     comp->temp_code_bounds, comp->temp_mem_bounds);
     }
 
     /* va_list region (RW) */
-    if (entry->valist_size > 0) {
+    if (comp->valist_size > 0) {
         dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W,
-                            entry->valist_base,
-                            entry->valist_base + entry->valist_size);
+                            comp->valist_base,
+                            comp->valist_base + comp->valist_size);
     }
 }
 
@@ -82,15 +84,15 @@ void do_apply_permission(fit_entry_t *entry) {
  * temp_times_tick - decrement the temporary-grant counter.
  *
  * When it reaches zero the temporary bounds are automatically cleared,
- * so the next transition into this entry will not apply them.
+ * so the next transition into this compartment will not apply them.
  */
-static void temp_times_tick(fit_entry_t *entry) {
-    if (entry->temp_times == 0)
+static void temp_times_tick(compartment_t *comp) {
+    if (comp->temp_times == 0)
         return;
-    entry->temp_times--;
-    if (entry->temp_times == 0) {
-        entry->temp_code_bounds_num = 0;
-        entry->temp_mem_bounds_num = 0;
+    comp->temp_times--;
+    if (comp->temp_times == 0) {
+        comp->temp_code_bounds_num = 0;
+        comp->temp_mem_bounds_num = 0;
     }
 }
 
@@ -105,22 +107,22 @@ static void temp_times_tick(fit_entry_t *entry) {
  * Returns the callee's uint64_t return value, or (uint64_t)-1 on error.
  */
 uint64_t do_transition(void *func, va_list args) {
-    fit_entry_t *entry_callee = NULL;
-    HASH_FIND_PTR(fit_table, &func, entry_callee);
-    if (!entry_callee) return (uint64_t)-1;
+    /* Look up the target compartment by function pointer (hash lookup needed here). */
+    compartment_t *callee = fit_find(func);
+    if (!callee) return (uint64_t)-1;
 
-    /* Push callee onto the closure stack */
-    if (fit_closure_push(entry_callee->key) != 0)
+    /* Push callee compartment onto the compartment stack */
+    if (fit_compartment_push(callee) != 0)
         return (uint64_t)-1;
 
     /* Capture the current stack pointer to set the callee's stack bound */
     uint64_t frame_addr;
     asm volatile("mv %0, sp" : "=r"(frame_addr));
-    entry_callee->stack_top = frame_addr - STACK_FRAME_SIZE_LIBCALL;
+    callee->stack_top = frame_addr - STACK_FRAME_SIZE_LIBCALL;
 
     /* Record va_list base for the callee if it expects variadic arguments */
-    if (entry_callee->valist_size > 0) {
-        entry_callee->valist_base = (uint64_t)args;
+    if (callee->valist_size > 0) {
+        callee->valist_base = (uint64_t)args;
     }
 
     /* Clear caller's DASICS bounds before entering callee domain */
@@ -128,30 +130,31 @@ uint64_t do_transition(void *func, va_list args) {
     dasics_libcfg_free_all();
 
     /* Apply callee's full permission set */
-    do_apply_permission(entry_callee);
+    do_apply_permission(callee);
 
     /* Notify mimalloc of the active library/closure IDs (if linked) */
     if (mi_set_ids_dasics)
-        mi_set_ids_dasics(entry_callee->library_id, entry_callee->closure_id);
+        mi_set_ids_dasics(callee->library_id, callee->closure_id);
 
     /* ---- Invoke the callee ---- */
     uint64_t ret = lib_call(func, args);
 
     /* Consume one use of the temporary grant */
-    temp_times_tick(entry_callee);
+    temp_times_tick(callee);
 
-    /* Pop callee from closure stack */
-    fit_closure_pop();
+    /* Pop callee from compartment stack */
+    fit_compartment_pop();
 
-    /* Restore previous domain's bounds (or leave cleared for trusted) */
-    void *top_key = fit_get_current_closure_key();
+    /*
+     * Restore previous domain's bounds.
+     * fit_get_current_compartment() returns the caller compartment
+     * directly from the stack -- no hash lookup needed.
+     */
+    compartment_t *caller = fit_get_current_compartment();
     dasics_jumpcfg_free_all();
     dasics_libcfg_free_all();
-    if (top_key) {
-        fit_entry_t *entry_caller = NULL;
-        HASH_FIND_PTR(fit_table, &top_key, entry_caller);
-        if (entry_caller)
-            do_apply_permission(entry_caller);
+    if (caller) {
+        do_apply_permission(caller);
     }
     return ret;
 }

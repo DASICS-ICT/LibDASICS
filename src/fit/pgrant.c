@@ -1,14 +1,14 @@
 /*
- * pgrant.c - Permission granting for FIT entries.
+ * pgrant.c - Permission granting for FIT compartments.
  *
  * Before a domain transition, the caller may grant temporary permissions
- * (code/memory bounds) to a callee's FIT entry.  These "temp" bounds are
- * applied on top of the entry's static bounds during the next N domain
- * transitions (controlled by the `times` parameter).
+ * (code/memory bounds) to a callee's compartment.  These "temp" bounds
+ * are applied on top of the compartment's static bounds during the next
+ * N domain transitions (controlled by the `times` parameter).
  *
  * A grant is only allowed if every bound being granted is a subset of
  * the caller's own bounds (monotonic delegation).  Trusted code
- * (closure_key == NULL) bypasses this check.
+ * (compartment == NULL) bypasses this check.
  */
 #include "fit.h"
 
@@ -22,7 +22,7 @@
  *
  * Code-execute bounds and data bounds are checked against separate arrays.
  */
-static int perm_is_subset_of_caller(const fit_bounds_t *p, const fit_entry_t *caller) {
+static int perm_is_subset_of_caller(const fit_bounds_t *p, const compartment_t *caller) {
     if (p->perm & DASICS_LIBCFG_X) {
         /* Check against caller's code bounds */
         for (size_t j = 0; j < caller->code_bounds_num; j++) {
@@ -58,9 +58,9 @@ static int perm_is_subset_of_caller(const fit_bounds_t *p, const fit_entry_t *ca
 }
 
 /*
- * do_permission_grant - core grant logic operating on a known entry.
+ * do_permission_grant - core grant logic operating on a known compartment.
  *
- * @entry:       target FIT entry to receive the temporary bounds.
+ * @comp:        target compartment to receive the temporary bounds.
  * @perms:       array of bounds to grant.
  * @num:         number of elements in @perms.
  * @valist_size: size of the va_list region to be granted (0 if none).
@@ -71,27 +71,20 @@ static int perm_is_subset_of_caller(const fit_bounds_t *p, const fit_entry_t *ca
  *
  * Returns 0 on success, -1 on failure.
  */
-int do_permission_grant(fit_entry_t *entry, const fit_bounds_t *perms, size_t num, size_t valist_size, unsigned times) {
+int do_permission_grant(compartment_t *comp, const fit_bounds_t *perms, size_t num, size_t valist_size, unsigned times) {
     /* Only one grant at a time: reject if temp_times is still active. */
-    if (entry->temp_times != 0) {
+    if (comp->temp_times != 0) {
         printf("[FIT] Error: permission grant rejected, previous grant still active (times=%u)\n",
-               entry->temp_times);
+               comp->temp_times);
         return -1;
     }
 
     /*
-     * Retrieve the caller's FIT entry for monotonic-delegation check.
-     * If the caller is in the trusted domain (key == NULL), skip the check.
+     * Retrieve the caller's compartment for monotonic-delegation check.
+     * Obtained directly from the compartment stack (no hash lookup).
+     * If the caller is in the trusted domain (comp == NULL), skip the check.
      */
-    void *caller_key = fit_get_current_closure_key();
-    fit_entry_t *caller = NULL;
-    if (caller_key) {
-        HASH_FIND_PTR(fit_table, &caller_key, caller);
-        if (!caller) {
-            printf("[FIT] Error: caller entry not found for key %p\n", caller_key);
-            return -1;
-        }
-    }
+    compartment_t *caller = fit_get_current_compartment();
 
     /* Subset check: every granted bound must be covered by the caller. */
     if (caller) {
@@ -116,27 +109,27 @@ int do_permission_grant(fit_entry_t *entry, const fit_bounds_t *perms, size_t nu
             mem_count++;
     }
 
-    if (code_count + entry->code_bounds_num > FIT_CODE_BOUNDS_MAX) {
+    if (code_count + comp->code_bounds_num > FIT_CODE_BOUNDS_MAX) {
         printf("[FIT] Error: code bounds limit exceeded\n");
         return -1;
     }
-    if (mem_count + entry->mem_bounds_num > FIT_MEM_BOUNDS_MAX) {
+    if (mem_count + comp->mem_bounds_num > FIT_MEM_BOUNDS_MAX) {
         printf("[FIT] Error: mem bounds limit exceeded\n");
         return -1;
     }
 
     /* Distribute granted bounds into temp_code_bounds / temp_mem_bounds. */
-    entry->temp_code_bounds_num = 0;
-    entry->temp_mem_bounds_num = 0;
+    comp->temp_code_bounds_num = 0;
+    comp->temp_mem_bounds_num = 0;
     for (size_t i = 0; i < num; i++) {
         if (perms[i].perm & DASICS_LIBCFG_X) {
-            entry->temp_code_bounds[entry->temp_code_bounds_num++] = perms[i];
+            comp->temp_code_bounds[comp->temp_code_bounds_num++] = perms[i];
         } else {
-            entry->temp_mem_bounds[entry->temp_mem_bounds_num++] = perms[i];
+            comp->temp_mem_bounds[comp->temp_mem_bounds_num++] = perms[i];
         }
     }
-    entry->temp_times = times;
-    entry->valist_size = valist_size;
+    comp->temp_times = times;
+    comp->valist_size = valist_size;
 
     return 0;
 }
@@ -145,11 +138,11 @@ int do_permission_grant(fit_entry_t *entry, const fit_bounds_t *perms, size_t nu
  * fit_permission_grant - public API: grant temporary permissions by
  * function pointer lookup.
  *
- * Looks up the FIT entry for @func and delegates to do_permission_grant().
+ * Looks up the compartment for @func via fit_find() and delegates to
+ * do_permission_grant().
  */
 int fit_permission_grant(void *func, const fit_bounds_t *perms, size_t num, size_t valist_size, unsigned times) {
-    fit_entry_t *entry = NULL;
-    HASH_FIND_PTR(fit_table, &func, entry);
-    if (!entry) return -1;
-    return do_permission_grant(entry, perms, num, valist_size, times);
+    compartment_t *comp = fit_find(func);
+    if (!comp) return -1;
+    return do_permission_grant(comp, perms, num, valist_size, times);
 }

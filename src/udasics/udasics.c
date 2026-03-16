@@ -186,13 +186,12 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
             retval = (uint64_t)p;
             if (!p)
                 break;
-            /* Scheme B: on first alloc for this closure, add heap bound and set heap_alloc_done */
-            void *key = fit_get_current_closure_key();
-            if (!key)
+            /* Scheme B: on first alloc for this compartment, add heap bound and set heap_alloc_done.
+             * Obtains the compartment directly from the compartment stack. */
+            compartment_t *entry = fit_get_current_compartment();
+            if (!entry)
                 break;
-            fit_entry_t *entry = NULL;
-            HASH_FIND_PTR(fit_table, &key, entry);
-            if (!entry || entry->heap_alloc_done)
+            if (entry->heap_alloc_done)
                 break;
             if (!mi_get_mem_area_dasics)
                 break;
@@ -222,13 +221,13 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
             size_t num = va_arg(args, size_t);
             size_t valist_size = va_arg(args, size_t);
             unsigned times = (unsigned)va_arg(args, unsigned int);
-            fit_entry_t *entry = NULL;
-            HASH_FIND_PTR(fit_table, &func_target, entry);
-            if (!entry) {
+            /* Look up the target compartment by function pointer. */
+            compartment_t *target = fit_find(func_target);
+            if (!target) {
                 retval = (uint64_t)-1;
                 break;
             }
-            if (do_permission_grant(entry, perms, num, valist_size, times) != 0)
+            if (do_permission_grant(target, perms, num, valist_size, times) != 0)
                 retval = (uint64_t)-1;
         }
         break;
