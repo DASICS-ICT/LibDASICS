@@ -6,9 +6,10 @@ AR				= $(CROSS_COMPILE)ar
 RANLIB			= $(CROSS_COMPILE)ranlib
 
 # C flags
-INCLUDE			= -Iinclude
+MIMALLOC_INC	= -I$(abspath $(RISCV_ROOTFS_HOME)/libs/mimalloc/build/include/mimalloc-2.2)
+INCLUDE			= -Iinclude $(MIMALLOC_INC)
 
-CFLAGS			= -O3 -g -MMD -Wno-c23-extensions -Wno-varargs $(INCLUDE) -DDASICS_LINUX #-DDASICS_DEBUG
+CFLAGS			= -O3 -g -MMD -Wno-c23-extensions -Wno-varargs $(INCLUDE) -DDASICS_LINUX -DMI_DASICS=1 #-DDASICS_DEBUG
 
 ifdef USER_DEFINE
     CFLAGS += -D$(USER_DEFINE)

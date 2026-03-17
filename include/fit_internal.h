@@ -38,12 +38,12 @@ int fit_compartment_push(compartment_t *comp);
 void fit_compartment_pop(void);
 
 /* ========================================================================
- * Optional mimalloc integration (weak symbol)
+ * mimalloc integration
  *
- * If the application links mimalloc-dasics, this symbol resolves to the
- * real function; otherwise it stays NULL and callers must check before use.
+ * LibDASICS requires mimalloc-dasics at link time.  The standard
+ * malloc/free are overridden by mimalloc; only mi_set_ids_dasics
+ * needs an explicit call to switch heap IDs on domain transitions.
  * ======================================================================== */
-extern void __attribute__((weak)) mi_set_ids_dasics(uint32_t library_id,
-                                                    uint32_t closure_id);
+#include <mimalloc.h>
 
 #endif /* FIT_INTERNAL_H */

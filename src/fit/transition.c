@@ -132,9 +132,8 @@ uint64_t do_transition(void *func, va_list args) {
     /* Apply callee's full permission set */
     do_apply_permission(callee);
 
-    /* Notify mimalloc of the active library/closure IDs (if linked) */
-    if (mi_set_ids_dasics)
-        mi_set_ids_dasics(callee->library_id, callee->closure_id);
+    /* Switch mimalloc to the callee's self-managed heap */
+    mi_set_ids_dasics(callee->library_id, callee->closure_id);
 
     /* ---- Invoke the callee ---- */
     uint64_t ret = lib_call(func, args);
@@ -151,6 +150,14 @@ uint64_t do_transition(void *func, va_list args) {
      * directly from the stack -- no hash lookup needed.
      */
     compartment_t *caller = fit_get_current_compartment();
+
+    /* Restore mimalloc heap IDs for the caller domain */
+    if (caller) {
+        mi_set_ids_dasics(caller->library_id, caller->closure_id);
+    } else {
+        mi_set_ids_dasics(0, 0);
+    }
+
     dasics_jumpcfg_free_all();
     dasics_libcfg_free_all();
     if (caller) {

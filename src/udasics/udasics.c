@@ -7,11 +7,7 @@
 #include <dasics_stdio.h>
 #include <umaincall.h>
 #include <fit.h>
-
-/* Optional: used by Umaincall_MALLOC when app links mimalloc-dasics */
-extern void *mi_malloc(size_t size) __attribute__((weak));
-extern int mi_get_mem_area_dasics(uint32_t library_id, uint32_t closure_id, void **p, size_t *area_size) __attribute__((weak));
-extern void mi_free(void *p) __attribute__((weak));
+#include <mimalloc.h>
 
 uint64_t umaincall_helper;
 
@@ -178,11 +174,7 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
 
         case Umaincall_MALLOC: {
             size_t size = va_arg(args, size_t);
-            if (!mi_malloc) {
-                retval = (uint64_t)NULL;
-                break;
-            }
-            void *p = mi_malloc(size);
+            void *p = malloc(size);
             retval = (uint64_t)p;
             if (!p)
                 break;
@@ -192,8 +184,6 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
             if (!entry)
                 break;
             if (entry->heap_alloc_done)
-                break;
-            if (!mi_get_mem_area_dasics)
                 break;
             void *seg = NULL;
             size_t area_size = 0;
@@ -241,8 +231,8 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
         case Umaincall_FREE: {
             // FIXME: Add pointer authority check!
             void *p = va_arg(args, void *);
-            if (mi_free && p)
-                mi_free(p);
+            if (p)
+                free(p);
         }
         break;
 
