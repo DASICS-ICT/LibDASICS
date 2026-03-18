@@ -288,6 +288,48 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
 
     uint64_t dasics_dfreason = csr_read(0x8b3);             // DasicsDFreason
 
+    const char *slot_name = "unknown";
+    switch (regs->utval)
+    {
+    case 0:
+        slot_name = "s0";
+        break;
+    case 1:
+        slot_name = "s1";
+        break;
+    case 2:
+        slot_name = "s2";
+        break;
+    case 3:
+        slot_name = "s3";
+        break;
+    case 4:
+        slot_name = "s4";
+        break;
+    case 5:
+        slot_name = "s5";
+        break;
+    case 6:
+        slot_name = "s6";
+        break;
+    case 7:
+        slot_name = "s7";
+        break;
+    case 8:
+        slot_name = "s8";
+        break;
+    case 9:
+        slot_name = "s9";
+        break;
+    case 10:
+        slot_name = "s10";
+        break;
+    case 11:
+        slot_name = "s11";
+        break;
+    default:
+        break;
+    }
 
     switch (dasics_dfreason)
     {
@@ -340,8 +382,8 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
         break;
 
     case DFR_S0_AUTH_DASICS_FAULT:
-        dasics_printf("[DASICS SREG] AUTH fault: reason=%d pc=0x%lx utval=0x%lx\n",
-            DFR_S0_AUTH_DASICS_FAULT, regs->uepc, regs->utval);
+        dasics_printf("[DASICS SREG] AUTH fault: reason=%d pc=0x%lx utval=0x%lx slot=%s\n",
+            DFR_S0_AUTH_DASICS_FAULT, regs->uepc, regs->utval, slot_name);
         error = -1;
         break;
         

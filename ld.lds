@@ -34,14 +34,19 @@ SECTIONS
   }  
   _text_end = . ;
   . = ALIGN(64 / 8);
-  . = .;
-  
+  . = ALIGN(0x1000);
+
+  /* Keep the first real untrusted instruction away from the trusted boundary. */
+  __ULIBTEXT_GAP_BEGIN__ = .;
+  . += 0x1000;
+  __ULIBTEXT_GAP_END__ = .;
+
   . = ALIGN(64 / 8);
   /* DASICS lib and freezone text section */
   .ulibtext :
   {
     __ULIBTEXT_BEGIN__ = .;
-    *(.ulibtext)
+    *(.ulibtext .ulibtext.*)
     __ULIBTEXT_END__ = .;
   } 
 
