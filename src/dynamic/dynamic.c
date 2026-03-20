@@ -55,6 +55,8 @@ static void _fill_module_name(const char * l_name, umain_elf_t * elf)
  */
 static void _fill_local_got(umain_elf_t * elf)
 {
+    uint64_t plt0_addr = elf->got_begin[2];
+
     elf->plt_begin = (uint64_t *)elf->got_begin[3];
     elf->_plt_start = (uint64_t)elf->plt_begin + 0x20;
     elf->_plt_end = elf->_plt_start + 0x10 * elf->got_num;  
@@ -87,6 +89,20 @@ static void _fill_local_got(umain_elf_t * elf)
             {
                 elf->got_begin[i] = (uint64_t)elf->plt_begin;     
             }
+        }
+        else
+        {
+            /*
+             * Shared libraries: fixup_handler resolves JUMP_SLOT and writes the real
+             * address into got_begin[i]. For most symbols that is correct (direct PLT).
+             * dasics_umaincall@plt must keep lazy/PLT0 semantics: PLT0 sets t0/t1/t3
+             * before entering dasics_umaincall; if got[i] points straight at
+             * dasics_umaincall, those registers are wrong and umaincall crashes.
+             * Other PLT entries stay resolved (unchanged).
+             */
+            char *sym_name = _get_lib_name(elf, (uint64_t)(i - 2));
+            if (sym_name && !dasics_strcmp(sym_name, "dasics_umaincall"))
+                elf->got_begin[i] = plt0_addr;
         }
     }
 
