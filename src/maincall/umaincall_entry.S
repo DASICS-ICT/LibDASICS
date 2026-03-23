@@ -132,6 +132,12 @@ END(dasics_umaincall)
 
 #-----------------------------------------------------------------------
 # lib_call: pass arguments to the target function.
+#
+# TODO: Only the first seven callee register arguments are forwarded:
+#       incoming a1-a7 become callee a0-a6; callee a7 is not loaded.
+#       RV64 callees with 8 fixed register arguments are not supported
+#       until this stub is extended (and any C wrapper matches).
+#       Expected to be resolved by future compiler-side changes.
 #-----------------------------------------------------------------------
 .section .text
 .global lib_call

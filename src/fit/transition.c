@@ -136,6 +136,8 @@ uint64_t do_transition(void *func, va_list args) {
     mi_set_ids_dasics(callee->library_id, callee->closure_id);
 
     /* ---- Invoke the callee ---- */
+    /* TODO: lib_call forwards only a limited argument set (see lib_call stub).
+     * Intended to be addressed by future compiler changes. */
     uint64_t ret = lib_call(func, args);
 
     /* Consume one use of the temporary grant */
