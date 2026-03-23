@@ -47,6 +47,11 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         int idx_lib = 0;
         int idx_jmp = 0;
         dasics_memset(&tmp, 0, sizeof(struct cross));
+        /* 0 is a valid DASICS handle index; use -1 as invalid sentinel. */
+        for (int i = 0; i < DASICS_JUMPCFG_WIDTH; i++)
+            tmp.jmpcfg[i] = -1;
+        for (int i = 0; i < DASICS_LIBCFG_WIDTH; i++)
+            tmp.handle[i] = -1;
         tmp.begin = _entry;
         tmp.target = _target;
         tmp.ra = CallContext->ra;
