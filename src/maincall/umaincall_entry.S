@@ -131,13 +131,23 @@ END(dasics_umaincall)
 
 
 #-----------------------------------------------------------------------
-# lib_call: pass arguments to the target function.
+# lib_call: invoke target wrapper in target domain.
 #
-# TODO: Only the first seven callee register arguments are forwarded:
-#       incoming a1-a7 become callee a0-a6; callee a7 is not loaded.
-#       RV64 callees with 8 fixed register arguments are not supported
-#       until this stub is extended (and any C wrapper matches).
-#       Expected to be resolved by future compiler-side changes.
+# C prototype:
+#   uint64_t lib_call(void *func_name, va_list args);
+#
+# ABI contract used by FIT:
+# - On entry: a0 = target function pointer, a1 = va_list object.
+# - This stub shifts a1 -> callee a0, so the target sees:
+#     callee a0 == va_list args
+# - This matches wrappers with signature:
+#     int wrapper(va_list args)
+#
+# Additional forwarding note:
+# - The implementation still only forwards a limited register set
+#   (incoming a1-a7 become callee a0-a6; callee a7 is not loaded).
+# - RV64 callees with 8 fixed register arguments are not supported yet.
+# - Wider argument forwarding is deferred to future compiler-side changes.
 #-----------------------------------------------------------------------
 .section .text
 .global lib_call
@@ -150,7 +160,8 @@ lib_call:
     sd     s0, 56(sp)
     addi   s0, sp, STACK_FRAME_SIZE_LIBCALL
 
-    // Save registers
+    // Save incoming argument registers.
+    // For current FIT usage, a1 holds va_list and is the key payload.
     sd     a1, -24(s0)
     sd     a2, -32(s0)
     sd     a3, -40(s0)
@@ -159,7 +170,9 @@ lib_call:
     sd     a6, -64(s0)
     sd     a7, -72(s0)
 
-    // Change the order of arguments
+    // Reorder argument registers for callee ABI:
+    // - a0 (function pointer) is moved to t0 for the indirect jump.
+    // - saved incoming a1 is restored into callee a0 (wrapper's va_list).
     mv     t0, a0
     ld     a0, -24(s0)
     ld     a1, -32(s0)

@@ -7,6 +7,7 @@ extern "C" {
 
 #include <stdio.h>
 #include <stdint.h>
+#include <stdarg.h>
 #include <utrap.h>
 #include "ucsr.h"
 #include "uattr.h"
@@ -78,7 +79,25 @@ int32_t dasics_jumpcfg_active(int32_t idx);
 // extern uint64_t umaincall_helper;
 extern void dasics_ufault_entry(void);
 extern uint64_t dasics_umaincall(UmaincallTypes type, ...);
-extern uint64_t lib_call(void *func_name, ...);
+/*
+ * lib_call
+ * --------
+ * Type-safe FIT transition call entry.
+ *
+ * Semantics:
+ * - The second parameter is a va_list object captured by the caller.
+ * - This API does NOT "expand" variadic arguments by itself.
+ * - FIT's current design expects the callee to be a wrapper with signature
+ *   like: int wrapper(va_list args), and the wrapper extracts parameters
+ *   with va_arg().
+ *
+ * Note:
+ * - Handling of "too many arguments" (beyond the current register-forwarding
+ *   strategy) is intentionally left for future compiler-side optimization.
+ * - This header intentionally exposes only one public entry for transition
+ *   calls, to avoid mixing two call conventions over time.
+ */
+extern uint64_t lib_call(void *func_name, va_list args);
 extern void azone_call(void* func_name);
 
 #define LIBCFG_ALLOC(flag, base, len) (dasics_libcfg_alloc(flag,((uint64_t)(base)),((uint64_t)(base)) + ((uint64_t)(len))));

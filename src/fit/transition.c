@@ -136,8 +136,19 @@ uint64_t do_transition(void *func, va_list args) {
     mi_set_ids_dasics(callee->library_id, callee->closure_id);
 
     /* ---- Invoke the callee ---- */
-    /* TODO: lib_call forwards only a limited argument set (see lib_call stub).
-     * Intended to be addressed by future compiler changes. */
+    /*
+     * lib_call() takes an explicit va_list object as its second parameter.
+     *
+     * This call style is deliberate:
+     * - We do not try to re-expand caller-side "..." arguments at this layer.
+     * - The transition target is expected to be a wrapper function that accepts
+     *   va_list directly (for example, `int func_wrapper(va_list args)`).
+     * - That wrapper then materializes concrete arguments with va_arg().
+     *
+     * Current limitation:
+     * - The low-level forwarding stub still uses a register-limited ABI path.
+     * - Wider argument forwarding is deferred to future compiler-side work.
+     */
     uint64_t ret = lib_call(func, args);
 
     /* Consume one use of the temporary grant */
