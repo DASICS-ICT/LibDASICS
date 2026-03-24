@@ -35,8 +35,10 @@
  * compartment_create - allocate, initialise, and register a new compartment.
  *
  * @func_key:    function-pointer key for the FIT hash table.
- * @library_id:  mimalloc library ID (typically 0 for user program).
- * @closure_id:  mimalloc closure ID (unique per compartment).
+ * library_id / closure_id are resolved internally:
+ *   - library_id from _get_area(func_key)->fit_library_id
+ *   - closure_id from ++_get_area(func_key)->current_closure_id
+ * closure_id=0 is reserved for the per-library default compartment.
  *
  * Allocates a compartment_t with ref_count=1, all bounds counts zeroed,
  * syscall/maincall bitmaps set to NULL (lazy allocation), and registers
@@ -44,7 +46,15 @@
  *
  * Returns the compartment pointer on success, NULL on failure.
  */
-compartment_t *compartment_create(void *func_key, uint32_t library_id, uint32_t closure_id);
+compartment_t *compartment_create(void *func_key);
+
+/*
+ * compartment_create_default - create a per-library default compartment.
+ *
+ * Same as compartment_create(), but closure_id is fixed to 0.
+ * Used by the dynamic fallback path for unmarked functions.
+ */
+compartment_t *compartment_create_default(void *func_key);
 
 /*
  * compartment_destroy - unregister and (if last reference) free a compartment.

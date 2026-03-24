@@ -15,7 +15,7 @@ typedef uint64_t (*fixup_entry_t)(uint64_t, uint64_t);
 struct func_mem;
 
 
-#define RANGE(X, Y, Z) (((X)>(Y)) && ((X)<(Z)))
+#define RANGE(X, Y, Z) (((X)>=(Y)) && ((X)<(Z)))
 #define D_PTR(map,i) map->i->d_un.d_ptr
 #define PLTREL  ElfW(Rela)
 
@@ -23,6 +23,12 @@ struct func_mem;
 
 /* Define the find result of the plt */
 #define NOEXIST -1
+
+/*
+ * Forward declaration for compartment_t (defined in fit.h).
+ * Avoids pulling the full FIT header into dynamic.h.
+ */
+typedef struct compartment compartment_t;
 
 
 typedef struct umain_elf
@@ -89,6 +95,28 @@ typedef struct umain_elf
    uint64_t _r_start, _r_end;
    uint64_t _w_start, _w_end; 
    uint64_t _map_start, _map_end;
+
+   /*
+    * FIT integration fields (added for unified transition engine).
+    *
+    * fit_library_id: runtime-assigned library ID for mimalloc heap isolation.
+    *   - Main program (MAIN_AREA) = 0, dynamic libraries start from 1.
+    *   - Assigned during create_umain_elf_chain(), never hardcoded.
+    *
+    * default_compartment: cached "whole-library" compartment for unmarked
+    *   functions.  NULL means not yet created; lazily built on first
+    *   cross-library call to an unmarked symbol in this library.
+    */
+   uint32_t fit_library_id;
+   compartment_t *default_compartment;
+
+   /*
+    * Next auto-assigned closure ID for marked compartments in this ELF.
+    * Starts from 0; compartment_create() uses ++current_closure_id, so
+    * user compartments begin at 1. closure_id=0 is reserved for the
+    * library default compartment.
+    */
+   uint32_t current_closure_id;
 } umain_elf_t;
 
 

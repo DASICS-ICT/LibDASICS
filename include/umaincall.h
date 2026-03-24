@@ -82,14 +82,6 @@ typedef struct umain_elf umain_elf_t;
 // Open maincall
 int _open_maincall();
 
-int dasics_dynamic_call(struct umaincall * CallContext, \
-                            umain_elf_t * _elf, \
-                            int idx, \
-                            uint64_t target, \
-                            umain_elf_t * target_elf, \
-                            const char * target_name);
-void dasics_dynamic_return(struct umaincall * CallContext);
-
 void init_maincall_handler();
 
 #endif

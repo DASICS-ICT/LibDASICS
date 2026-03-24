@@ -26,6 +26,36 @@
 fit_entry_t *fit_table = NULL;
 
 /*
+ * Weak fallback: application may override fit_init_static().
+ * If not overridden, static FIT registration is treated as empty.
+ */
+int __attribute__((weak)) fit_init_static(void) {
+#ifdef DASICS_DEBUG
+    static int warned = 0;
+    if (!warned) {
+        warned = 1;
+        printf("[WARNING] fit_init_static weak fallback used (no generated static fit init found)\n");
+    }
+#endif
+    return 0;
+}
+
+/*
+ * Weak fallback: application may override fit_init_dynamic().
+ * If not overridden, dynamic FIT registration is treated as empty.
+ */
+int __attribute__((weak)) fit_init_dynamic(void) {
+#ifdef DASICS_DEBUG
+    static int warned = 0;
+    if (!warned) {
+        warned = 1;
+        printf("[WARNING] fit_init_dynamic weak fallback used (no generated dynamic fit init found)\n");
+    }
+#endif
+    return 0;
+}
+
+/*
  * fit_init - initialise the whole FIT subsystem.
  *
  * @dasics_funcptr: address of the DASICS handler used by register_udasics().
@@ -35,9 +65,22 @@ fit_entry_t *fit_table = NULL;
  * 3. Populate the FIT table from compile-time static data.
  */
 int fit_init(uint64_t dasics_funcptr) {
+    int ret;
+
     register_udasics(dasics_funcptr);
     fit_init_compartment_stack();
-    return fit_init_static();
+
+    /* Stage 1: program/static-library generated FIT registration. */
+    ret = fit_init_static();
+    if (ret != 0)
+        return ret;
+
+    /* Stage 2: dynamic-library generated FIT registration (aggregated). */
+    ret = fit_init_dynamic();
+    if (ret != 0)
+        return ret;
+
+    return 0;
 }
 
 /*

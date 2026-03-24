@@ -17,6 +17,13 @@ umain_elf_t * _umain_elf_table = NULL;
 umain_elf_t * dasics_main_elf = NULL;
 int dasics_stage = 0;
 
+/*
+ * Runtime FIT library ID counter.
+ * Main program (MAIN_AREA) is always 0; dynamic libraries are assigned
+ * sequentially starting from 1 during create_umain_elf_chain().
+ */
+static uint32_t _next_fit_library_id = 1;
+
 extern char _interp_start[];
 extern uint64_t _start[];
 
@@ -351,6 +358,16 @@ int create_umain_elf_chain(struct link_map * main_elf)
                 _find_copy_lib(_elf);
             }
         }
+
+        /*
+         * Assign runtime FIT library ID for mimalloc heap isolation.
+         * MAIN_AREA gets 0; each dynamic library (LIB_AREA) gets a unique
+         * ID starting from 1.
+         */
+        if (_elf->_flags & MAIN_AREA)
+            _elf->fit_library_id = 0;
+        else if (_elf->_flags & LIB_AREA)
+            _elf->fit_library_id = _next_fit_library_id++;
 
         if (!map_base)  _elf->_flags |= ELF_AREA;
         if (map_base && _get_auxv_entry(user_sp ,AT_DASICS))

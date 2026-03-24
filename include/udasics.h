@@ -98,6 +98,14 @@ extern uint64_t dasics_umaincall(UmaincallTypes type, ...);
  *   calls, to avoid mixing two call conventions over time.
  */
 extern uint64_t lib_call(void *func_name, va_list args);
+/*
+ * lib_call_context - PLT dynamic call entry (raw register context).
+ *
+ * Unlike lib_call (which shifts a1->a0 for wrapper(va_list) convention),
+ * this stub restores original a0-a7 from @saved_regs and jumps to @func
+ * via dasicscall.jr.  The target receives its arguments unmodified.
+ */
+extern uint64_t lib_call_context(void *func, uint64_t *saved_regs);
 extern void azone_call(void* func_name);
 
 #define LIBCFG_ALLOC(flag, base, len) (dasics_libcfg_alloc(flag,((uint64_t)(base)),((uint64_t)(base)) + ((uint64_t)(len))));

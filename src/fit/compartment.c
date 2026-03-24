@@ -12,6 +12,7 @@
  *   - Registration / removal from the FIT hash table
  */
 #include "compartment.h"
+#include "dynamic.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -20,12 +21,16 @@
 /* ======================================================================
  * compartment_create
  * ====================================================================== */
-compartment_t *compartment_create(void *func_key, uint32_t library_id, uint32_t closure_id) {
+static compartment_t *compartment_create_internal(void *func_key, int is_default) {
+    umain_elf_t *elf = _get_area((uint64_t)(uintptr_t)func_key);
+    if (!elf) return NULL;
+
     compartment_t *comp = (compartment_t *)calloc(1, sizeof(compartment_t));
     if (!comp) return NULL;
 
-    comp->library_id  = library_id;
-    comp->closure_id  = closure_id;
+    comp->elf         = elf;
+    comp->library_id  = elf->fit_library_id;
+    comp->closure_id  = is_default ? 0 : ++elf->current_closure_id;
     comp->ref_count   = 1;
 
     /*
@@ -41,6 +46,14 @@ compartment_t *compartment_create(void *func_key, uint32_t library_id, uint32_t 
     }
 
     return comp;
+}
+
+compartment_t *compartment_create(void *func_key) {
+    return compartment_create_internal(func_key, 0);
+}
+
+compartment_t *compartment_create_default(void *func_key) {
+    return compartment_create_internal(func_key, 1);
 }
 
 /* ======================================================================

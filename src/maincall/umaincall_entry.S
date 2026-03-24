@@ -38,39 +38,24 @@
     ld sp, OFFSET_UMAINCALL_SP(sp)
 .endm
 
-.macro SAVE_MAINCALLRET
-    addi sp, sp,  -OFFSET_UMAINCALL
-    sd a0, OFFSET_UMAINCALL_A0(sp)
-.endm
-
-
-.macro RESTORE_MAINCALLRET
-    ld ra, OFFSET_UMAINCALL_RA(sp)
-    ld a0, OFFSET_UMAINCALL_A0(sp)
-    addi sp, sp, OFFSET_UMAINCALL
-.endm
-
-
 #-----------------------------------------------------------------------
 # dasics_umaincall: pass arguments to umaincall helper.
 #-----------------------------------------------------------------------
 ENTRY(dasics_umaincall)
     auipc t4, 0 // t4 = address of dasics_umaincall
     beq  t3, t4, 1f // if (CallContext->t3 == (reg_t)dasics_umaincall)
-    beq  ra, t4, 2f // if (CallContext->ra == (reg_t)dasics_umaincall) 
     // umaincall not need to save context, we used temporary registers
-    j 3f    
+    j 2f
 1:
-    // t0 is umain_elf_t
-    // t1 is offset of target function
+    // t0 = source umain_elf_t, t1 = raw PLT offset
     addi t1, t1, 16
 
-    // get target function address
+    // Resolve target function address from _local_got_table
     ld   t2, 0(t0)
     add  t2, t2, t1
     ld   t2, 0(t2)
 
-    // is maincall?
+    // Check if target is in MAIN_AREA (trusted direct jump, no transition)
     ld   t5, 32(t0)
     add  t5, t5, t1
     ld   t5, 0(t5)
@@ -83,50 +68,31 @@ ENTRY(dasics_umaincall)
     ebreak
 
 5:
-    // get target elf
+    // Resolve target_elf pointer for do_transition_dynamic
     ld   t3, 16(t0)
     add  t3, t3, t1
     ld   t3, 0(t3)
 
-    // get target function name
-    ld   t4, 24(t0)
-    add  t4, t4, t1
-    ld   t4, 0(t4)
+    /*
+     * do_transition_dynamic(func, saved_regs, target_elf)
+     *   a0 = target function address
+     *   a1 = pointer to saved {a0..a7} in the umaincall stack frame
+     *   a2 = target_elf (passed explicitly to skip runtime lookup)
+     */
+    mv   a0, t2
+    addi a1, sp, OFFSET_UMAINCALL_A0
+    mv   a2, t3
+    call do_transition_dynamic
 
+    // Overwrite saved a0 with the callee's return value
+    sd   a0, OFFSET_UMAINCALL_A0(sp)
 
-    SAVE_MAINCALL 
-    // Let's do dasics_dynamic_call first    
-    // int dasics_dynamic_call(struct umaincall * CallContext, \
-    //                         umain_elf_t * _elf, \
-    //                         int idx, \
-    //                         uint64_t target, \
-    //                         umain_elf_t * target_elf, \
-    //                         const char * target_name)    
-    
-    mv   a0, sp
-    mv   a1, t0
-    srli a2, t1, 3
-    mv   a3, t2
-    mv   a4, t3
-    mv   a5, t4
-    call dasics_dynamic_call
-    j 6f
-2:
-    SAVE_MAINCALLRET
-    mv   a0, sp
-    // ra is the address of dasics_umaincall
-    call dasics_dynamic_return
-    j 4f
-3:
-    ld   t4, umaincall_helper
-    jr t4
-    ret
-4:
-    RESTORE_MAINCALLRET
-    ret
-6:
     RESTORE_MAINCALL
-    jr t1
+    ret
+2:
+    ld   t4, umaincall_helper
+    jr   t4
+    ret
 END(dasics_umaincall)
 
 
@@ -186,6 +152,47 @@ lib_call:
     .word 0x0002908b    // dasicscall.jr ra, t0
 
     // Restore registers
+    ld     ra, 64(sp)
+    ld     s0, 56(sp)
+    addi   sp, sp, STACK_FRAME_SIZE_LIBCALL
+    ret
+
+#-----------------------------------------------------------------------
+# lib_call_context: invoke target with raw register context.
+#
+# C prototype:
+#   uint64_t lib_call_context(void *func, uint64_t *saved_regs);
+#
+# ABI contract:
+# - a0 = target function pointer
+# - a1 = pointer to saved umaincall frame where A0..A7 are stored
+# - Restores callee a0..a7 from saved frame and jumps to target via
+#   dasicscall.jr, preserving natural return semantics.
+#-----------------------------------------------------------------------
+.section .text
+.global lib_call_context
+.type lib_call_context, @function
+
+lib_call_context:
+    addi   sp, sp, -STACK_FRAME_SIZE_LIBCALL
+    sd     ra, 64(sp)
+    sd     s0, 56(sp)
+    addi   s0, sp, STACK_FRAME_SIZE_LIBCALL
+
+    mv     t0, a0
+    mv     t1, a1
+
+    ld     a0, OFFSET_UMAINCALL_A0(t1)
+    ld     a1, OFFSET_UMAINCALL_A1(t1)
+    ld     a2, OFFSET_UMAINCALL_A2(t1)
+    ld     a3, OFFSET_UMAINCALL_A3(t1)
+    ld     a4, OFFSET_UMAINCALL_A4(t1)
+    ld     a5, OFFSET_UMAINCALL_A5(t1)
+    ld     a6, OFFSET_UMAINCALL_A6(t1)
+    ld     a7, OFFSET_UMAINCALL_A7(t1)
+
+    .word  0x0002908b    // dasicscall.jr ra, t0
+
     ld     ra, 64(sp)
     ld     s0, 56(sp)
     addi   sp, sp, STACK_FRAME_SIZE_LIBCALL

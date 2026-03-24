@@ -3,7 +3,6 @@
 #include <dynamic.h>
 #include <udasics.h>
 #include <umaincall.h>
-#include <cross.h>
 
 // STD
 #include <stdlib.h>

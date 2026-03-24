@@ -79,8 +79,9 @@ typedef struct compartment {
     uint64_t valist_base;        // Base address of the va_list (set dynamically)
     size_t valist_size;          // Size of the va_list
 
-    uint32_t library_id;         // Library id for mimalloc (e.g. 0 = user program)
-    uint32_t closure_id;         // Closure id for mimalloc (per-function)
+    struct umain_elf *elf;       // Owning ELF module (NULL for trusted domain sentinel)
+    uint32_t library_id;         // Cached library id for mimalloc (from elf->fit_library_id)
+    uint32_t closure_id;         // Cached closure id for mimalloc (allocated per compartment)
     int heap_alloc_done;         // 1 if self-managed heap bound was added (for Umaincall_MALLOC scheme B)
 
     /*
@@ -149,6 +150,7 @@ static inline int fit_map_add(void *key, compartment_t *comp) {
  * ====================================================================== */
 extern int fit_init(uint64_t dasics_funcptr);
 extern int fit_init_static(void);
+extern int fit_init_dynamic(void);
 extern void fit_destroy(void);
 extern void fit_print(void);
 extern uint64_t fit_switchto(void *func, ...);
@@ -171,5 +173,24 @@ extern int fit_permission_grant(void *func, const fit_bounds_t *perms, size_t nu
 extern void do_apply_permission(compartment_t *comp);
 /* Domain switch: push, apply callee bounds, lib_call, then pop and restore caller bounds. */
 extern uint64_t do_transition(void *func, va_list args);
+
+/*
+ * do_transition_dynamic - PLT dynamic call transition.
+ *
+ * Performs the same push/apply/pop/restore sequence as do_transition(),
+ * but uses lib_call_context (raw a0-a7) instead of lib_call (va_list).
+ * If the function has no FIT entry, a default whole-library compartment
+ * is lazily created and cached on target_elf->default_compartment.
+ *
+ * @func:        resolved target function address.
+ * @saved_regs:  pointer to saved {a0..a7} from the PLT intercept frame.
+ * @target_elf:  the umain_elf_t of the target library (passed from assembly
+ *               to avoid runtime _get_area lookup overhead).
+ *
+ * Returns the callee's uint64_t return value.
+ */
+struct umain_elf;
+extern uint64_t do_transition_dynamic(void *func, uint64_t *saved_regs,
+                                      struct umain_elf *target_elf);
 
 #endif // FIT_H

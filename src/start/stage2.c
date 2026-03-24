@@ -3,7 +3,6 @@
 #include <udasics.h>
 #include <dynamic.h>
 #include <umaincall.h>
-#include <cross.h>
 
 void print_exit_func_num();
 // STD
@@ -56,11 +55,6 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 #ifdef DASICS_DEBUG
     dasics_printf("> [INIT] Init maincall for dynamic successfully\n");
 #endif
-    init_cross_stack();
-
-// #ifdef DASICS_DEBUG
-//     dasics_printf("> [INIT] Init corss stack successfully\n");
-// #endif
 
 #ifdef DASICS_COPY
     /* begin to init copy of the trust lib */
