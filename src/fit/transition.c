@@ -103,19 +103,52 @@ static void temp_times_tick(compartment_t *comp) {
 
 /*
  * resolve_plt_target - normalize a possible func@plt address to the
- * corresponding real target address from caller_elf->_local_got_table.
+ * corresponding real target address.
  *
- * If @func is not inside caller_elf's PLT, returns @func unchanged.
+ * Strategy: check the current domain's ELF first (fast path), then
+ * fall back to scanning all ELFs (slow path).  The fast path hits in
+ * the common case where the PLT stub belongs to the caller's own ELF.
+ *
+ * PLT address ranges are non-overlapping across ELFs, so scanning is
+ * always deterministic.  This replaces the old caller_elf parameter
+ * approach, which was incorrect when the trusted domain contained
+ * multiple ELFs (e.g. main program + trusted third-party libraries)
+ * -- the old code always fell back to _umain_elf_table (main program),
+ * causing PLT resolution failures for trusted libraries whose PLT
+ * ranges differ from the main program's.
+ *
+ * If @func does not fall inside any known ELF's PLT, it is not a PLT
+ * stub and is returned unchanged.
  */
-static void *resolve_plt_target(void *func, umain_elf_t *caller_elf) {
-    if (!caller_elf)
+static void *resolve_plt_target(void *func) {
+    if (!_umain_elf_table)
         return func;
 
-    int plt_idx = _is_plt_area((uint64_t)(uintptr_t)func, caller_elf);
-    if (plt_idx == NOEXIST)
-        return func;
+    uint64_t addr = (uint64_t)(uintptr_t)func;
+    int plt_idx;
 
-    return (void *)(uintptr_t)caller_elf->_local_got_table[plt_idx + 2];
+    /* Fast path: try the current domain's ELF first. */
+    compartment_t *current = fit_get_current_compartment();
+    umain_elf_t *current_elf = current ? current->elf : _umain_elf_table;
+
+    if (current_elf) {
+        plt_idx = _is_plt_area(addr, current_elf);
+        if (plt_idx != NOEXIST)
+            return (void *)(uintptr_t)current_elf->_local_got_table[plt_idx + 2];
+    }
+
+    /* Slow path: scan all ELFs, skipping current_elf (already checked). */
+    umain_elf_t *elf = _umain_elf_table;
+    do {
+        if (elf != current_elf) {
+            plt_idx = _is_plt_area(addr, elf);
+            if (plt_idx != NOEXIST)
+                return (void *)(uintptr_t)elf->_local_got_table[plt_idx + 2];
+        }
+        elf = elf->umain_elf_next;
+    } while (elf != _umain_elf_table);
+
+    return func;
 }
 
 /* ---- Domain transition ---- */
@@ -134,12 +167,13 @@ uint64_t do_transition(void *func, va_list args) {
     if (!callee) return (uint64_t)-1;
 
     /*
-     * If func is a PLT stub in the caller ELF (e.g. trusted main calling
-     * entry@plt), normalize it to the real target entry before lib_call().
+     * If func is a PLT stub, normalize it to the real target address
+     * before lib_call().  resolve_plt_target() scans all ELFs
+     * automatically, so this works regardless of whether the caller is
+     * the main program, a trusted third-party library, or an untrusted
+     * compartment.
      */
-    compartment_t *current = fit_get_current_compartment();
-    umain_elf_t *caller_elf = current ? current->elf : _umain_elf_table;
-    void *real_func = resolve_plt_target(func, caller_elf);
+    void *real_func = resolve_plt_target(func);
 
     /* Push callee compartment onto the compartment stack */
     if (fit_compartment_push(callee) != 0)
