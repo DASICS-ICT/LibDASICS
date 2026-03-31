@@ -149,7 +149,7 @@ lib_call:
     ld     a6, -72(s0)
 
     // Call the target function
-    .word 0x0002908b    // dasicscall.jr ra, t0
+    dasicscall.jr ra, t0, 0
 
     // Restore registers
     ld     ra, 64(sp)
@@ -191,7 +191,7 @@ lib_call_context:
     ld     a6, OFFSET_UMAINCALL_A6(t1)
     ld     a7, OFFSET_UMAINCALL_A7(t1)
 
-    .word  0x0002908b    // dasicscall.jr ra, t0
+    dasicscall.jr ra, t0, 0
 
     ld     ra, 64(sp)
     ld     s0, 56(sp)

@@ -1,5 +1,4 @@
 #include <asm/asm.h>
-#include <ucsr.h>
 #include <asm/offset.h>
 
 .macro SAVE_CONTEXT
@@ -35,26 +34,26 @@
     sd t5, OFFSET_TRAP_T5(sp)
     sd t6, OFFSET_TRAP_T6(sp)    
 
-    csrr t0, CSR_UEPC
+    csrr t0, uepc
     sd t0, OFFSET_TRAP_UEPC(sp)
 
-    csrr t0, CSR_UCAUSE
+    csrr t0, ucause
     sd t0, OFFSET_TRAP_UCAUSE(sp)
 
-    csrr t0, CSR_UTVAL
+    csrr t0, utval
     sd t0, OFFSET_TRAP_UTVAL(sp)
     fence.i
 .endm
 
 .macro RESTORE_CONTEXT
     ld t0, OFFSET_TRAP_UEPC(sp)
-    csrw CSR_UEPC, t0 
+    csrw uepc, t0
 
     ld t0, OFFSET_TRAP_UCAUSE(sp)
-    csrw CSR_UCAUSE, t0 
+    csrw ucause, t0
 
     ld t0, OFFSET_TRAP_UTVAL(sp)
-    csrw CSR_UTVAL, t0 
+    csrw utval, t0
 
 
     // return address
@@ -102,7 +101,7 @@ END(__dasics_uret)
 ENTRY(dasics_ufault_entry) 
     SAVE_CONTEXT
     // handle syscall fault alone
-    csrr t0, CSR_DFREASON
+    csrr t0, dfreason
     li t1, 1 // DFR_ECALL_DASICS_FAULT
     beq t0, t1, 1f
 
@@ -121,7 +120,7 @@ END(dasics_ufault_entry)
 ENTRY(_setup_fault)
     SAVE_CONTEXT
     // handle syscall fault alone
-    csrr t0, CSR_DFREASON
+    csrr t0, dfreason
     li t1, 1 // DFR_ECALL_DASICS_FAULT
     beq t0, t1, 1f
 
