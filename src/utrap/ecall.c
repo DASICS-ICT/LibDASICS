@@ -11,7 +11,7 @@ int handle_DasicsUEcallFault(struct ucontext_trap * regs)
   if (fit_check_syscall(regs->a7) != 0)
   {
     // Invalid syscall
-    printf("[DASICS EXCEPTION] Invalid syscall %d at %lx, cancel this syscall\n", regs->a7, regs->uepc - 4);
+    printf("[DASICS EXCEPTION] Invalid syscall %lu at %lx, cancel this syscall\n", regs->a7, regs->uepc - 4);
     return -1;  // Return -1 to terminate the program
   }
 
