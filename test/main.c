@@ -29,28 +29,6 @@ ATTR_ULIB_TEXT int my_memcpy()
     return 0;
 }
 
-/*
- * call_lib_noarg - invoke lib_call() for a wrapper that takes no user args.
- *
- * Why this helper is needed:
- * - lib_call now has a type-safe prototype: lib_call(func, va_list args).
- * - Even when we have "no logical arguments", we still need a valid va_list
- *   object created by va_start/va_end.
- *
- * This helper creates an empty variadic frame and forwards the resulting
- * va_list to lib_call(), so legacy no-arg test code can stay simple while
- * still obeying the explicit va_list API contract.
- */
-static uint64_t call_lib_noarg(void *func_name, ...)
-{
-    va_list args;
-    va_start(args, func_name);
-    uint64_t ret = lib_call(func_name, args);
-    va_end(args);
-    return ret;
-}
-
-
 int main(int argc, char *argv[]) {
     // Add exit function 
     atexit(exit_function);
@@ -70,7 +48,7 @@ int main(int argc, char *argv[]) {
 
 
     printf("[LOG]: call my_memcpy\n");
-    call_lib_noarg(my_memcpy);
+    __builtin_dasicscall(my_memcpy);
 
     dasics_libcfg_free(idx0);
     dasics_libcfg_free(idx1);

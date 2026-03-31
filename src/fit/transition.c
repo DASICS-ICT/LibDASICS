@@ -6,7 +6,7 @@
  *   1. Push callee's compartment onto the compartment stack.
  *   2. Clear the caller's DASICS bounds.
  *   3. Apply the callee's bounds (static + temporary + stack + valist).
- *   4. Invoke the callee via lib_call (FIT path) or lib_call_context (PLT path).
+ *   4. Invoke the callee via __builtin_dasicscall (dasicscall.jr).
  *   5. On return, pop the stack, clear callee bounds, restore caller bounds.
  *
  * Two entry points share the same pre/post logic:
@@ -23,7 +23,6 @@
 #include <assert.h>
 #include <string.h>
 #include <asm/unistd.h>
-#include <asm/offset.h>
 
 /* ---- Helpers ---- */
 
@@ -168,7 +167,7 @@ uint64_t do_transition(void *func, va_list args) {
 
     /*
      * If func is a PLT stub, normalize it to the real target address
-     * before lib_call().  resolve_plt_target() scans all ELFs
+     * before the dasicscall.  resolve_plt_target() scans all ELFs
      * automatically, so this works regardless of whether the caller is
      * the main program, a trusted third-party library, or an untrusted
      * compartment.
@@ -182,7 +181,7 @@ uint64_t do_transition(void *func, va_list args) {
     /* Capture the current stack pointer to set the callee's stack bound */
     uint64_t frame_addr;
     asm volatile("mv %0, sp" : "=r"(frame_addr));
-    callee->stack_top = frame_addr - STACK_FRAME_SIZE_LIBCALL;
+    callee->stack_top = frame_addr;
 
     /* Record va_list base for the callee if it expects variadic arguments */
     if (callee->valist_size > 0) {
@@ -199,21 +198,14 @@ uint64_t do_transition(void *func, va_list args) {
     /* Switch mimalloc to the callee's self-managed heap */
     mi_set_ids_dasics(callee->library_id, callee->closure_id);
 
-    /* ---- Invoke the callee ---- */
     /*
-     * lib_call() takes an explicit va_list object as its second parameter.
+     * Invoke the callee via dasicscall.jr.
      *
-     * This call style is deliberate:
-     * - We do not try to re-expand caller-side "..." arguments at this layer.
-     * - The transition target is expected to be a wrapper function that accepts
-     *   va_list directly (for example, `int func_wrapper(va_list args)`).
-     * - That wrapper then materializes concrete arguments with va_arg().
-     *
-     * Current limitation:
-     * - The low-level forwarding stub still uses a register-limited ABI path.
-     * - Wider argument forwarding is deferred to future compiler-side work.
+     * The transition target is a wrapper function that accepts va_list
+     * directly (e.g. `int func_wrapper(va_list args)`).  The va_list
+     * pointer is passed as the sole argument (callee a0).
      */
-    uint64_t ret = lib_call(real_func, args);
+    uint64_t ret = (uint64_t)(uintptr_t)__builtin_dasicscall(real_func, args);
 
     /* Consume one use of the temporary grant */
     temp_times_tick(callee);
@@ -349,8 +341,8 @@ static compartment_t *lazy_create_default_compartment(void *func,
  * This is the PLT counterpart of do_transition().  Both share the same
  * pre/post logic (push, clear, apply, pop, restore); the only difference
  * is the call stub:
- *   - do_transition       uses lib_call   (wrapper receives va_list)
- *   - do_transition_dynamic uses lib_call_context (target gets raw a0-a7)
+ *   - do_transition        uses __builtin_dasicscall (wrapper receives va_list)
+ *   - do_transition_dynamic uses __builtin_dasicscall (target gets raw a0-a7)
  *
  * @func:        resolved address of the target function.
  * @saved_regs:  pointer to the saved {a0, a1, ..., a7} array on the
@@ -381,7 +373,7 @@ uint64_t do_transition_dynamic(void *func, uint64_t *saved_regs,
     /* Capture current SP to set the callee's stack bound. */
     uint64_t frame_addr;
     asm volatile("mv %0, sp" : "=r"(frame_addr));
-    callee->stack_top = frame_addr - STACK_FRAME_SIZE_LIBCALL;
+    callee->stack_top = frame_addr;
 
     /* Step 3: Clear all caller bounds before entering callee domain. */
     dasics_jumpcfg_free_all();
@@ -395,10 +387,12 @@ uint64_t do_transition_dynamic(void *func, uint64_t *saved_regs,
 
     /*
      * Step 6: Invoke the target function with the original caller arguments.
-     * lib_call_context restores a0-a7 from saved_regs and jumps via
-     * dasicscall.jr -- the target returns naturally (no ra hijacking).
+     * __builtin_dasicscall places saved_regs[0..7] into a0-a7 and jumps
+     * via dasicscall.jr -- the target returns naturally.
      */
-    uint64_t ret = lib_call_context(func, saved_regs);
+    uint64_t ret = (uint64_t)(uintptr_t)__builtin_dasicscall(func,
+        saved_regs[0], saved_regs[1], saved_regs[2], saved_regs[3],
+        saved_regs[4], saved_regs[5], saved_regs[6], saved_regs[7]);
 
     /* Step 7: Consume one use of any temporary permission grant. */
     temp_times_tick(callee);

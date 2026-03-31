@@ -171,14 +171,14 @@ extern int fit_permission_grant(void *func, const fit_bounds_t *perms, size_t nu
 
 /* Apply compartment's code/mem + temp bounds to DASICS hardware. */
 extern void do_apply_permission(compartment_t *comp);
-/* Domain switch: push, apply callee bounds, lib_call, then pop and restore caller bounds. */
+/* Domain switch: push, apply callee bounds, dasicscall, then pop and restore caller bounds. */
 extern uint64_t do_transition(void *func, va_list args);
 
 /*
  * do_transition_dynamic - PLT dynamic call transition.
  *
  * Performs the same push/apply/pop/restore sequence as do_transition(),
- * but uses lib_call_context (raw a0-a7) instead of lib_call (va_list).
+ * but passes raw a0-a7 via __builtin_dasicscall instead of va_list.
  * If the function has no FIT entry, a default whole-library compartment
  * is lazily created and cached on target_elf->default_compartment.
  *

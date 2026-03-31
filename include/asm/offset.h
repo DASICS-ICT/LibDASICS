@@ -45,7 +45,4 @@
 
 #define OFFSET_UMAINCALL        (8*13)
 
-/* for lib_call */
-#define STACK_FRAME_SIZE_LIBCALL 72
-
 #endif
