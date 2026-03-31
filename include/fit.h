@@ -148,7 +148,7 @@ static inline int fit_map_add(void *key, compartment_t *comp) {
 /* ======================================================================
  * Public function declarations
  * ====================================================================== */
-extern int fit_init(uint64_t dasics_funcptr);
+extern int fit_init(void);
 extern int fit_init_static(void);
 extern int fit_init_dynamic(void);
 extern void fit_destroy(void);

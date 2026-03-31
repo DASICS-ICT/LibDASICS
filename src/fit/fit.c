@@ -25,6 +25,8 @@
 /* ---- FIT hash-table (global, declared extern in fit.h) ---- */
 fit_entry_t *fit_table = NULL;
 
+static int fit_initialized = 0;
+
 /*
  * Weak fallback: application may override fit_init_static().
  * If not overridden, static FIT registration is treated as empty.
@@ -56,18 +58,23 @@ int __attribute__((weak)) fit_init_dynamic(void) {
 }
 
 /*
- * fit_init - initialise the whole FIT subsystem.
+ * fit_init - initialise the whole FIT subsystem (GCC constructor).
  *
- * @dasics_funcptr: address of the DASICS handler used by register_udasics().
+ * Called automatically before main() via __attribute__((constructor)).
+ * Uses the default dasics_umaincall_helper as the maincall handler.
  *
- * 1. Register the DASICS user-space mechanism.
+ * 1. Register the DASICS user-space mechanism with default handler.
  * 2. Create the compartment stack (trusted base frame).
  * 3. Populate the FIT table from compile-time static data.
  */
-int fit_init(uint64_t dasics_funcptr) {
+__attribute__((constructor))
+int fit_init(void) {
+    if (fit_initialized) return 0;
+    fit_initialized = 1;
+
     int ret;
 
-    register_udasics(dasics_funcptr);
+    register_udasics(0);
     fit_init_compartment_stack();
 
     /* Stage 1: program/static-library generated FIT registration. */
@@ -84,7 +91,10 @@ int fit_init(uint64_t dasics_funcptr) {
 }
 
 /*
- * fit_destroy - tear down the FIT subsystem and release all resources.
+ * fit_destroy - tear down the FIT subsystem and release all resources
+ *               (GCC destructor / cleanup stage).
+ *
+ * Called automatically after main() returns via __attribute__((destructor)).
  *
  * Order matters: compartment stack first (no more domain switches),
  * then the hash table, and finally the DASICS mechanism itself.
@@ -92,7 +102,11 @@ int fit_init(uint64_t dasics_funcptr) {
  * For each hash-table entry we decrement the compartment's ref_count.
  * Only when it reaches zero do we free the compartment and its bitmaps.
  */
+__attribute__((destructor))
 void fit_destroy(void) {
+    if (!fit_initialized) return;
+    fit_initialized = 0;
+
     fit_entry_t *current, *tmp;
 
     /* 1. Destroy the compartment stack */
