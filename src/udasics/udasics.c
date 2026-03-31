@@ -64,10 +64,10 @@ typedef struct {
     uint64_t hi;
 } bound_t;
 
-void register_udasics(uint64_t funcptr) 
+void register_udasics(void)
 {
-    // Set maincall & ufault handler
-    umaincall_helper = (funcptr != 0) ? funcptr : (uint64_t) dasics_umaincall_helper;
+    /* Default maincall helper; dmaincall CSR points at dasics_umaincall trampoline. */
+    umaincall_helper = (uint64_t)dasics_umaincall_helper;
     csr_write(dmaincall, (uint64_t)dasics_umaincall);
     csr_write(utvec, (uint64_t)dasics_ufault_entry);
 }

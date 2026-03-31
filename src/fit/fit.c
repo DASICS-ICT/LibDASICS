@@ -74,7 +74,7 @@ int fit_init(void) {
 
     int ret;
 
-    register_udasics(0);
+    register_udasics();
     fit_init_compartment_stack();
 
     /* Stage 1: program/static-library generated FIT registration. */

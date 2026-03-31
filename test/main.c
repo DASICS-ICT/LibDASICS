@@ -54,7 +54,7 @@ static uint64_t call_lib_noarg(void *func_name, ...)
 int main(int argc, char *argv[]) {
     // Add exit function 
     atexit(exit_function);
-    register_udasics(0);
+    register_udasics();
 
     int size = strlen(test_str);
 

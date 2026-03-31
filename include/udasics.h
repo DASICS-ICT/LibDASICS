@@ -41,7 +41,7 @@ typedef enum {
 struct umaincall;
 
 // DASICS open/close
-void register_udasics(uint64_t funcptr);
+void register_udasics(void);
 void unregister_udasics(void);
 
 // DASICS user fault handler register
