@@ -1,15 +1,19 @@
 # compile logic
-CROSS_COMPILE	?= riscv64-unknown-linux-gnu-
-CC				= $(CROSS_COMPILE)gcc
-OBJDUMP			= $(CROSS_COMPILE)objdump
-AR				= $(CROSS_COMPILE)ar
-RANLIB			= $(CROSS_COMPILE)ranlib
+CLANG_TARGET	?= --target=riscv64-unknown-linux-gnu
+CLANG_SYSROOT	?= --sysroot=$(RISCV)/sysroot
+CLANG_GCC_TOOLCHAIN ?= --gcc-toolchain=$(RISCV)
+CLANG_FLAGS		?= $(CLANG_TARGET) $(CLANG_SYSROOT) $(CLANG_GCC_TOOLCHAIN)
+
+CC				= clang $(CLANG_FLAGS)
+OBJDUMP			= llvm-objdump
+AR				= llvm-ar
+RANLIB			= llvm-ranlib
 
 # C flags
 MIMALLOC_INC	= -I$(abspath $(RISCV_ROOTFS_HOME)/libs/mimalloc/build/include/mimalloc-2.2)
 INCLUDE			= -Iinclude $(MIMALLOC_INC)
 
-CFLAGS			= -O3 -g -MMD -Wno-c23-extensions -Wno-varargs $(INCLUDE) -DDASICS_LINUX -DMI_DASICS=1 #-DDASICS_DEBUG
+CFLAGS			= -O3 -g -fno-PIC -MMD -Wno-c23-extensions -Wno-varargs $(INCLUDE) -DDASICS_LINUX -DMI_DASICS=1 #-DDASICS_DEBUG
 
 ifdef USER_DEFINE
     CFLAGS += -D$(USER_DEFINE)
