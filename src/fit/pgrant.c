@@ -46,13 +46,6 @@ static int perm_is_subset_of_caller(const fit_bounds_t *p, const compartment_t *
                 (p->perm & ~(DASICS_LIBCFG_R | DASICS_LIBCFG_W)) == 0)
                 return 1;
         }
-        /* Check against caller's valist region [valist_base, valist_base + valist_size - 1] (RW) */
-        if (caller->valist_size > 0) {
-            uint64_t va_hi = caller->valist_base + caller->valist_size - 1;
-            if (p->lo >= caller->valist_base && p->hi <= va_hi &&
-                (p->perm & ~(DASICS_LIBCFG_R | DASICS_LIBCFG_W)) == 0)
-                return 1;
-        }
     }
     return 0;
 }
@@ -63,7 +56,6 @@ static int perm_is_subset_of_caller(const fit_bounds_t *p, const compartment_t *
  * @comp:        target compartment to receive the temporary bounds.
  * @perms:       array of bounds to grant.
  * @num:         number of elements in @perms.
- * @valist_size: size of the va_list region to be granted (0 if none).
  * @times:       how many domain transitions the grant stays active for.
  *
  * Only one grant may be active at a time; calling this while a previous
@@ -71,7 +63,7 @@ static int perm_is_subset_of_caller(const fit_bounds_t *p, const compartment_t *
  *
  * Returns 0 on success, -1 on failure.
  */
-int do_permission_grant(compartment_t *comp, const fit_bounds_t *perms, size_t num, size_t valist_size, unsigned times) {
+int do_permission_grant(compartment_t *comp, const fit_bounds_t *perms, size_t num, unsigned times) {
     /* Only one grant at a time: reject if temp_times is still active. */
     if (comp->temp_times != 0) {
         printf("[FIT] Error: permission grant rejected, previous grant still active (times=%u)\n",
@@ -129,7 +121,6 @@ int do_permission_grant(compartment_t *comp, const fit_bounds_t *perms, size_t n
         }
     }
     comp->temp_times = times;
-    comp->valist_size = valist_size;
 
     return 0;
 }
@@ -141,8 +132,8 @@ int do_permission_grant(compartment_t *comp, const fit_bounds_t *perms, size_t n
  * Looks up the compartment for @func via fit_find() and delegates to
  * do_permission_grant().
  */
-int fit_permission_grant(void *func, const fit_bounds_t *perms, size_t num, size_t valist_size, unsigned times) {
+int fit_permission_grant(void *func, const fit_bounds_t *perms, size_t num, unsigned times) {
     compartment_t *comp = fit_find(func);
     if (!comp) return -1;
-    return do_permission_grant(comp, perms, num, valist_size, times);
+    return do_permission_grant(comp, perms, num, times);
 }

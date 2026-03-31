@@ -36,7 +36,7 @@ static compartment_t *compartment_create_internal(void *func_key, int is_default
     /*
      * Bitmaps are left NULL (lazy allocation).
      * All bounds counters are already zero from calloc.
-     * stack_top / valist_base are set dynamically by do_transition().
+     * stack_top is set dynamically at domain-switch time.
      */
 
     /* Register this compartment into the FIT hash table. */
@@ -230,27 +230,10 @@ int compartment_set_stack(compartment_t *comp, uint64_t stack_size) {
     }
 
     /* stack_top is set to 0 here; it will be filled dynamically by
-     * do_transition() using the current SP at domain-switch time. */
+     * transition_pre() using the current SP at domain-switch time. */
     comp->stack_top  = 0;
     comp->stack_size = stack_size;
 
     return 0;
 }
 
-/* ======================================================================
- * compartment_set_valist
- * ====================================================================== */
-int compartment_set_valist(compartment_t *comp, size_t valist_size) {
-    if (!comp) return -1;
-
-    if (valist_size > COMPARTMENT_VALIST_SIZE_MAX) {
-        printf("[compartment] Error: valist_size (0x%zx) exceeds max (0x%lx)\n",
-               valist_size, (unsigned long)COMPARTMENT_VALIST_SIZE_MAX);
-        return -1;
-    }
-
-    /* valist_base is set dynamically by do_transition(). */
-    comp->valist_size = valist_size;
-
-    return 0;
-}

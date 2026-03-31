@@ -90,6 +90,24 @@ ENTRY(dasics_umaincall)
     RESTORE_MAINCALL
     ret
 2:
+    li   t5, 3                           // Umaincall_TRANS
+    bne  a0, t5, 3f
+
+    // TRANS fast path: save context and perform domain switch directly
+    SAVE_MAINCALL
+
+    // Original register layout: a0=type, a1=func, a2=arg1, ..., a7=arg6
+    ld   a0, OFFSET_UMAINCALL_A1(sp)    // func
+    addi a1, sp, OFFSET_UMAINCALL_A2    // &saved_regs[a2]
+    call do_transition_regs
+
+    // Overwrite saved a0 with the callee's return value
+    sd   a0, OFFSET_UMAINCALL_A0(sp)
+
+    RESTORE_MAINCALL
+    ret
+
+3:
     ld   t4, umaincall_helper
     jr   t4
     ret

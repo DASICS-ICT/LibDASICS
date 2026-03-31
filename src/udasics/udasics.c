@@ -214,7 +214,6 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
             void *func_target = va_arg(args, void *);
             const fit_bounds_t *perms = va_arg(args, const fit_bounds_t *);
             size_t num = va_arg(args, size_t);
-            size_t valist_size = va_arg(args, size_t);
             unsigned times = (unsigned)va_arg(args, unsigned int);
             /* Look up the target compartment by function pointer. */
             compartment_t *target = fit_find(func_target);
@@ -222,16 +221,16 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
                 retval = (uint64_t)-1;
                 break;
             }
-            if (do_permission_grant(target, perms, num, valist_size, times) != 0)
+            if (do_permission_grant(target, perms, num, times) != 0)
                 retval = (uint64_t)-1;
         }
         break;
 
-        case Umaincall_TRANS: {
-            void *func = va_arg(args, void *);
-            retval = do_transition(func, args);
-        }
-        break;
+        case Umaincall_TRANS:
+            /* Handled by the assembly fast path in umaincall_entry.S;
+             * this C handler should never be reached for TRANS. */
+            __builtin_unreachable();
+            break;
 
         case Umaincall_FREE: {
             // FIXME: Add pointer authority check!

@@ -65,7 +65,7 @@ typedef struct compartment {
     size_t mem_bounds_num;                         // Number of mem bounds
 
     // Stack permission
-    uint64_t stack_top;       // Stack top address (set dynamically by do_transition)
+    uint64_t stack_top;       // Stack top address (set dynamically at domain-switch time)
     uint64_t stack_size;      // Stack size
 
     /* Temporary granted bounds: single grant at a time, shared times counter. */
@@ -74,10 +74,6 @@ typedef struct compartment {
     fit_bounds_t temp_mem_bounds[FIT_MEM_BOUNDS_MAX];
     size_t temp_mem_bounds_num;
     unsigned temp_times;
-
-    // va_list permission
-    uint64_t valist_base;        // Base address of the va_list (set dynamically)
-    size_t valist_size;          // Size of the va_list
 
     struct umain_elf *elf;       // Owning ELF module (NULL for trusted domain sentinel)
     uint32_t library_id;         // Cached library id for mimalloc (from elf->fit_library_id)
@@ -153,7 +149,6 @@ extern int fit_init_static(void);
 extern int fit_init_dynamic(void);
 extern void fit_destroy(void);
 extern void fit_print(void);
-extern uint64_t fit_switchto(void *func, ...);
 extern int fit_check_syscall(int sysno);
 extern int fit_check_maincall(int maincall);
 
@@ -166,19 +161,50 @@ extern int fit_check_maincall(int maincall);
 extern compartment_t *fit_get_current_compartment(void);
 
 /* Permission grant: copy perms into target compartment's temp_*_bounds (4/16 checked). */
-extern int do_permission_grant(compartment_t *comp, const fit_bounds_t *perms, size_t num, size_t valist_size, unsigned times);
-extern int fit_permission_grant(void *func, const fit_bounds_t *perms, size_t num, size_t valist_size, unsigned times);
+extern int do_permission_grant(compartment_t *comp, const fit_bounds_t *perms, size_t num, unsigned times);
+extern int fit_permission_grant(void *func, const fit_bounds_t *perms, size_t num, unsigned times);
 
 /* Apply compartment's code/mem + temp bounds to DASICS hardware. */
 extern void do_apply_permission(compartment_t *comp);
-/* Domain switch: push, apply callee bounds, dasicscall, then pop and restore caller bounds. */
-extern uint64_t do_transition(void *func, va_list args);
+
+/* Shared transition pre/post logic (used by fit_switchto macro and do_transition_regs). */
+extern int transition_pre(void *func, uint64_t frame_addr,
+                          compartment_t **out_callee, void **out_real_func);
+extern void transition_post(compartment_t *callee);
+
+/* Umaincall_TRANS assembly fast path entry. */
+extern uint64_t do_transition_regs(void *func, uint64_t *args);
+
+/*
+ * fit_switchto - domain switch macro.
+ *
+ * Usage: uint64_t ret = fit_switchto(real_func, arg1, arg2, ...);
+ *
+ * Arguments are passed directly to the callee via __builtin_dasicscall
+ * (up to 8 register arguments, RISC-V a0-a7).  No wrapper function or
+ * va_list indirection is needed.
+ */
+#define fit_switchto(func, ...) ({                                      \
+    compartment_t *_callee;                                             \
+    void *_real_func;                                                   \
+    uint64_t _ret;                                                      \
+    uint64_t _frame_addr;                                               \
+    __asm__ volatile("mv %0, sp" : "=r"(_frame_addr));                  \
+    if (transition_pre((func), _frame_addr, &_callee, &_real_func) != 0) { \
+        _ret = (uint64_t)-1;                                            \
+    } else {                                                            \
+        _ret = (uint64_t)(uintptr_t)                                    \
+            __builtin_dasicscall(_real_func, ##__VA_ARGS__);            \
+        transition_post(_callee);                                       \
+    }                                                                   \
+    _ret;                                                               \
+})
 
 /*
  * do_transition_dynamic - PLT dynamic call transition.
  *
- * Performs the same push/apply/pop/restore sequence as do_transition(),
- * but passes raw a0-a7 via __builtin_dasicscall instead of va_list.
+ * Performs the same push/apply/pop/restore sequence,
+ * but passes raw a0-a7 via __builtin_dasicscall.
  * If the function has no FIT entry, a default whole-library compartment
  * is lazily created and cached on target_elf->default_compartment.
  *

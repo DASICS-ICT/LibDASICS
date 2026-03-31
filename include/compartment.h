@@ -5,7 +5,7 @@
  * compartments (compartment_t).  Each compartment encapsulates:
  *   - Code and memory bounds (with DASICS permission bits)
  *   - Allowed syscall and maincall bitmaps
- *   - Stack and va_list ranges
+ *   - Stack range
  *   - Library/closure IDs for mimalloc integration
  *
  * A compartment is registered into the FIT hash table at creation time
@@ -21,14 +21,11 @@
 #include "fit.h"
 
 /*
- * Upper bounds for stack and valist sizes (sanity checks).
+ * Upper bound for stack size (sanity check).
  * Override at compile time with -DCOMPARTMENT_STACK_SIZE_MAX=... if needed.
  */
 #ifndef COMPARTMENT_STACK_SIZE_MAX
 #define COMPARTMENT_STACK_SIZE_MAX  (64 * 1024)   /* 64 KiB */
-#endif
-#ifndef COMPARTMENT_VALIST_SIZE_MAX
-#define COMPARTMENT_VALIST_SIZE_MAX (16 * 1024)    /* 16 KiB */
 #endif
 
 /*
@@ -137,22 +134,10 @@ int compartment_add_mem_bound(compartment_t *comp, fit_perm_t perm, uint64_t lo,
  * @stack_size:  stack size in bytes (must be <= COMPARTMENT_STACK_SIZE_MAX).
  *
  * stack_top is set to 0 here and will be filled dynamically by
- * do_transition() at runtime using the current SP.
+ * transition_pre() at runtime using the current SP.
  *
  * Returns 0 on success, -1 if stack_size exceeds the limit.
  */
 int compartment_set_stack(compartment_t *comp, uint64_t stack_size);
-
-/*
- * compartment_set_valist - set the va_list region size for the compartment.
- *
- * @comp:         target compartment.
- * @valist_size:  va_list region size in bytes (must be <= COMPARTMENT_VALIST_SIZE_MAX).
- *
- * valist_base is set dynamically by do_transition() at runtime.
- *
- * Returns 0 on success, -1 if valist_size exceeds the limit.
- */
-int compartment_set_valist(compartment_t *comp, size_t valist_size);
 
 #endif /* COMPARTMENT_H */

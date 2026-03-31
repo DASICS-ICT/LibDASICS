@@ -5,13 +5,14 @@
  *
  *   1. Push callee's compartment onto the compartment stack.
  *   2. Clear the caller's DASICS bounds.
- *   3. Apply the callee's bounds (static + temporary + stack + valist).
+ *   3. Apply the callee's bounds (static + temporary + stack).
  *   4. Invoke the callee via __builtin_dasicscall (dasicscall.jr).
  *   5. On return, pop the stack, clear callee bounds, restore caller bounds.
  *
- * Two entry points share the same pre/post logic:
- *   - do_transition()         : FIT explicit path (wrapper(va_list) convention)
- *   - do_transition_dynamic() : PLT dynamic call path (raw a0-a7 register context)
+ * Entry points:
+ *   - fit_switchto()            : macro (in fit.h), uses transition_pre/post
+ *   - do_transition_regs()      : Umaincall_TRANS assembly fast path
+ *   - do_transition_dynamic()   : PLT dynamic call path (raw a0-a7)
  *
  * This file also manages the "temporary times" counter which tracks how
  * many transitions a permission grant remains valid for.
@@ -47,17 +48,15 @@ static void apply_bounds(size_t code_num, size_t mem_num,
 
 /*
  * do_apply_permission - apply all of a compartment's bounds to the DASICS
- * hardware: static code/mem bounds, stack bound, temporary bounds, and
- * the va_list region.
+ * hardware: static code/mem bounds, stack bound, and temporary bounds.
  *
  * The total number of bounds must not exceed the hardware limits
  * (asserted here).
  */
 void do_apply_permission(compartment_t *comp) {
     assert(comp->code_bounds_num + comp->temp_code_bounds_num <= FIT_CODE_BOUNDS_MAX);
-    /* +1 for stack permission, +1 for optional valist */
-    assert(comp->mem_bounds_num + comp->temp_mem_bounds_num + 1
-           + (comp->valist_size == 0 ? 0 : 1) <= FIT_MEM_BOUNDS_MAX);
+    /* +1 for stack permission */
+    assert(comp->mem_bounds_num + comp->temp_mem_bounds_num + 1 <= FIT_MEM_BOUNDS_MAX);
 
     /* Static code & memory bounds */
     apply_bounds(comp->code_bounds_num, comp->mem_bounds_num,
@@ -74,13 +73,6 @@ void do_apply_permission(compartment_t *comp) {
     if (comp->temp_code_bounds_num > 0 || comp->temp_mem_bounds_num > 0) {
         apply_bounds(comp->temp_code_bounds_num, comp->temp_mem_bounds_num,
                      comp->temp_code_bounds, comp->temp_mem_bounds);
-    }
-
-    /* va_list region (RW) */
-    if (comp->valist_size > 0) {
-        dasics_libcfg_alloc(DASICS_LIBCFG_R | DASICS_LIBCFG_W,
-                            comp->valist_base,
-                            comp->valist_base + comp->valist_size);
     }
 }
 
@@ -150,104 +142,118 @@ static void *resolve_plt_target(void *func) {
     return func;
 }
 
-/* ---- Domain transition ---- */
+/* ---- Shared transition pre/post logic ---- */
 
 /*
- * do_transition - perform a full domain switch to the function @func.
+ * transition_pre - prepare a domain switch.
  *
- * @func: target function pointer (must have a FIT entry).
- * @args: forwarded va_list from fit_switchto().
+ * Looks up the compartment for @func, resolves PLT, pushes the callee
+ * onto the compartment stack, clears caller bounds, applies callee bounds,
+ * and switches the mimalloc heap.
  *
- * Returns the callee's uint64_t return value, or (uint64_t)-1 on error.
+ * @func:           target function pointer (must have a FIT entry).
+ * @frame_addr:     caller's SP value (captured before this call).
+ * @out_callee:     [out] callee compartment pointer.
+ * @out_real_func:  [out] resolved target function address.
+ *
+ * Returns 0 on success, -1 if the function has no FIT entry or push fails.
  */
-uint64_t do_transition(void *func, va_list args) {
-    /* Look up the target compartment by function pointer (hash lookup needed here). */
+int transition_pre(void *func, uint64_t frame_addr,
+                   compartment_t **out_callee, void **out_real_func) {
+    /* Step 1: Find the callee compartment by function key. */
     compartment_t *callee = fit_find(func);
-    if (!callee) return (uint64_t)-1;
+    if (!callee) return -1;
 
     /*
-     * If func is a PLT stub, normalize it to the real target address
-     * before the dasicscall.  resolve_plt_target() scans all ELFs
-     * automatically, so this works regardless of whether the caller is
-     * the main program, a trusted third-party library, or an untrusted
-     * compartment.
+     * Step 2: Resolve possible func@plt to the final target.
+     * For non-PLT addresses, resolve_plt_target() returns @func unchanged.
      */
     void *real_func = resolve_plt_target(func);
 
-    /* Push callee compartment onto the compartment stack */
+    /* Step 3: Enter callee domain by pushing it onto the compartment stack. */
     if (fit_compartment_push(callee) != 0)
-        return (uint64_t)-1;
+        return -1;
 
-    /* Capture the current stack pointer to set the callee's stack bound */
-    uint64_t frame_addr;
-    asm volatile("mv %0, sp" : "=r"(frame_addr));
+    /*
+     * Step 4: Record caller SP as callee stack_top.
+     * This value is captured by the caller before transition_pre() is called.
+     */
     callee->stack_top = frame_addr;
 
-    /* Record va_list base for the callee if it expects variadic arguments */
-    if (callee->valist_size > 0) {
-        callee->valist_base = (uint64_t)args;
-    }
-
-    /* Clear caller's DASICS bounds before entering callee domain */
+    /* Step 5: Clear caller bounds before programming callee permissions. */
     dasics_jumpcfg_free_all();
     dasics_libcfg_free_all();
 
-    /* Apply callee's full permission set */
+    /* Step 6: Apply callee static/temp/stack permissions. */
     do_apply_permission(callee);
 
-    /* Switch mimalloc to the callee's self-managed heap */
+    /* Step 7: Switch mimalloc heap context to callee (library_id, closure_id). */
     mi_set_ids_dasics(callee->library_id, callee->closure_id);
 
-    /*
-     * Invoke the callee via dasicscall.jr.
-     *
-     * The transition target is a wrapper function that accepts va_list
-     * directly (e.g. `int func_wrapper(va_list args)`).  The va_list
-     * pointer is passed as the sole argument (callee a0).
-     */
-    uint64_t ret = (uint64_t)(uintptr_t)__builtin_dasicscall(real_func, args);
-
-    /* Consume one use of the temporary grant */
-    temp_times_tick(callee);
-
-    /* Pop callee from compartment stack */
-    fit_compartment_pop();
-
-    /*
-     * Restore previous domain's bounds.
-     * fit_get_current_compartment() returns the caller compartment
-     * directly from the stack -- no hash lookup needed.
-     */
-    compartment_t *caller = fit_get_current_compartment();
-
-    /* Restore mimalloc heap IDs for the caller domain */
-    if (caller) {
-        mi_set_ids_dasics(caller->library_id, caller->closure_id);
-    } else {
-        mi_set_ids_dasics(0, 0);
-    }
-
-    dasics_jumpcfg_free_all();
-    dasics_libcfg_free_all();
-    if (caller) {
-        do_apply_permission(caller);
-    }
-    return ret;
+    /* Step 8: Return data needed by the actual call site. */
+    *out_callee = callee;
+    *out_real_func = real_func;
+    return 0;
 }
 
 /*
- * fit_switchto - public variadic entry point for domain transitions.
+ * transition_post - clean up after a domain switch.
  *
- * Usage: uint64_t ret = fit_switchto(func_ptr, arg1, arg2, ...);
+ * Ticks the temp-grant counter, pops the callee from the compartment
+ * stack, restores the caller domain's mimalloc heap and DASICS bounds.
  */
-uint64_t fit_switchto(void *func, ...) {
-    va_list args;
-    va_start(args, func);
-    uint64_t ret = do_transition(func, args);
-    va_end(args);
+void transition_post(compartment_t *callee) {
+    /* Step 1: Consume one use of temporary granted permissions. */
+    temp_times_tick(callee);
 
+    /* Step 2: Leave callee domain and restore previous stack top entry. */
+    fit_compartment_pop();
+
+    /* Step 3: Restore caller's mimalloc heap context. */
+    compartment_t *caller = fit_get_current_compartment();
+    if (caller)
+        mi_set_ids_dasics(caller->library_id, caller->closure_id);
+    else
+        mi_set_ids_dasics(0, 0);
+
+    /* Step 4: Clear active bounds before restoring caller permissions. */
+    dasics_jumpcfg_free_all();
+    dasics_libcfg_free_all();
+
+    /* Step 5: Re-apply caller domain permissions if we have a caller. */
+    if (caller)
+        do_apply_permission(caller);
+}
+
+/*
+ * do_transition_regs - Umaincall_TRANS assembly fast path.
+ *
+ * Called from the TRANS fast path in umaincall_entry.S.  Uses the shared
+ * transition_pre/post logic to perform a domain switch.
+ *
+ * @func:  target function pointer (original a1 from the umaincall).
+ * @args:  pointer to saved {a2, a3, ..., a7} — six consecutive uint64_t.
+ *         args[0]=original a2 (target arg1), ..., args[5]=original a7 (target arg6).
+ *
+ * Returns the callee's uint64_t return value, or (uint64_t)-1 on error.
+ */
+uint64_t do_transition_regs(void *func, uint64_t *args) {
+    compartment_t *callee;
+    void *real_func;
+
+    uint64_t frame_addr;
+    asm volatile("mv %0, sp" : "=r"(frame_addr));
+
+    if (transition_pre(func, frame_addr, &callee, &real_func) != 0)
+        return (uint64_t)-1;
+
+    uint64_t ret = (uint64_t)(uintptr_t)__builtin_dasicscall(real_func,
+        args[0], args[1], args[2], args[3], args[4], args[5], 0, 0);
+
+    transition_post(callee);
     return ret;
 }
+
 /* ---- PLT dynamic call transition ---- */
 
 /*
@@ -338,11 +344,10 @@ static compartment_t *lazy_create_default_compartment(void *func,
  * do_transition_dynamic - perform a full domain switch for a PLT-intercepted
  * cross-library call.
  *
- * This is the PLT counterpart of do_transition().  Both share the same
- * pre/post logic (push, clear, apply, pop, restore); the only difference
- * is the call stub:
- *   - do_transition        uses __builtin_dasicscall (wrapper receives va_list)
- *   - do_transition_dynamic uses __builtin_dasicscall (target gets raw a0-a7)
+ * Uses the same push/clear/apply/pop/restore sequence as transition_pre/post,
+ * but with an additional lazy_create_default_compartment fallback for
+ * unmarked functions.  Arguments are passed as raw a0-a7 via
+ * __builtin_dasicscall.
  *
  * @func:        resolved address of the target function.
  * @saved_regs:  pointer to the saved {a0, a1, ..., a7} array on the
