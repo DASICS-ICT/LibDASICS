@@ -21,6 +21,7 @@
 #include "fit_internal.h"
 #include "compartment.h"
 #include "dynamic.h"
+#include "ucsr.h"
 #include <assert.h>
 #include <string.h>
 #include <asm/unistd.h>
@@ -240,6 +241,8 @@ void transition_post(compartment_t *callee) {
 uint64_t do_transition_regs(void *func, uint64_t *args) {
     compartment_t *callee;
     void *real_func;
+    uint64_t saved_dretpc;
+    uint64_t saved_dretpcactz;
 
     uint64_t frame_addr;
     asm volatile("mv %0, sp" : "=r"(frame_addr));
@@ -247,8 +250,17 @@ uint64_t do_transition_regs(void *func, uint64_t *args) {
     if (transition_pre(func, frame_addr, &callee, &real_func) != 0)
         return (uint64_t)-1;
 
+    /*
+     * Nested dasicscall updates dretpc/dretpcactz to its own return sites.
+     * Save the outer return context so the caller compartment's final `ret`
+     * still matches the trusted-domain return target after we come back.
+     */
+    saved_dretpc = csr_read(dretpc);
+    saved_dretpcactz = csr_read(dretpcactz);
     uint64_t ret = (uint64_t)(uintptr_t)__builtin_dasicscall(real_func,
         args[0], args[1], args[2], args[3], args[4], args[5], 0, 0);
+    csr_write(dretpc, saved_dretpc);
+    csr_write(dretpcactz, saved_dretpcactz);
 
     transition_post(callee);
     return ret;
@@ -359,6 +371,8 @@ static compartment_t *lazy_create_default_compartment(void *func,
  */
 uint64_t do_transition_dynamic(void *func, uint64_t *saved_regs,
                                umain_elf_t *target_elf) {
+    uint64_t saved_dretpc;
+    uint64_t saved_dretpcactz;
     /*
      * Step 1: Resolve the callee compartment.
      * Marked functions (registered via fit_generated.c) take absolute priority.
@@ -395,9 +409,13 @@ uint64_t do_transition_dynamic(void *func, uint64_t *saved_regs,
      * __builtin_dasicscall places saved_regs[0..7] into a0-a7 and jumps
      * via dasicscall.jr -- the target returns naturally.
      */
+    saved_dretpc = csr_read(dretpc);
+    saved_dretpcactz = csr_read(dretpcactz);
     uint64_t ret = (uint64_t)(uintptr_t)__builtin_dasicscall(func,
         saved_regs[0], saved_regs[1], saved_regs[2], saved_regs[3],
         saved_regs[4], saved_regs[5], saved_regs[6], saved_regs[7]);
+    csr_write(dretpc, saved_dretpc);
+    csr_write(dretpcactz, saved_dretpcactz);
 
     /* Step 7: Consume one use of any temporary permission grant. */
     temp_times_tick(callee);
