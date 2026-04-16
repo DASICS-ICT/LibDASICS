@@ -37,9 +37,10 @@
  *   - closure_id from ++_get_area(func_key)->current_closure_id
  * closure_id=0 is reserved for the per-library default compartment.
  *
- * Allocates a compartment_t with ref_count=1, all bounds counts zeroed,
- * syscall/maincall bitmaps set to NULL (lazy allocation), and registers
- * the (func_key -> compartment) mapping in fit_table.
+ * Allocates a compartment_t with all bounds counts zeroed, syscall/maincall
+ * bitmaps set to NULL (lazy allocation), and registers the
+ * (func_key -> compartment) mapping in fit_table.  The compartment remains
+ * alive while its per-compartment entry list is non-empty.
  *
  * Returns the compartment pointer on success, NULL on failure.
  */
@@ -54,11 +55,11 @@ compartment_t *compartment_create(void *func_key);
 compartment_t *compartment_create_default(void *func_key);
 
 /*
- * compartment_destroy - unregister and (if last reference) free a compartment.
+ * compartment_destroy - unregister and free a compartment.
  *
- * Removes all fit_table entries that point to @comp, then decrements
- * ref_count.  When ref_count reaches zero, the bitmaps and the
- * compartment itself are freed.
+ * Removes all fit_table entries that point to @comp, then frees the
+ * bitmaps and the compartment itself.  This destroys the entire
+ * compartment and all of its key mappings.
  */
 void compartment_destroy(compartment_t *comp);
 
@@ -68,8 +69,8 @@ void compartment_destroy(compartment_t *comp);
  * @comp:      the existing compartment to share.
  * @func_key:  the new function-pointer key to map to @comp.
  *
- * Increments comp->ref_count and inserts a new fit_table entry.
- * Returns @comp on success, NULL on failure.
+ * Inserts a new fit_table entry and appends it to @comp's per-compartment
+ * entry list.  Returns @comp on success, NULL on failure.
  */
 compartment_t *compartment_duplicate(compartment_t *comp, void *func_key);
 

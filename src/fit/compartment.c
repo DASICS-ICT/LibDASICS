@@ -8,7 +8,7 @@
  *   - Memory allocation and zero-initialisation of compartment_t
  *   - Lazy allocation of syscall/maincall bitmaps
  *   - Bounds-array management with limit checking
- *   - Reference-counted sharing via compartment_duplicate()
+ *   - Shared compartments via per-compartment entry lists
  *   - Registration / removal from the FIT hash table
  */
 #include "compartment.h"
@@ -31,7 +31,6 @@ static compartment_t *compartment_create_internal(void *func_key, int is_default
     comp->elf         = elf;
     comp->library_id  = elf->fit_library_id;
     comp->closure_id  = is_default ? 0 : ++elf->current_closure_id;
-    comp->ref_count   = 1;
 
     /*
      * Bitmaps are left NULL (lazy allocation).
@@ -62,25 +61,26 @@ compartment_t *compartment_create_default(void *func_key) {
 void compartment_destroy(compartment_t *comp) {
     if (!comp) return;
 
-    /*
-     * Remove all fit_table entries that point to this compartment.
-     * There may be more than one if compartment_duplicate() was used.
-     */
-    fit_entry_t *current, *tmp;
-    HASH_ITER(hh, fit_table, current, tmp) {
-        if (current->comp == comp) {
-            HASH_DEL(fit_table, current);
-            free(current);
-        }
+    fit_entry_t *entry, *tmp;
+    DL_FOREACH_SAFE2(comp->entries, entry, tmp, comp_next) {
+        DL_DELETE2(comp->entries, entry, comp_prev, comp_next);
+        HASH_DEL(fit_table, entry);
+        free(entry);
     }
 
-    /* Decrement reference count; free only when last reference is gone. */
-    comp->ref_count--;
-    if (comp->ref_count == 0) {
-        free(comp->syscalls);
-        free(comp->maincalls);
-        free(comp);
+    if (comp->elf && comp->elf->default_compartment == comp) {
+        comp->elf->default_compartment = NULL;
     }
+
+#ifdef DASICS_DEBUG
+    if (comp->entries != NULL) {
+        printf("[compartment] Warning: entry list not empty during destroy\n");
+    }
+#endif
+
+    free(comp->syscalls);
+    free(comp->maincalls);
+    free(comp);
 }
 
 /* ======================================================================
@@ -93,7 +93,6 @@ compartment_t *compartment_duplicate(compartment_t *comp, void *func_key) {
     if (fit_map_add(func_key, comp) != 0)
         return NULL;
 
-    comp->ref_count++;
     return comp;
 }
 

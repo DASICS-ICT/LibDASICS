@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include "udasics.h"   // Contains DASICS permission definitions and Umaincall_UNKNOWN
 #include "uthash.h"    // UTHash library
+#include "utlist.h"    // utlist intrusive linked-list helpers
 #include "bitmap.h"    // Bitmap operations
 
 /* ======================================================================
@@ -55,9 +56,12 @@ typedef struct fit_handles {
  * compartment_t - Isolation compartment data.
  *
  * Decoupled from the hash table: key and hh live in fit_entry_t (the
- * hash-table wrapper).  A ref_count field enables multiple fit_entry_t
- * nodes to share the same compartment via compartment_duplicate().
+ * hash-table wrapper).  A per-compartment linked list of fit_entry_t nodes
+ * records every key sharing the same compartment and defines the
+ * compartment's lifetime.
  * ====================================================================== */
+struct fit_entry;
+
 typedef struct compartment {
     fit_bounds_t code_bounds[FIT_CODE_BOUNDS_MAX]; // Code (executable) bounds
     size_t code_bounds_num;                        // Number of code bounds
@@ -87,13 +91,7 @@ typedef struct compartment {
      */
     uint8_t *syscalls;            // System call bitmap (NULL = none allowed)
     uint8_t *maincalls;           // Main call bitmap (NULL = none allowed)
-
-    /*
-     * Reference count for shared compartments.
-     * Incremented by compartment_duplicate(), decremented by compartment_destroy().
-     * The compartment is freed when ref_count reaches zero.
-     */
-    uint32_t ref_count;
+    struct fit_entry *entries;    // Head of the per-compartment entry list
 } compartment_t;
 
 /* ======================================================================
@@ -101,12 +99,15 @@ typedef struct compartment {
  *
  * Each entry maps a function-pointer key to a compartment.
  * Multiple entries may point to the same compartment_t when
- * compartment_duplicate() is used.
+ * compartment_duplicate() is used.  The compartment list links are separate
+ * from uthash's internal app/bucket order links.
  * ====================================================================== */
 typedef struct fit_entry {
     void *key;              // Hash key (function address)
     compartment_t *comp;    // Pointer to the isolation compartment
     UT_hash_handle hh;      // Required field for UTHash
+    struct fit_entry *comp_prev; // Previous entry in the compartment list
+    struct fit_entry *comp_next; // Next entry in the compartment list
 } fit_entry_t;
 
 /* ---- FIT hash-table (global) ---- */
@@ -129,7 +130,9 @@ static inline compartment_t *fit_find(void *key) {
 }
 
 /*
- * fit_map_add - insert a (key -> compartment) mapping into fit_table.
+ * fit_map_add - insert a (key -> compartment) mapping into fit_table and
+ *               append the new entry to the compartment's entry list.
+ *
  * Allocates a new fit_entry_t wrapper.  Returns 0 on success, -1 on failure.
  */
 static inline int fit_map_add(void *key, compartment_t *comp) {
@@ -137,7 +140,10 @@ static inline int fit_map_add(void *key, compartment_t *comp) {
     if (!m) return -1;
     m->key = key;
     m->comp = comp;
+    m->comp_prev = NULL;
+    m->comp_next = NULL;
     HASH_ADD_PTR(fit_table, key, m);
+    DL_APPEND2(comp->entries, m, comp_prev, comp_next);
     return 0;
 }
 
