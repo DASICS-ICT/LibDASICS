@@ -52,7 +52,7 @@ void ignore_simple_function()
                 }
                 else 
                 {
-                    reloc_addr = prev_addr + (func_elf->_copy_lib_elf->l_addr, func_elf->l_addr);
+                    reloc_addr = prev_addr + (func_elf->_copy_lib_elf->l_addr - func_elf->l_addr);
                 }
                 // reloc addr
                 target->got_begin[j + 2] = reloc_addr;
