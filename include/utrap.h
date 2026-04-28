@@ -77,6 +77,7 @@ struct ucontext_trap
 #define DFR_JUMP_DASICS_FAULT 		4
 #define DFR_LOAD_MPK_FAULT 			5
 #define DFR_STORE_MPK_FAULT 		6
+#define DFR_TAG_DASICS_FAULT 		7
 
 typedef int (*utrap_handler)(struct ucontext_trap * regs);
 
@@ -87,6 +88,9 @@ int handle_DasicsUFetchFault(struct ucontext_trap * regs);
 int handle_DasicsULoadFault(struct ucontext_trap * regs);
 int handle_DasicsUStoreFault(struct ucontext_trap * regs);
 int handle_DasicsUEcallFault(struct ucontext_trap * regs);
+int handle_DasicsUTagFault(struct ucontext_trap * regs);
+
+extern utrap_handler udasics_tag_fault_handler;
 
 
 extern long invoke_syscall(struct ucontext_trap * regs);

@@ -44,6 +44,7 @@ void register_uecall_fault_handler(utrap_handler ecall_fault_handler);
 void register_uload_fault_handler(utrap_handler load_fault_handler);
 void register_ustore_fault_handler(utrap_handler store_fault_handler);
 void register_ufetch_fault_handler(utrap_handler fetch_fault_handler);
+void register_utag_fault_handler(utrap_handler tag_fault_handler);
 
 
 // DASICS maincall

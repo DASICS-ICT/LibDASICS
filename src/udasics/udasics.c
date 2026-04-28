@@ -14,6 +14,7 @@ utrap_handler udasics_ecall_fault_handler = handle_DasicsUEcallFault;
 utrap_handler udasics_load_fault_handler  = handle_DasicsULoadFault;
 utrap_handler udasics_store_fault_handler = handle_DasicsUStoreFault;
 utrap_handler udasics_fetch_fault_handler = handle_DasicsUFetchFault;
+utrap_handler udasics_tag_fault_handler   = handle_DasicsUTagFault;
 
 
 #define BOUND_REG_READ(hi,lo,idx)   \
@@ -69,14 +70,25 @@ hashed_bound_t *bounds_table = NULL;
 static int available_handle = 0;  // FIXME: Currently we ignore int overflow conditions
 
 int dlibcfg_handle_map[DASICS_LIBCFG_WIDTH] = {-1};
+static uint64_t dlibcfg_lru_tick = 0;
+static uint64_t dlibcfg_last_used[DASICS_LIBCFG_WIDTH] = {0};
+
+static void dasics_init_dlibcfg_map(void)
+{
+    for (int i = 0; i < DASICS_LIBCFG_WIDTH; ++i) {
+        dlibcfg_handle_map[i] = -1;
+        dlibcfg_last_used[i] = 0;
+    }
+    dlibcfg_lru_tick = 0;
+}
 
 void register_udasics(uint64_t funcptr) 
 {
     uint64_t libcfg = csr_read(0x880);  // DasicsLibCfg
     int32_t max_cfgs = DASICS_LIBCFG_WIDTH;
     int32_t step = 4;
-    // Set random seed
-    srand(2023);
+
+    dasics_init_dlibcfg_map();
 
     // Write OS-allocated bounds to hash table
     for (int32_t idx = 0; idx < max_cfgs; ++idx) {
@@ -93,6 +105,7 @@ void register_udasics(uint64_t funcptr)
             entry->handle = available_handle++;
             HASH_ADD_INT(bounds_table, handle, entry);
             dlibcfg_handle_map[idx] = entry->handle;
+            dlibcfg_last_used[idx] = ++dlibcfg_lru_tick;
         }
     }
 
@@ -137,6 +150,12 @@ void register_ufetch_fault_handler(utrap_handler fetch_fault_handler)
 {
     if (fetch_fault_handler != NULL)
         udasics_fetch_fault_handler = fetch_fault_handler;
+}
+
+void register_utag_fault_handler(utrap_handler tag_fault_handler)
+{
+    if (tag_fault_handler != NULL)
+        udasics_tag_fault_handler = tag_fault_handler;
 }
 
 
@@ -219,23 +238,13 @@ uint64_t dasics_umaincall_helper(UmaincallTypes type, ...)
 
 
 static int dasics_oldest_victim(void) {
-    uint64_t dlaging0 = csr_read(0x881);  // DasicsLibAging0
-    uint64_t dlaging1 = csr_read(0x882);  // DasicsLibAging1
-    const uint64_t aging_width = 8;
-
     int victim = 0;
-    uint8_t oldest = 0xffu;  // Smaller value is older
+    uint64_t oldest = (uint64_t)-1;
 
     for (int i = 0; i < DASICS_LIBCFG_WIDTH; ++i) {
-        uint8_t aging_val;
-        if (i < DASICS_LIBCFG_WIDTH / 2) {
-            aging_val = (uint8_t)(dlaging0 >> (i * aging_width));
-        } else {
-            aging_val = (uint8_t)(dlaging1 >> ((i - DASICS_LIBCFG_WIDTH / 2) * aging_width));
-        }
-        if (aging_val <= oldest) {
+        if (dlibcfg_last_used[i] < oldest) {
+            oldest = dlibcfg_last_used[i];
             victim = i;
-            oldest = aging_val;
         }
     }
 
@@ -261,8 +270,7 @@ static int dasics_ldst_checker(uint64_t utval, int is_read)
         if (current->bound.lo <= utval && utval < current->bound.hi && \
             (current->priv & valid_perm) == valid_perm) {
             // Find the matching bound, thus replace one libcfg & libbound with it
-            // int victim = dasics_oldest_victim();
-            int victim = rand() % DASICS_LIBCFG_WIDTH;
+            int victim = dasics_oldest_victim();
             LIBBOUND_LOOKUP(current->bound.hi, current->bound.lo, victim, WRITE);
 
             // Write config
@@ -272,6 +280,7 @@ static int dasics_ldst_checker(uint64_t utval, int is_read)
 
              // Fill dlibcsr map with new handle
             dlibcfg_handle_map[victim] = current->handle;
+            dlibcfg_last_used[victim] = ++dlibcfg_lru_tick;
             
             return victim;
         }
@@ -326,6 +335,10 @@ void dasics_ufault_handler(struct ucontext_trap * regs)
     case DFR_ECALL_DASICS_FAULT:
         error = udasics_ecall_fault_handler(regs);
         break;
+
+    case DFR_TAG_DASICS_FAULT:
+        error = udasics_tag_fault_handler(regs);
+        break;
         
     default:
         dasics_printf("[ERROR] unhandle ufault: 0x%lx\n", regs->ucause);
@@ -365,8 +378,7 @@ int32_t dasics_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi) {
 
     // Kick out the oldest victim if we cannot find one available place
     if (victim == max_cfgs) {
-        // victim = dasics_oldest_victim();
-        victim = rand() % DASICS_LIBCFG_WIDTH;
+        victim = dasics_oldest_victim();
     }
 
     // Write libbound
@@ -391,6 +403,7 @@ int32_t dasics_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi) {
 
     // Fill dlibcsr map with new handle
     dlibcfg_handle_map[victim] = entry->handle;
+    dlibcfg_last_used[victim] = ++dlibcfg_lru_tick;
 
     return entry->handle;
 }
@@ -421,6 +434,7 @@ int32_t dasics_libcfg_free(int32_t handle) {
             libcfg &= ~(DASICS_LIBCFG_V << (idx * step));
             csr_write(0x880, libcfg);   // DasicsLibCfg
             dlibcfg_handle_map[idx] = -1;
+            dlibcfg_last_used[idx] = 0;
             break;
         }
     }
