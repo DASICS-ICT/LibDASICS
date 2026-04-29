@@ -77,10 +77,14 @@ ENTRY(dynamic_hook)
 
     li t4, 0
     li t5, 0x4000000000
-    li t6, 0xb
 
     csrw CSR_DLBOUND0LO, t4
     csrw CSR_DLBOUND0HI, t5
+
+    csrw CSR_DLBOUND1LO, t4
+    csrw CSR_DLBOUND1HI, t5
+
+    li t6, 0xbb
     csrw CSR_DLCFG, t6
 
     li t4, 0x2000000000
@@ -101,13 +105,7 @@ ENTRY(dynamic_hook)
 
     bnez t5, 1f
 
-
-    csrw CSR_DLBOUND1LO, zero
-    csrw CSR_DLBOUND1HI, zero
     csrw CSR_DLCFG, zero
-
-    csrw CSR_DJBOUND0LO, zero
-    csrw CSR_DJBOUND0HI, zero
     csrw CSR_DJCFG, zero
 
 1:
