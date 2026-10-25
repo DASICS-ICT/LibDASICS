@@ -1,3 +1,10 @@
+# NanhuV5-FDI static SPEC runtime
+
+The `NanhuV5-FDI` branch provides the static SPEC cross-domain runtime in
+[spec-static](spec-static/README.md). Its ABI, user-mode trap handling, observation
+interface and supported lifecycle are documented there. The manual below
+describes the retained dynamic LibDASICS implementation.
+
 [TOC]
 
 
@@ -128,3 +135,49 @@ int register_syscall_check(int sysno, ecall_check_handler check_handler, ecall_e
 对于第三方库进行的 `malloc` 和 `free` 操作，第三方库进行 `malloc` 调用时，由主函数调用截取并代理完成内存和 `libbound` 寄存器的分配以及权限的设置；第三方库进行 `free` 调用时由主函数调用截取并代理完成内存的 `free` 并释放相应的 `libbound` 寄存器。其余的内存处理函数类似。
 
  
+
+
+## NanhuV5-FDI ISA and recovery contract
+
+The shared C/assembly definitions are in `include/dasics_isa.h`. The static
+SPEC build uses the same definitions without importing the private dynamic
+loader protocol.
+
+| Interface | NanhuV5-FDI behavior |
+| --- | --- |
+| Main configuration | U view `0x9e1`, mask `0x3e`; S view `0xbc0`, mask `0x3ff`. `0x9e0` is Sfetchctl. |
+| Calls | FDICALL uses custom3 (`0x7b`); existing target-register operands are retained. |
+| Bounds | Half-open ranges, rounded outward to 8-byte grains. Empty, reversed, and ranges above the lower Sv48 user limit are rejected. |
+| Wide user range | `[0, 0x800000000000)`; this broad permission policy does not provide per-buffer isolation. |
+| Bound cache | A miss can refill only a complete, permission-matched access from one software grant. An already resident grant is not retried indefinitely. |
+| Registration lifetime | `register_udasics` saves the prior FDI entries and bound bank; `unregister_udasics` restores them. `free_all` also removes nonresident software handles. |
+
+Default load, store, jump, and unsupported delegated faults are denied without
+advancing the faulting PC or authorizing its target. Registered `resgister_*`
+handlers remain available for explicit recovery. They return a nonnegative
+value on handled recovery and update the saved context as needed. Return-state
+changes belong in `regs->return_pc` and `regs->freezone_return_pc`; direct CSR
+writes inside a handler are superseded by the common context restoration.
+
+A valid ECALL is checked against the syscall table. Check result zero permits
+the trusted restore-first proxy; other results invoke the error callback.
+Rejected or out-of-range syscalls return an error and resume after that ECALL.
+A malformed fault or non-ECALL instruction is denied without such advancement.
+A custom ECALL handler requests a proxy explicitly using
+`syscall_action = DASICS_TRAP_PROXY_SYSCALL`.
+
+The leading 160 bytes of `ucontext_trap` and 104 bytes of `umaincall` retain
+their field offsets. Their structures grow to include floating-point and
+return-state context, so users that allocate or inspect them must rebuild.
+The maincall-specific callback typedef is `umaincall_check_handler`, avoiding
+a conflicting definition of the syscall policy's `ecall_check_handler`.
+
+`dynamic_hook` and `lib_call` keep target stack arguments at the original `sp`.
+`lib_call` retains its historical ABI with the target address in `a0`; it is
+not a general variadic argument-shifting adapter. Its return preserves any
+bound-cache refills performed by the callee. The process-local side frames
+remain single-threaded and do not implement general nonlocal-unwind cleanup.
+
+The legacy dynamic entry still requires its private Linux/glibc auxiliary-vector
+and relocation protocol. ISA correction alone does not make that protocol
+available in the current static SPEC Linux stack.

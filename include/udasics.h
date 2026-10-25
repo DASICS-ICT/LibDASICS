@@ -12,19 +12,9 @@ extern "C" {
 #include "uattr.h"
 
 
-/* DASICS Lib cfg */
-#define DASICS_LIBCFG_WIDTH 16
-#define DASICS_LIBCFG_MASK  0xfUL
-#define DASICS_LIBCFG_V     0x8UL
-#define DASICS_LIBCFG_R     0x2UL
-#define DASICS_LIBCFG_W     0x1UL
-
-#define DASICS_JUMPCFG_WIDTH 	4
-#define DASICS_JUMPCFG_MASK 	0xffffUL
-#define DASICS_JUMPCFG_V    	0x1UL
-
-#define align8up(addr) 		 ((addr+0x7) & ~(0x7)) 
-#define align8down(addr) 	 (addr & ~(0x7))
+/* Public bounds are half-open; allocation rounds them out to 8-byte grains. */
+#define align8up(addr) (((uint64_t)(addr) + 7UL) & ~7UL)
+#define align8down(addr) ((uint64_t)(addr) & ~7UL)
 
 // TODO: Add UmaincallTypes
 typedef enum {

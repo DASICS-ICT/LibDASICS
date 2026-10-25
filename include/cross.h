@@ -23,6 +23,7 @@ struct cross {
     struct func_mem * func;
     // Return Address
     reg_t ra;
+    reg_t return_pc, freezone_return_pc;
     int handle_num;
     int32_t jmpcfg[DASICS_JUMPCFG_WIDTH];
     // Jumpcall's handler

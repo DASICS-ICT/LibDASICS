@@ -2,6 +2,7 @@
 #include <dasics_stdio.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 
 ecall_check_t syscall_check[__NR_syscalls];
 
@@ -20,7 +21,7 @@ int default_ecall_check_handler(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t 
 /* default ecall error handler */
 int default_ecall_error_handler()
 {
-    return 0;
+    return -EPERM;
 }
 
 /* init all syscall's check handler */

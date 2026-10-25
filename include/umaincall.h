@@ -23,8 +23,9 @@ typedef unsigned long reg_t;
  * ra is used to change jump target
  */
 
-struct umaincall
-{
+/* The original 104-byte prefix stays stable. The trailing register argument
+ * area ends at the caller's original sp for RISC-V variadic forwarding. */
+struct umaincall {
     reg_t t0;
     reg_t t1;
     reg_t t3;
@@ -38,30 +39,19 @@ struct umaincall
     reg_t a6;
     reg_t a7;
     reg_t sp;
+    reg_t fpr[32];
+    reg_t fcsr, return_pc, freezone_return_pc;
+    reg_t reserved[2];
+    reg_t vararg_registers[6];
 };
 
+#include "asm/offset.h"
 
-#define OFFSET_UMAINCALL_T0     (8*0)
-#define OFFSET_UMAINCALL_T1     (8*1)
-#define OFFSET_UMAINCALL_T3     (8*2)
-#define OFFSET_UMAINCALL_RA     (8*3)
-#define OFFSET_UMAINCALL_A0     (8*4)
-#define OFFSET_UMAINCALL_A1     (8*5)
-#define OFFSET_UMAINCALL_A2     (8*6)
-#define OFFSET_UMAINCALL_A3     (8*7)
-#define OFFSET_UMAINCALL_A4     (8*8)
-#define OFFSET_UMAINCALL_A5     (8*9)
-#define OFFSET_UMAINCALL_A6     (8*10)
-#define OFFSET_UMAINCALL_A7     (8*11)
-#define OFFSET_UMAINCALL_SP     (8*12)
-
-
-#define OFFSET_UMAINCALL        sizeof(struct umaincall)
 #define NOP 0x00000013
 
 extern uint64_t umaincall_helper;
 
-typedef void * (*ecall_check_handler)(unsigned long, \
+typedef void * (*umaincall_check_handler)(unsigned long, \
                                     unsigned long, \
                                     unsigned long, \
                                     unsigned long, \
@@ -74,7 +64,7 @@ struct umaincall_handler
 {
     list_head list;
     uint64_t maincallnum;
-    ecall_check_handler handler;
+    umaincall_check_handler handler;
 };
 
 

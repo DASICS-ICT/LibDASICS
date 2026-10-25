@@ -2,6 +2,7 @@
 #define _INCLUDE_DASICS_START_H
 
 #include <elf.h>
+#include "dasics_isa.h"
 #include <dasics_string.h>
 
 // DASICS INIT STAGE
@@ -44,7 +45,7 @@ void dasics_start_fault(struct ucontext_trap * regs);
             asm volatile ("ret");          \
         })
 
-#define TASK_SIZE 0x4000000000
+#define TASK_SIZE DASICS_USER_LIMIT
 
 
 // DASICS module flag

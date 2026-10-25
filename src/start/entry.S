@@ -1,5 +1,5 @@
 #include <asm/asm.h>
-#inlcude <asm/offset.h>
+#include <asm/offset.h>
 
 // True entry of dasics excution
 ENTRY(_check_dasics)

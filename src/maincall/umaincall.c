@@ -56,6 +56,9 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         tmp.begin = _entry;
         tmp.target = _target;
         tmp.ra = CallContext->ra;
+        tmp.return_pc = CallContext->return_pc;
+        tmp.freezone_return_pc = CallContext->freezone_return_pc;
+        for (int i = 0; i < DASICS_JUMPCFG_WIDTH; ++i) tmp.jmpcfg[i] = -1;
         tmp.func = _target->namespace_func;
         
         // tmp.jmpcfg[idx_jmp++] = dasics_jumpcfg_alloc(_target->_plt_start, _target->_text_end);
@@ -77,7 +80,7 @@ void cross_call(umain_elf_t * _entry, umain_elf_t * _target, const char *name, s
         // dasics_printf("[LOG]: DASICS lib (%s), return address: 0x%lx target elf: %s name: %s\n", _entry->real_name, CallContext->ra, _target->real_name, name);
 
         CallContext->ra = (reg_t)dasics_umaincall;
-        csr_write(0x8b1 , CallContext->ra);
+        CallContext->return_pc = CallContext->ra;
 
     }
 }
