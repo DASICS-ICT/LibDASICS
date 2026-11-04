@@ -45,7 +45,9 @@ void _dasics_entry_stage1(uint64_t sp, rtld_fini fini)
                     TASK_SIZE);
         original_jumpcfg_alloc(0, TASK_SIZE);
 
+#ifndef DASICS_NGINX_MODE1
         _set_auxv_entry(sp, AT_DASICS, 3);
+#endif
         // set a trap entry for link time
         csr_write(0x005, (uint64_t)_setup_fault);
         // Transfer executive authority to dynamic linker

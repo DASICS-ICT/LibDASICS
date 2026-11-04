@@ -4,6 +4,9 @@
 #include <dynamic.h>
 #include <umaincall.h>
 #include <cross.h>
+#ifdef DASICS_NGINX_MODE1
+#include <nginx_plugin.h>
+#endif
 
 void print_exit_func_num();
 // STD
@@ -13,7 +16,9 @@ fixup_entry_t dll_fixup_handler;
 
 rtld_fini dll_fini;
 
+#ifndef DASICS_NGINX_MODE1
 uint64_t tp_stage1_ld;
+#endif
 /*
  * for the stage two, we will set a utrap function 
  * for the stage3, and some prepare
@@ -57,9 +62,17 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 #ifdef DASICS_DEBUG
     dasics_printf("> [INIT] Init maincall for dynamic successfully\n");
 #endif
+#ifdef DASICS_NGINX_MODE1
+    init_cross_stack();
+
+// #ifdef DASICS_DEBUG
+//     dasics_printf("> [INIT] Init corss stack successfully\n");
+// #endif
+#else
 
     // load tp
     asm volatile("mv %0, tp": "=r"(tp_stage1_ld)::);
+#endif
 
 #ifdef DASICS_COPY
     /* begin to init copy of the trust lib */
@@ -73,7 +86,11 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
     if (fini)
         atexit(fini);
     /* change dasics_flag to 2 let linker just map trust lib on untrusted area*/
+#ifdef DASICS_NGINX_MODE1
+    _set_auxv_entry(sp, AT_DASICS, 2);
+#else
     _set_auxv_entry(sp, AT_DASICS, 4);
+#endif
     // Stage 2
     dasics_stage = 2;
     /* Go to stage 3 */
@@ -85,24 +102,26 @@ void _dasics_entry_stage2(uint64_t sp, rtld_fini fini)
 #endif
 
 #ifdef DASICS_LINUX
-    // Clear all lib bounds
+    // Clear startup permissions before installing the application policy.
     csr_write(0x880, 0);
     csr_write(0x8c8, 0);
-
     original_libcfg_free_all();
     original_jumpcfg_free_all();
-    // extern uint64_t _got_start, _got_end;
-    // original_libcfg_alloc(DASICS_LIBCFG_V | DASICS_LIBCFG_R | DASICS_LIBCFG_W, 0, TASK_SIZE);
-    // original_jumpcfg_alloc(TASK_SIZE / 2, TASK_SIZE);
-
-    // setup user ufault handler 
-    csr_write(0x005, (uint64_t)dasics_ufault_entry);
-
-    // atexit(&print_exit_func_num);
-    _umain_elf_table->calculate = 1;
-
+#ifdef DASICS_NGINX_MODE1
+    libcfg = 0;
+    jumpcfg = 0;
+    for (int i = 0; i < DASICS_LIBCFG_WIDTH; i++)
+        dlibcfg_handle_map[i] = -1;
 #endif
-
+    csr_write(0x005, (uint64_t)dasics_ufault_entry);
+#ifndef DASICS_NGINX_MODE1
+    _umain_elf_table->calculate = 1;
+#endif
+#endif
+#ifdef DASICS_NGINX_MODE1
+    init_pcre(MB * 2);
+    init_openssl(MB * 1024);
+#endif
     
 }
 

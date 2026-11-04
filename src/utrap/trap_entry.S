@@ -191,6 +191,11 @@ END(__dasics_uret)
 ENTRY(dasics_ufault_entry)
     SAVE_CONTEXT
     mv a0, sp
+#ifdef DASICS_NGINX_MODE1
+    ld t0, OFFSET_TRAP_DFREASON(sp)
+    li t1, DFR_ECALL_DASICS_FAULT
+    beq t0, t1, .Lnginx_ecall
+#endif
     call dasics_ufault_handler
     j __dasics_uret
 END(dasics_ufault_entry)
@@ -198,9 +203,22 @@ END(dasics_ufault_entry)
 ENTRY(_setup_fault)
     SAVE_CONTEXT
     mv a0, sp
+#ifdef DASICS_NGINX_MODE1
+    ld t0, OFFSET_TRAP_DFREASON(sp)
+    li t1, DFR_ECALL_DASICS_FAULT
+    beq t0, t1, .Lnginx_ecall
     call dasics_start_fault
     j __dasics_uret
 END(_setup_fault)
+
+.Lnginx_ecall:
+    call handle_DasicsUEcallFault
+    j __dasics_uret
+#else
+    call dasics_start_fault
+    j __dasics_uret
+END(_setup_fault)
+#endif
 
 /* A normal C-callable raw proxy; trap dispatch instead uses the restore-first
  * path above so its public register context remains authoritative. */

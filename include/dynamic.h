@@ -27,8 +27,18 @@ struct func_mem;
 
 typedef struct umain_elf
 {
+#ifdef DASICS_NGINX_MODE1
+   /* Do not change the order of the following structures */
+   uint64_t *_local_got_table; /* Num of lib call */
+   uint64_t *_local_call_time; /* Call num of a outer func */
+   struct umain_elf ** target_elf; /* Target elf */
+   char **target_func_name;
+   uint64_t *target_is_main;
+
+#else
    uint64_t *_local_got_table; /* Num of lib call */   
    uint64_t *_local_call_time; /* Call num of a outer func */ 
+#endif
    uint64_t calculate;
 
    ElfW(Addr) l_addr;		/* Difference between the address in the ELF
@@ -64,8 +74,10 @@ typedef struct umain_elf
 
    struct func_mem **local_func; /* Find func_mem fast */
    int * redirect_switch;       /* Redirect switch */
+#ifndef DASICS_NGINX_MODE1
    struct umain_elf ** target_elf; /* Target elf */
    char **target_func_name;
+#endif
 
    struct func_mem * namespace_func;
 
@@ -86,6 +98,10 @@ typedef struct umain_elf
    uint64_t _r_start, _r_end;
    uint64_t _w_start, _w_end; 
    uint64_t _map_start, _map_end;
+#ifdef DASICS_NGINX_MODE1
+
+   uint64_t _plt_begin;
+#endif
 } umain_elf_t;
 
 
@@ -93,7 +109,9 @@ extern fixup_entry_t dll_fixup_handler;
 extern fixup_entry_t dll_fixup_handler_lib;
 extern uint64_t user_sp;
 extern umain_elf_t * _umain_elf_table;
+#ifndef DASICS_NGINX_MODE1
 extern uint64_t tp_stage1_ld;
+#endif
 
 // Creat Umain elf 
 int create_umain_elf_chain(struct link_map * main_elf);

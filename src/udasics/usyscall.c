@@ -2,7 +2,9 @@
 #include <dasics_stdio.h>
 #include <stdlib.h>
 #include <stdio.h>
+#ifndef DASICS_NGINX_MODE1
 #include <errno.h>
+#endif
 
 ecall_check_t syscall_check[__NR_syscalls];
 
@@ -21,7 +23,11 @@ int default_ecall_check_handler(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t 
 /* default ecall error handler */
 int default_ecall_error_handler()
 {
+#ifdef DASICS_NGINX_MODE1
+    return 0;
+#else
     return -EPERM;
+#endif
 }
 
 /* init all syscall's check handler */

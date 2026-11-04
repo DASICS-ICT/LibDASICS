@@ -71,7 +71,14 @@ struct umaincall_handler
 // Open maincall
 int _open_maincall();
 
+#ifdef DASICS_NGINX_MODE1
+typedef struct umain_elf umain_elf_t;
+int dasics_dynamic_call(struct umaincall *CallContext, umain_elf_t *elf,
+                        int idx, uint64_t target, umain_elf_t *target_elf,
+                        const char *target_name);
+#else
 int dasics_dynamic_call(struct umaincall * CallContext);
+#endif
 void dasics_dynamic_return(struct umaincall * CallContext);
 
 void init_maincall_handler();

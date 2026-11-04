@@ -10,16 +10,28 @@
 #include <dmalloc.h>
 #include <udasics.h>
 
+#ifdef DASICS_NGINX_MODE1
+//mem
+#include <ufuncmem.h>
+
+//STD
+#include <stdlib.h>
+
+#else
 //STD
 #include <stdlib.h>
 
 
 uint64_t dynamic_hook_ra;
+#endif
 umain_elf_t * _umain_elf_table = NULL;
 umain_elf_t * dasics_main_elf = NULL;
 int dasics_stage = 0;
 
 extern char _interp_start[];
+#ifdef DASICS_NGINX_MODE1
+extern uint64_t _start[];
+#endif
 
 // Fill dynamic section
 static void _fill_dynamic_section(ElfW(Dyn) **l_info, ElfW(Dyn) *l_ld)
@@ -56,8 +68,14 @@ static void _fill_module_name(const char * l_name, umain_elf_t * elf)
  */
 static void _fill_local_got(umain_elf_t * elf)
 {
+#ifdef DASICS_NGINX_MODE1
+    elf->plt_begin = (uint64_t *)elf->got_begin[2];
+    elf->_plt_begin = elf->got_begin[2];
+    elf->_plt_start = elf->_plt_begin + 0x20;
+#else
     elf->plt_begin = (uint64_t *)elf->got_begin[3];
     elf->_plt_start = (uint64_t)elf->plt_begin + 0x20;
+#endif
     elf->_plt_end = elf->_plt_start + 0x10 * elf->got_num;  
 
     for (int i = 2; i < elf->got_num + 2; i++)
@@ -73,6 +91,63 @@ static void _fill_local_got(umain_elf_t * elf)
 
         uint64_t dll_a0 = (uint64_t)elf->map_link;
         uint64_t dll_a1 = (((uint64_t)(i - 2) * 0x10UL) >> 1) * 3;
+#ifdef DASICS_NGINX_MODE1
+        uint64_t ulib_func = elf->fixup_handler(dll_a0, dll_a1);   // fixup_handler will fill the GOT for us
+
+        elf->_local_got_table[i] = ulib_func;
+        // Recover the plt begin
+        if (elf->_flags & MAIN_AREA)
+        {
+            // Trueted lib call untrusted lib, recover GOT to plt begin, which finally target to dasics_umaincall
+            if (ulib_func > (uint64_t)_start)
+            {
+
+#ifdef DASICS_DEBUG
+                dasics_printf("[LOG]: %s fill (%s) with 0x%lx, origin: 0x%0lx\n",
+                    elf->real_name,
+                    _get_lib_name(elf, i - 2),
+                    elf->_plt_begin,
+                    elf->got_begin[i]);
+#endif
+                elf->got_begin[i] = elf->_plt_begin;
+            }
+        } else
+        {
+            // Untrusted lib call other lib's function, target to dasics_umaincall
+            if (elf->got_begin[i] < elf->_plt_begin || elf->got_begin[i] > elf->_text_end)
+            {
+#ifdef DASICS_DEBUG
+                dasics_printf("[LOG]: %s fill (%s) with 0x%lx, origin: 0x%0lx\n",
+                    elf->real_name,
+                    _get_lib_name(elf, i - 2),
+                    elf->_plt_begin,
+                    elf->got_begin[i]);
+#endif
+                elf->got_begin[i] = elf->_plt_begin;
+            }
+        }
+    }
+
+//     if (!(elf->_flags & MAIN_AREA)) {
+//         set_global_func_man(elf, 0);
+// #ifdef DASICS_DEBUG
+//         dasics_printf("[LOG]: elf:%s set func mem\n", elf->real_name);
+// #endif
+//     }
+
+
+    uint64_t start = ROUNDDOWN(elf->l_relro_addr, PAGE_SIZE);
+    uint64_t end = ROUND(elf->l_relro_addr + elf->l_relro_size, PAGE_SIZE);
+
+    _dasics_mprotect((void *)start, \
+                        end - start, \
+                        PROT_READ | PROT_WRITE);
+    elf->got_begin[0] = (uint64_t)dasics_umaincall;
+    elf->got_begin[1] = (uint64_t)elf;
+    _dasics_mprotect((void *)start, \
+                        end - start, \
+                        PROT_READ);
+#else
         uint64_t ulib_func = elf->fixup_handler(dll_a0, dll_a1);   
 
         elf->_local_got_table[i] = ulib_func;
@@ -101,6 +176,7 @@ static void _fill_local_got(umain_elf_t * elf)
 
     }
 
+#endif
 
 }
 
@@ -239,8 +315,13 @@ static void _find_copy_lib(umain_elf_t * elf)
     }
 
     do {
+#ifdef DASICS_NGINX_MODE1
+        if ((tmp->_flags & MAIN_AREA) && \
+            !dasics_strcmp(tmp->l_name, elf->l_name))
+#else
         if (/*(tmp->_flags & MAIN_AREA) && \ */
             !dasics_strcmp(tmp->l_name, elf->l_name))
+#endif
         {
             tmp->_copy_lib_elf = elf;
             elf->_copy_lib_elf = tmp;
@@ -263,9 +344,17 @@ static void _fill_target_elf()
         /* code */
         for (int i = 0; i < tmp_elf->got_num; i++)
         {
+#ifdef DASICS_NGINX_MODE1
+            umain_elf_t * tmp_target_elf = _get_area(tmp_elf->_local_got_table[i + 2]);
+            tmp_elf->target_elf[i + 2] = tmp_target_elf;
+            tmp_elf->target_func_name[i + 2] = _get_lib_name(tmp_elf, i);
+            if (tmp_target_elf != NULL)
+                tmp_elf->target_is_main[i + 2] = (tmp_target_elf->_flags & MAIN_AREA) ? 1 : 0;
+#else
             /* code */
             tmp_elf->target_elf[i + 2] = _get_area(tmp_elf->_local_got_table[i + 2]);
             tmp_elf->target_func_name[i + 2] = _get_lib_name(tmp_elf, i);
+#endif
             // if (tmp_elf == _umain_elf_table && (tmp_elf->target_elf[i + 2]->_flags & MAIN_AREA))
             // {
             //     tmp_elf->got_begin[i + 2] = tmp_elf->_local_got_table[i+2];
@@ -286,7 +375,9 @@ int create_umain_elf_chain(struct link_map * main_elf)
     struct link_map * _map_init = main_elf;
 
     // Judge trust area
+#ifndef DASICS_NGINX_MODE1
     extern uint64_t _start[];
+#endif
     // Build all chain
     while (_map_init != NULL)
     {
@@ -299,7 +390,11 @@ int create_umain_elf_chain(struct link_map * main_elf)
         }
 
         // DASICS_COPY_STAGE will use stdlib and avoid to change BRK
+#ifdef DASICS_NGINX_MODE1
+        umain_elf_t * _elf = dasics_stage == DASICS_COPY_LIB ? (umain_elf_t *)malloc(sizeof(umain_elf_t)) :
+#else
         umain_elf_t * _elf = /*dasics_stage == DASICS_COPY_LIB ? (umain_elf_t *)malloc(sizeof(umain_elf_t)) :*/
+#endif
                              (umain_elf_t *)dasics_malloc(sizeof(umain_elf_t));
 
         dasics_memset(_elf, 0, sizeof(umain_elf_t));
@@ -325,11 +420,21 @@ int create_umain_elf_chain(struct link_map * main_elf)
         ElfW(Addr) map_base = _elf->l_addr; 
         if (map_base < (uint64_t)_start) _elf->_flags |= MAIN_AREA;
         else 
+#ifdef DASICS_NGINX_MODE1
+        {
+            _elf->_flags |= LIB_AREA;
+            // Find copy lib
+            if (dasics_stage == 2)
+            {
+                _find_copy_lib(_elf);
+            }
+#else
             _elf->_flags |= LIB_AREA;
         // Find copy lib
         if (dasics_stage == 2)
         {
             _find_copy_lib(_elf);
+#endif
         }
 
         if (!map_base)  _elf->_flags |= ELF_AREA;
@@ -367,11 +472,15 @@ int create_umain_elf_chain(struct link_map * main_elf)
         _elf->target_elf = (umain_elf_t **)dasics_malloc(alloc_num* sizeof(umain_elf_t *));
         _elf->_local_call_time = (uint64_t *)dasics_malloc(alloc_num * sizeof(uint64_t) );
         _elf->target_func_name = (char **)dasics_malloc(alloc_num * sizeof(char *));
+#ifdef DASICS_NGINX_MODE1
+        _elf->target_is_main = (uint64_t *)dasics_malloc(alloc_num * sizeof(uint64_t) );
+#endif
         // Now, we will calculate all JMPREL's value，and copy them to the local got table
         _elf->calculate = 0;
 
         // fill the *_start, *_end of 
         _fill_module_map(_elf);
+#ifndef DASICS_NGINX_MODE1
 
 
         if (_elf->_local_got_table == NULL || \
@@ -382,6 +491,7 @@ int create_umain_elf_chain(struct link_map * main_elf)
             dasics_printf("[DASICS ERROR]: dasics_malloc error\n");
             while(1);
         } 
+#endif
 
         dasics_memset(_elf->_local_got_table, 0, alloc_num * sizeof(uint64_t));
         dasics_memset(_elf->local_func, 0, alloc_num * sizeof(struct func_mem *));
@@ -389,7 +499,11 @@ int create_umain_elf_chain(struct link_map * main_elf)
         dasics_memset(_elf->target_elf, 0, alloc_num * sizeof(umain_elf_t *));
         dasics_memset(_elf->_local_call_time, 0, alloc_num * sizeof(uint64_t));
         dasics_memset(_elf->target_func_name, 0, alloc_num * sizeof(char *));
+#ifdef DASICS_NGINX_MODE1
+        dasics_memset(_elf->target_is_main, 0, alloc_num * sizeof(uint64_t));
+#else
 
+#endif
 
         if (_umain_elf_table == NULL)
             dasics_main_elf = _elf;

@@ -5,14 +5,18 @@ AR = $(CROSS_COMPILE)ar
 RANLIB = $(CROSS_COMPILE)ranlib
 OBJDUMP = $(CROSS_COMPILE)objdump
 
-BUILD_DIR ?= build
 CFLAGS = -O2 -g -MMD -Wno-c23-extensions -Wno-varargs -Iinclude -DDASICS_LINUX -DDASICS_DEBUG -DDASICS_COPY
 ifdef USER_DEFINE
 CFLAGS += -D$(USER_DEFINE)
 endif
 UCFLAGS = -O2 -g -MMD -Iinclude -Itest/include -MMD
 
-SOURCES = $(wildcard src/*/*.c src/*/*.S lib/*/*.c lib/*/*.S)
+MODE1_SOURCES = src/maincall/openssl_hook.c src/maincall/pcre_hook.c src/maincall/abi.c
+SOURCES = $(filter-out $(MODE1_SOURCES),$(wildcard src/*/*.c src/*/*.S lib/*/*.c lib/*/*.S))
+ifeq ($(PROFILE),nginx-mode1)
+include profiles/nginx-mode1/profile.mk
+endif
+BUILD_DIR ?= build
 OBJECTS = $(addprefix $(BUILD_DIR)/,$(addsuffix .o,$(basename $(SOURCES))))
 HEADERS = $(wildcard include/*.h include/asm/*.h)
 ARCHIVE = $(BUILD_DIR)/libDASICS.a
@@ -22,11 +26,11 @@ TEST_LIBS = $(patsubst test/lib/%.c,$(BUILD_DIR)/%.so,$(wildcard test/lib/*.c))
 .PHONY: all test clean
 all: $(ARCHIVE)
 
-$(BUILD_DIR)/%.o: %.c $(HEADERS) Makefile
+$(BUILD_DIR)/%.o: %.c $(HEADERS) Makefile $(PROFILE_CONFIG)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(if $(filter lib/%,$<),-fno-builtin -nostdlib) -c $< -o $@
 
-$(BUILD_DIR)/%.o: %.S $(HEADERS) Makefile
+$(BUILD_DIR)/%.o: %.S $(HEADERS) Makefile $(PROFILE_CONFIG)
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(if $(filter lib/%,$<),-fno-builtin -nostdlib) -c $< -o $@
 

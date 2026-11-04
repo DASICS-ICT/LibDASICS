@@ -1,0 +1,122 @@
+{
+  "description": "Provenance of the legacy mode-1 policy, now selected within shared sources by DASICS_NGINX_MODE1. Listed hashes identify the original inputs, not the adapted files.",
+  "files": [
+    {
+      "path": "include/cross.h",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/include/cross.h",
+      "sha256": "e709b8297b4f0b5bbeada82bbf0179ce55bacc02279ff07691d11512929ea305"
+    },
+    {
+      "path": "include/dynamic.h",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/include/dynamic.h",
+      "sha256": "00bb6c6a0e10176bc48db43297d2c8a308b80b512ec7a9e81262f8aaf5cc644e"
+    },
+    {
+      "path": "include/udasics.h",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/include/udasics.h",
+      "sha256": "3545030658e3b7f77eaa7921ad16370d5b81ff6e343eeb898f1e2ebc5383ac19"
+    },
+    {
+      "path": "include/nginx_plugin.h",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/include/nginx_plugin.h",
+      "sha256": "c88c67fd1ff8d7057ee79fa9fcba6b8d09e05648b5578864ee279ff58c7e168a"
+    },
+    {
+      "path": "src/dynamic/dynamic.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/dynamic/dynamic.c",
+      "sha256": "af9544b3c260847a8d57388e4401f4f8914e30937659aafcfd0afc68018cbc28"
+    },
+    {
+      "path": "src/dynamic/relocation.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/dynamic/relocation.c",
+      "sha256": "3de3671e63197767ed56738f9dff030b83762dc35ffc8355317fa0fef8103e98"
+    },
+    {
+      "path": "src/maincall/cross.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/maincall/cross.c",
+      "sha256": "5c3b3fa93964dfb00204502083ac4c5ed5e73f9fd697ed932c5abe6cb5304387"
+    },
+    {
+      "path": "src/maincall/umaincall.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/maincall/umaincall.c",
+      "sha256": "e46f59a512ce0fc4e546e5e91d05cd5532033100036419d251f40619096d6863"
+    },
+    {
+      "path": "src/maincall/openssl_hook.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/maincall/openssl_hook.c",
+      "sha256": "026dd478f14131efabd3569fc0dd6abd2d5da1aa2de3ead9517fd30292194d3f"
+    },
+    {
+      "path": "src/maincall/pcre_hook.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/maincall/pcre_hook.c",
+      "sha256": "dedca4df0f61cd8f1f586f291c05f66b43d3bcec7e00b1a19b944dbd4b1491eb"
+    },
+    {
+      "path": "src/start/stage1.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/start/stage1.c",
+      "sha256": "03911f24492c9744fc11cc95deb4041ef3ae6b7bd04578194a456fb635710449"
+    },
+    {
+      "path": "src/start/stage2.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/start/stage2.c",
+      "sha256": "b6df57be9a8096d5137d2570d609cd58642927cc42ef5ea89b96fbddf2cc682b"
+    },
+    {
+      "path": "src/start/stage3.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/start/stage3.c",
+      "sha256": "51f853d5d7b72b3b534f7ed20cc2bafb4e99d0c84e926125800f4bdffdb87626"
+    },
+    {
+      "path": "src/start/fault.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/start/fault.c",
+      "sha256": "d261303b35a482740aad4b5ea7b578b667fabd88792fadc1f11ca7738d9f6cc1"
+    },
+    {
+      "path": "src/udasics/udasics.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/udasics/udasics.c",
+      "sha256": "69f09cfa255d47deeff05573e1ebb22dbff12ee9fdce1a05cf8cc4755d668283"
+    },
+    {
+      "path": "src/udasics/usyscall.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/udasics/usyscall.c",
+      "sha256": "4186255de1eda9cb3a184507ae76322353f763106c0a37cae1c5a061000deadc"
+    },
+    {
+      "path": "src/utrap/fetch.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/utrap/fetch.c",
+      "sha256": "fee42d7c3968b49940f1d4e95f162b83d7d20999e63fe0fb2f2df47e2107561b"
+    },
+    {
+      "path": "src/utrap/ldst.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/utrap/ldst.c",
+      "sha256": "5a87cffc87de72cc1b23f367aa4036e8490c3e319039da6ed3365bf8b44e59a8"
+    },
+    {
+      "path": "src/utrap/ecall.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/src/utrap/ecall.c",
+      "sha256": "acccaa43fa1f1291c297d5d1b662db7e641636d634782d27448b04cb064f06d4"
+    },
+    {
+      "path": "lib/tools/original.c",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/lib/tools/original.c",
+      "sha256": "1ee3deedc6989e285bf8e6c7b70167955937e12842235aaba5578e50cc8e1354"
+    },
+    {
+      "path": "include/dasics_start.h",
+      "source": "NGINX-playground/rootfs/libs/LibDASICS/repo/include/dasics_start.h",
+      "sha256": "3db68ad2fff92d97260168bfb84e487e1c028c2316bae84d371841dd2e36c94b"
+    }
+  ],
+  "current_context_sources": {
+    "head": "bd978f604bcdb8f61fad6c912ffbf6320d317357",
+    "files": [
+      "include/dasics_isa.h",
+      "include/ucsr.h",
+      "include/utrap.h",
+      "include/umaincall.h",
+      "include/asm/offset.h",
+      "src/utrap/trap_entry.S",
+      "src/maincall/umaincall_entry.S"
+    ]
+  }
+}

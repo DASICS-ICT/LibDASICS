@@ -1,7 +1,9 @@
 #include <dasics_start.h>
 #include <ucsr.h>
 #include <udasics.h>
+#ifndef DASICS_NGINX_MODE1
 #include <dasics_bounds.h>
+#endif
 
 #define BOUND_REG_READ(hi,lo,idx)   \
         case idx:  \
@@ -42,7 +44,9 @@
 
 
 int32_t original_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi) {
+#ifndef DASICS_NGINX_MODE1
     if (dasics_normalize_bound(&lo, &hi)) return -1;
+#endif
     uint64_t libcfg = csr_read(0x880);  // DasicsLibCfg
     int32_t max_cfgs = DASICS_LIBCFG_WIDTH;
     int32_t step = 4;
@@ -97,7 +101,9 @@ int32_t original_libcfg_get(int32_t idx) {
 
 int32_t original_jumpcfg_alloc(uint64_t lo, uint64_t hi)
 {
+#ifndef DASICS_NGINX_MODE1
     if (dasics_normalize_bound(&lo, &hi)) return -1;
+#endif
     uint64_t jumpcfg = csr_read(0x8c8);    // DasicsJumpCfg
     int32_t max_cfgs = DASICS_JUMPCFG_WIDTH;
     int32_t step = 16;

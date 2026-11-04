@@ -2,7 +2,11 @@
 #define _INCLUDE_DASICS_START_H
 
 #include <elf.h>
+#ifdef DASICS_NGINX_MODE1
+#include <dasics_isa.h>
+#else
 #include "dasics_isa.h"
+#endif
 #include <dasics_string.h>
 
 // DASICS INIT STAGE
@@ -15,7 +19,9 @@ extern void _check_dasics();
 extern void _setup_mainlib_entry();
 extern void _setup_copy_lib_entry();
 extern void _setup_fault();
+#ifndef DASICS_NGINX_MODE1
 extern void dynamic_hook();
+#endif
 
 // DASICS INIT STAGE FALUT AND LIB BOUNDS
 int32_t original_libcfg_alloc(uint64_t cfg, uint64_t lo, uint64_t hi);
@@ -45,7 +51,11 @@ void dasics_start_fault(struct ucontext_trap * regs);
             asm volatile ("ret");          \
         })
 
+#ifdef DASICS_NGINX_MODE1
+#define TASK_SIZE 0X4000000000
+#else
 #define TASK_SIZE DASICS_USER_LIMIT
+#endif
 
 
 // DASICS module flag

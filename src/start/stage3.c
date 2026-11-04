@@ -4,7 +4,9 @@
 #include <udasics.h>
 #include <umaincall.h>
 #include <cross.h>
+#ifndef DASICS_NGINX_MODE1
 #include <spec.h>
+#endif
 
 // STD
 #include <stdlib.h>
@@ -14,9 +16,11 @@ fixup_entry_t dll_fixup_handler_lib = NULL;
 
 void _dasics_entry_stage3(uint64_t sp, rtld_fini fini)
 {
+#ifndef DASICS_NGINX_MODE1
     // restore tp
     asm volatile("mv tp,%0"::"r"(tp_stage1_ld));
 
+#endif
 #ifdef DASICS_DEBUG
     dasics_printf("> [INIT] _dasics_entry_stage3\n");
 #endif    
@@ -50,7 +54,11 @@ void _dasics_entry_stage3(uint64_t sp, rtld_fini fini)
 
     original_libcfg_free_all();
     original_jumpcfg_free_all();
+#ifdef DASICS_NGINX_MODE1
+
+#else
     ignore_simple_function();
+#endif
     // setup user ufault handler 
     csr_write(0x005, (uint64_t)dasics_ufault_entry);
 

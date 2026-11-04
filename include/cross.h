@@ -23,11 +23,22 @@ struct cross {
     struct func_mem * func;
     // Return Address
     reg_t ra;
+#ifdef DASICS_NGINX_MODE1
+    int handle_num;
+    int longTimeHandle_num;
+    int jmp_num;
+    int32_t jmpcfg[DASICS_JUMPCFG_WIDTH];
+    // Jumpcall's handler
+    int handle[DASICS_LIBCFG_WIDTH];
+    int clear_active;
+    int longTimeHandle[DASICS_LIBCFG_WIDTH];
+#else
     reg_t return_pc, freezone_return_pc;
     int handle_num;
     int32_t jmpcfg[DASICS_JUMPCFG_WIDTH];
     // Jumpcall's handler
     int handle[DASICS_LIBCFG_WIDTH];
+#endif
 };
 
 // Init cross stack
@@ -35,6 +46,9 @@ void init_cross_stack();
 
 /* Push and Pop */ 
 void push_cross(struct cross * tmp);
+#ifdef DASICS_NGINX_MODE1
+struct cross * push_cross_get();
+#endif
 void pop_cross(struct umaincall * maincallContext);
 
 
