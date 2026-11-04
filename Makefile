@@ -1,104 +1,47 @@
-# compile logic
-CROSS_COMPILE	?= riscv64-unknown-linux-gnu-
-CC				= $(CROSS_COMPILE)gcc
-OBJDUMP			= $(CROSS_COMPILE)objdump
-AR				= $(CROSS_COMPILE)ar
-RANLIB			= $(CROSS_COMPILE)ranlib
+# Common build rules; each configuration can use a separate output directory.
+CROSS_COMPILE ?= riscv64-unknown-linux-gnu-
+CC = $(CROSS_COMPILE)gcc
+AR = $(CROSS_COMPILE)ar
+RANLIB = $(CROSS_COMPILE)ranlib
+OBJDUMP = $(CROSS_COMPILE)objdump
 
-# C flags
-INCLUDE			= -Iinclude
-
-CFLAGS			= -O2 -g -MMD -Wno-c23-extensions -Wno-varargs $(INCLUDE) -DDASICS_LINUX -DDASICS_DEBUG -DDASICS_COPY
-
+BUILD_DIR ?= build
+CFLAGS = -O2 -g -MMD -Wno-c23-extensions -Wno-varargs -Iinclude -DDASICS_LINUX -DDASICS_DEBUG -DDASICS_COPY
 ifdef USER_DEFINE
-    CFLAGS += -D$(USER_DEFINE)
+CFLAGS += -D$(USER_DEFINE)
 endif
+UCFLAGS = -O2 -g -MMD -Iinclude -Itest/include -MMD
 
-# build di0
-DIR_PWD			?= 
-DIR_BUILD		= build
-DIR_SRC			= src
-DIR_LIB			= lib
+SOURCES = $(wildcard src/*/*.c src/*/*.S lib/*/*.c lib/*/*.S)
+OBJECTS = $(addprefix $(BUILD_DIR)/,$(addsuffix .o,$(basename $(SOURCES))))
+HEADERS = $(wildcard include/*.h include/asm/*.h)
+ARCHIVE = $(BUILD_DIR)/libDASICS.a
+TEST_SOURCES = $(wildcard test/*.c)
+TEST_LIBS = $(patsubst test/lib/%.c,$(BUILD_DIR)/%.so,$(wildcard test/lib/*.c))
 
-DIR_TEST		= test
-UCFLAGS			= -O2 -g -MMD $(INCLUDE) -I$(DIR_TEST)/include -MMD
-# target files
-# LIB FILE, stand alone, not depend on any other standard library
-LIB_FILES_C		= $(wildcard $(DIR_LIB)/*/*.c)
-LIB_FILES_ASM	= $(wildcard $(DIR_LIB)/*/*.S)
+.PHONY: all test clean
+all: $(ARCHIVE)
 
-# SRC FILE, may used standard library
-SRC_FILES_C		= $(wildcard $(DIR_SRC)/*/*.c)
-SRC_FILES_ASM	= $(wildcard $(DIR_SRC)/*/*.S)
+$(BUILD_DIR)/%.o: %.c $(HEADERS) Makefile
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(if $(filter lib/%,$<),-fno-builtin -nostdlib) -c $< -o $@
 
-# TEST FIle
-TEST_FILES		= $(wildcard $(DIR_TEST)/*.c)
+$(BUILD_DIR)/%.o: %.S $(HEADERS) Makefile
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(if $(filter lib/%,$<),-fno-builtin -nostdlib) -c $< -o $@
 
-# BASENAME
-BASENAME		= $(notdir $(LIB_FILES_C) $(LIB_FILES_ASM) $(SRC_FILES_C) $(SRC_FILES_ASM))
-OBJ_FILES		= $(addprefix build/, \
-						$(addsuffix .o, $(basename $(BASENAME))))
+$(ARCHIVE): $(OBJECTS)
+	$(AR) rcs $@ $(OBJECTS)
+	$(RANLIB) $@
 
-TEST_SO_FILES	= $(notdir $(wildcard $(DIR_TEST)/lib/*.c))
-TEST_SO_OBJ		= $(addprefix build/, \
-						$(addsuffix .so, $(basename $(TEST_SO_FILES))))
+$(BUILD_DIR)/%.so: test/lib/%.c $(ARCHIVE)
+	$(CC) $(UCFLAGS) -fPIC -shared $< -o $@
 
-# Lib target
-LibDASICS		= $(DIR_BUILD)/libDASICS.a
-
-
-.PHONY: all
-
-all: $(LibDASICS)
-
-build:
-	@mkdir -p $(DIR_BUILD)
-
-
-# compile all files
-$(DIR_BUILD)/%.o: $(DIR_SRC)/*/%.c | $(DIR_BUILD)
-	@$(CC) $(CFLAGS) -c $< -o $@
-	@echo + CC $@
-
-$(DIR_BUILD)/%.o: $(DIR_SRC)/*/%.S | $(DIR_BUILD)
-	@$(CC) $(CFLAGS) -c $< -o $@
-	@echo + CC $@
-
-
-$(DIR_BUILD)/%.o: $(DIR_LIB)/*/%.c | $(DIR_BUILD)
-	@$(CC) -fno-builtin -nostdlib $(CFLAGS) -c $< -o $@
-	@echo + CC $@
-
-
-$(DIR_BUILD)/%.o: $(DIR_LIB)/*/%.S | $(DIR_BUILD)
-	@$(CC) -fno-builtin -nostdlib $(CFLAGS) -c $< -o $@
-	@echo + CC $@
-
-# Test library
-$(DIR_BUILD)/%.so: $(DIR_TEST)/*/%.c | $(DIR_BUILD) $(LibDASICS)
-	@$(CC) $(UCFLAGS) -fPIC -shared  $< -o $@
-	@echo + CC $@	
-
-# Make lib
-$(LibDASICS): $(OBJ_FILES)
-	@$(AR) rcs $(LibDASICS) $(OBJ_FILES) 
-	@echo + AR $(LibDASICS)
-	@$(RANLIB) $(LibDASICS)
-	@echo +  RANLIB $(LibDASICS)
-
-
-test: $(LibDASICS) $(TEST_SO_OBJ)
-	@$(CC) $(UCFLAGS) $(TEST_FILES) -o ./build/test -T./ld.lds $(LibDASICS)
-
-	@echo + CC ./build/test
-	@$(OBJDUMP) -d ./build/test > $(DIR_BUILD)/test.txt
-	@echo + OBJDUMP ./build/test
-
+test: $(ARCHIVE) $(TEST_LIBS)
+	$(CC) $(UCFLAGS) $(TEST_SOURCES) -o $(BUILD_DIR)/test -T./ld.lds $(ARCHIVE)
+	$(OBJDUMP) -d $(BUILD_DIR)/test > $(BUILD_DIR)/test.txt
 
 clean:
-	rm -rf $(DIR_BUILD)
+	rm -rf $(BUILD_DIR)
 
-# Dependencies
-DEPS = $(addprefix $(DIR_BUILD)/, \
-						$(addsuffix .d, $(basename $(BASENAME))))
--include $(DEPS)
+-include $(OBJECTS:.o=.d)
