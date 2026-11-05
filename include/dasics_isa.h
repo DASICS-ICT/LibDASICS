@@ -72,8 +72,8 @@
 #define CSR_DJBOUND3HI             0x8c7
 #define CSR_DJCFG                  0x8c8
 
-#define DASICS_SMAINCFG_MASK DASICS_UL(0x3ff)
-#define DASICS_UMAINCFG_MASK DASICS_UL(0x3e)
+#define DASICS_SMAINCFG_MASK DASICS_UL(0x3fff)
+#define DASICS_UMAINCFG_MASK DASICS_UL(0xc3e)
 #define DASICS_MAINCFG_MASK DASICS_SMAINCFG_MASK
 #define DASICS_SCFG_ENA DASICS_UL(0x1)
 #define DASICS_UCFG_ENA DASICS_UL(0x2)
@@ -85,6 +85,12 @@
 #define DASICS_SCFG_CSST DASICS_UL(0x80)
 #define DASICS_SCFG_CSLT DASICS_UL(0x100)
 #define DASICS_SCFG_CSFT DASICS_UL(0x200)
+/* Set these bits to close the corresponding AMO/LR/SC or CBO FDI checks. */
+#define DASICS_UCFG_CUCT DASICS_UL(0x400)
+#define DASICS_UCFG_CUAT DASICS_UL(0x800)
+#define DASICS_SCFG_CSCT DASICS_UL(0x1000)
+#define DASICS_SCFG_CSAT DASICS_UL(0x2000)
+/* ECALL/load/store/jump close groups exclude the independent AMO/CBO controls. */
 #define DASICS_UCFG_CLS DASICS_UL(0x3c)
 #define DASICS_SCFG_CLS DASICS_UL(0x3c0)
 
