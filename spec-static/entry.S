@@ -352,5 +352,23 @@ fdi_spec_trap_entry:
     UNTRUSTED_SERVICE __wrap___cxa_finalize, FDI_SPEC_SERVICE_FINALIZE
     UNTRUSTED_SERVICE __wrap_exit, FDI_SPEC_SERVICE_EXIT
     UNTRUSTED_SERVICE __wrap__exit, FDI_SPEC_SERVICE_DIRECT_EXIT
+
+    /* Exception entry from a library must never bypass the side-stack return
+     * path. This fixed maincall reports the unsupported transfer and exits. */
+    .macro UNTRUSTED_EH name, operation
+    .balign 8
+    .global \name
+    .type \name, @function
+\name:
+    li a0, \operation
+    li t0, FDI_SPEC_SERVICE_EH_UNSUPPORTED
+    tail fdi_spec_maincall
+    .size \name, .-\name
+    .endm
+    UNTRUSTED_EH __wrap___cxa_throw, FDI_SPEC_EH_THROW
+    UNTRUSTED_EH __wrap___cxa_rethrow, FDI_SPEC_EH_RETHROW
+    UNTRUSTED_EH __wrap__Unwind_Resume, FDI_SPEC_EH_RESUME
+    UNTRUSTED_EH __wrap___cxa_begin_catch, FDI_SPEC_EH_BEGIN_CATCH
+    UNTRUSTED_EH __wrap___cxa_end_catch, FDI_SPEC_EH_END_CATCH
     .option pop
     .section .note.GNU-stack,"",@progbits

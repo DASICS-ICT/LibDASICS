@@ -50,6 +50,15 @@ extern int __libc_argc;
 extern void *fdi_spec_omnetpp_operator_new(size_t) __attribute__((weak));
 extern void fdi_spec_omnetpp_operator_delete(void *) __attribute__((weak));
 
+/* Weak references leave C and Fortran links independent of libstdc++. The
+ * builder explicitly retains the real entries needed by each C++ program. */
+extern _Noreturn void __real_umain___cxa_throw(void *, void *, void (*)(void *))
+    __attribute__((weak));
+extern _Noreturn void __real_umain___cxa_rethrow(void) __attribute__((weak));
+extern _Noreturn void __real_umain__Unwind_Resume(void *) __attribute__((weak));
+extern void *__real_umain___cxa_begin_catch(void *) __attribute__((weak));
+extern void __real_umain___cxa_end_catch(void) __attribute__((weak));
+
 /* No libc, TLS, allocation, or floating operations are needed before _start.
  * The six-argument proxy always clears a6 for the existing control syscall. */
 static long raw_syscall(long number, long p0, long p1, long p2,
@@ -198,6 +207,96 @@ _Noreturn void fdi_spec_panic(uint64_t code)
     write_all(FDI_SPEC_METADATA_FD, record.data, record.size);
     write_all(2, record.data, record.size);
     raw_exit(127);
+}
+
+struct eh_state {
+    uint64_t libcfg, return_pc, freezone_return_pc;
+};
+
+static _Noreturn void eh_reject(unsigned long operation, const char *reason)
+{
+    struct record record;
+    record.size = 0;
+    text(&record, "FDI_SPEC_RUNTIME version=1 event=fatal code=19 error=unsupported_exception_transfer reason=");
+    text(&record, reason);
+    field(&record, " operation=", operation);
+    field(&record, " depth=", fdi_spec_call_depth);
+    text(&record, " libcfg=0x"); number(&record, READ_CSR(CSR_DLCFG), 16);
+    text(&record, " return_pc=0x"); number(&record, READ_CSR(CSR_DRETURNPC), 16);
+    text(&record, " freezone_return_pc=0x"); number(&record, READ_CSR(CSR_DFZRETURN), 16);
+    emit(&record);
+    raw_exit(127);
+}
+
+static struct eh_state eh_enter(unsigned long operation)
+{
+    struct eh_state state;
+    if (!initialized || finished || fdi_spec_call_depth)
+        eh_reject(operation, "active_wrapper_or_invalid_lifecycle");
+    state.libcfg = READ_CSR(CSR_DLCFG);
+    state.return_pc = READ_CSR(CSR_DRETURNPC);
+    state.freezone_return_pc = READ_CSR(CSR_DFZRETURN);
+    if (state.libcfg)
+        eh_reject(operation, "active_library_permissions");
+    return state;
+}
+
+static void eh_leave(unsigned long operation, struct eh_state saved)
+{
+    struct eh_state current = eh_enter(operation);
+    if (current.libcfg != saved.libcfg || current.return_pc != saved.return_pc ||
+        current.freezone_return_pc != saved.freezone_return_pc)
+        eh_reject(operation, "return_state_changed");
+}
+
+/* These entries only guard trusted application EH. They never retire side
+ * frames, rewrite permissions, or authorize an arbitrary untrusted landing pad. */
+_Noreturn void __wrap_umain___cxa_throw(void *object, void *type,
+                                      void (*destructor)(void *))
+{
+    eh_enter(FDI_SPEC_EH_THROW);
+    if (destructor && ((uintptr_t)destructor < (uintptr_t)__fdi_trusted_start ||
+                       (uintptr_t)destructor >= (uintptr_t)__fdi_trusted_end))
+        eh_reject(FDI_SPEC_EH_THROW, "untrusted_exception_destructor");
+    if (!__real_umain___cxa_throw)
+        eh_reject(FDI_SPEC_EH_THROW, "missing_trusted_runtime");
+    __real_umain___cxa_throw(object, type, destructor);
+}
+
+_Noreturn void __wrap_umain___cxa_rethrow(void)
+{
+    eh_enter(FDI_SPEC_EH_RETHROW);
+    if (!__real_umain___cxa_rethrow)
+        eh_reject(FDI_SPEC_EH_RETHROW, "missing_trusted_runtime");
+    __real_umain___cxa_rethrow();
+}
+
+_Noreturn void __wrap_umain__Unwind_Resume(void *exception)
+{
+    eh_enter(FDI_SPEC_EH_RESUME);
+    if (!__real_umain__Unwind_Resume)
+        eh_reject(FDI_SPEC_EH_RESUME, "missing_trusted_runtime");
+    __real_umain__Unwind_Resume(exception);
+}
+
+void *__wrap_umain___cxa_begin_catch(void *exception)
+{
+    struct eh_state state = eh_enter(FDI_SPEC_EH_BEGIN_CATCH);
+    void *object;
+    if (!__real_umain___cxa_begin_catch)
+        eh_reject(FDI_SPEC_EH_BEGIN_CATCH, "missing_trusted_runtime");
+    object = __real_umain___cxa_begin_catch(exception);
+    eh_leave(FDI_SPEC_EH_BEGIN_CATCH, state);
+    return object;
+}
+
+void __wrap_umain___cxa_end_catch(void)
+{
+    struct eh_state state = eh_enter(FDI_SPEC_EH_END_CATCH);
+    if (!__real_umain___cxa_end_catch)
+        eh_reject(FDI_SPEC_EH_END_CATCH, "missing_trusted_runtime");
+    __real_umain___cxa_end_catch();
+    eh_leave(FDI_SPEC_EH_END_CATCH, state);
 }
 
 void fdi_spec_initialize(void)
@@ -450,6 +549,8 @@ long fdi_spec_service(long p0, long p1, long p2, unsigned long service)
             fdi_spec_panic(18);
         fdi_spec_omnetpp_operator_delete((void *)p0);
         return 0;
+    case FDI_SPEC_SERVICE_EH_UNSUPPORTED:
+        eh_reject((unsigned long)p0, "untrusted_eh_entry");
     default:
         fdi_spec_panic(15);
     }

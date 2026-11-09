@@ -13,6 +13,14 @@
 #define FDI_SPEC_SERVICE_DIRECT_EXIT 4
 #define FDI_SPEC_SERVICE_OMNETPP_NEW 5
 #define FDI_SPEC_SERVICE_OMNETPP_DELETE 6
+#define FDI_SPEC_SERVICE_EH_UNSUPPORTED 7
+
+/* Untrusted EH entries report which unsupported transition was attempted. */
+#define FDI_SPEC_EH_THROW 1
+#define FDI_SPEC_EH_RETHROW 2
+#define FDI_SPEC_EH_RESUME 3
+#define FDI_SPEC_EH_BEGIN_CATCH 4
+#define FDI_SPEC_EH_END_CATCH 5
 
 #ifndef FDI_SPEC_DIAGNOSTIC
 #define FDI_SPEC_DIAGNOSTIC 0

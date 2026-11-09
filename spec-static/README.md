@@ -19,7 +19,7 @@ policy.
 | `fdi_spec_loader_initialize` | Parses auxv from the original kernel stack and calls the untrusted libc's leaf `_dl_aux_init` before the normal CRT seals RELRO. This initializer has no TLS dependency. |
 | `fdi_spec_preinitialize` | Runs first in `.preinit_array`, after static TLS exists and before library constructors. Initializes the untrusted libc's environment, early TLS state, and program name. |
 | `fdi_spec_call` | Receives the untrusted target in `t0` and wrapper ID in `t1`. Preserves integer/floating arguments, stack arguments, `tp`, integer/floating results, and callee-saved state. |
-| `fdi_spec_maincall` | Provides only the explicitly enumerated registration, finalization, exit, and omnetpp allocator services. It does not recover arbitrary jump faults. |
+| `fdi_spec_maincall` | Provides only the explicitly enumerated registration, finalization, exit, omnetpp allocator, and unsupported-EH reporting services. It does not recover arbitrary jump faults. |
 | `umain_main` | Calls the application `main` and checks that a normal return leaves no active wrapper frames. |
 
 Generated wrappers must use `lla t2, fdi_spec_call; jr t2` after setting `t0`
@@ -120,8 +120,36 @@ records at termination. Diagnostic builds provide observed function coverage;
 they are not the formal timing binaries. Initialization and exit records must
 be checked together with process status and the original SPEC output oracle.
 
-The assembly includes CFI descriptions for the side-frame return address and
-`s11`. It does not implement general cleanup for exceptions or `longjmp` that
-cross an active wrapper. CFI alone is not evidence of full nonlocal-unwind
-support. Initialization, callbacks, and normal benchmark behavior still require
-target validation before the runtime is considered usable for a test batch.
+## Application-side C++ exceptions
+
+The static builder selects a trusted C++ exception-runtime closure. Application
+throw/catch, frame registration, personality, unwind, allocation, exception TLS,
+and RTTI dependencies must resolve consistently within that closure. These
+trusted services are excluded from FDI-isolated function coverage.
+
+The prefixed `__cxa_throw`, `__cxa_rethrow`, `_Unwind_Resume`,
+`__cxa_begin_catch`, and `__cxa_end_catch` enter trusted guards. Each guard
+requires an initialized runtime, zero active wrapper frames, and no active
+library data permissions. Returning catch entries also check that the data
+configuration and both return CSRs match their entry values. Exception-object
+destructors supplied to `__cxa_throw` must be trusted or null. The guards do not
+rewrite CSRs, retire frames, or repair an interrupted call.
+
+Unprefixed versions of those five entries use fixed untrusted stubs. Maincall
+service 7 reports `error=unsupported_exception_transfer` to metadata descriptor
+198 and exits with status 127. An active-wrapper or state-consistency failure
+uses the same failure record. The `reason` and numeric `operation` identify the
+attempt: 1 is throw, 2 rethrow, 3 resume, 4 begin-catch, and 5 end-catch.
+Successful runs retain the existing metadata format.
+
+A trusted destructor may make an ordinary FDI call if it returns normally
+before unwind resumes. Exceptions originating in an untrusted library, or
+escaping an active FDI wrapper/maincall, are not supported. The assembly CFI
+describes the side-frame return address and `s11`; it does not clean up that
+frame during nonlocal transfer. General cross-domain exceptions and `longjmp`
+across active wrappers require separate state-restoration support.
+
+The builder explicitly retains real EH entries required by each C++ program;
+weak runtime references avoid introducing libstdc++ dependencies into C or
+Fortran programs. Software probes and target tests must verify the selected
+closure and the rejection boundary before accepting a benchmark result.
